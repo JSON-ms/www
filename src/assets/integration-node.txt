@@ -1,0 +1,65 @@
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const app = express();
+
+// Middleware to parse JSON bodies
+app.use(express.json());
+
+// CORS middleware
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '[INTERFACE_EDITOR_URL]');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    next();
+});
+
+// Handle preflight requests (OPTIONS method)
+app.options('/', (req, res) => {
+    res.sendStatus(200);
+});
+
+// Handle GET requests
+app.get('/', (req, res) => {
+    const hash = req.query.hash;
+    if (!hash) {
+        return res.status(400).json({ body: 'Hash parameter is required' });
+    }
+
+    const filePath = path.join(__dirname, '/', `${hash}.json`);
+
+    fs.readFile(filePath, 'utf8', (err, content) => {
+        if (err) {
+            if (err.code === 'ENOENT') {
+                return res.json({}); // Return an empty JSON object if no content is found
+            }
+            return res.status(500).json({ body: 'Error reading file' });
+        }
+        res.status(200).json(JSON.parse(content)); // Return the content of the JSON file
+    });
+});
+
+// Handle POST requests
+app.post('/', (req, res) => {
+    const data = req.body;
+
+    if (!data.hash || !data.data) {
+        return res.status(400).json({ body: 'Hash and data properties are required' });
+    }
+
+    const filePath = path.join(__dirname, '../../private', `${data.hash}.json`);
+
+    fs.writeFile(filePath, JSON.stringify(data.data), (err) => {
+        if (err) {
+            return res.status(500).json({ body: 'Error writing file' });
+        }
+        res.status(200).json(data); // Return the saved data as a JSON response
+    });
+});
+
+// Start the server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});

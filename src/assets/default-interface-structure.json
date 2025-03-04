@@ -1,0 +1,25 @@
+{
+  "global": {
+    "title": "Untitled",
+    "copyright": "",
+    "logo": "",
+    "theme": {
+      "default": "light",
+      "light": {
+        "primary": "#1867c0"
+      },
+      "dark": {
+        "primary": "#1867c0"
+      }
+    }
+  },
+  "locales": {
+
+  },
+  "enums": {
+
+  },
+  "sections": {
+
+  }
+}

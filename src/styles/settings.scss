@@ -1,0 +1,22 @@
+/**
+ * src/styles/settings.scss
+ *
+ * Configures SASS variables and Vuetify overwrites
+ */
+
+// https://vuetifyjs.com/features/sass-variables/`
+// @use 'vuetify/settings' with (
+//   $color-pack: false
+// );
+
+html, body {
+  overflow-y: auto;
+}
+body.ajax-loading,
+body.ajax-loading * {
+  cursor: wait !important;
+}
+
+.v-file-upload hr {
+  width: 100px !important;
+}

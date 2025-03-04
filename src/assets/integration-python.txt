@@ -1,0 +1,56 @@
+from flask import Flask, request, jsonify, make_response
+import os
+import json
+
+app = Flask(__name__)
+
+# Set CORS headers
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '[INTERFACE_EDITOR_URL]'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, DELETE'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    return response
+
+# Handle preflight requests (OPTIONS method)
+@app.route('/', methods=['OPTIONS'])
+def options():
+    return make_response('', 200)
+
+# Handle GET requests
+@app.route('/', methods=['GET'])
+def get_data():
+    hash_param = request.args.get('hash')
+    if not hash_param:
+        return jsonify({'body': 'Hash parameter is required'}), 400
+
+    file_path = os.path.join(os.path.dirname(__file__), '/', f'{hash_param}.json')
+
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as file:
+            content = file.read()
+            return jsonify(json.loads(content)), 200
+    else:
+        return jsonify({}), 200  # Return an empty JSON object if no content is found
+
+# Handle POST requests
+@app.route('/', methods=['POST'])
+def post_data():
+    try:
+        data = request.get_json(force=True)
+    except Exception as e:
+        return jsonify({'body': 'Invalid JSON'}), 400
+
+    if 'hash' not in data or 'data' not in data:
+        return jsonify({'body': 'Hash and data properties are required'}), 400
+
+    file_path = os.path.join(os.path.dirname(__file__), '../../private', f'{data["hash"]}.json')
+
+    with open(file_path, 'w') as file:
+        json.dump(data['data'], file)  # Save the 'data' property back to JSON format
+
+    return jsonify(data), 200  # Return the saved data as a JSON response
+
+if __name__ == '__main__':
+    app.run(debug=True)
