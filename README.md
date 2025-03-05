@@ -4,6 +4,8 @@
 
 JSON.ms allows you to create an admin panel from a YAML interface that communicates with a remote server using JSON. Users enjoy a sleek interface while you dynamically manage fields through YAML, handling all RESTful requests seamlessly from your server.
 
+You don't need to install JSON.ms on your server; you can simply use our [online version](https://json.ms), which connects to your remote server. However, if you're concerned about data security, you have the option to install your own instance.
+
 ## Features
 - Define admin panel UI using YAML
 - Seamless communication with a remote server via JSON
@@ -42,7 +44,11 @@ npm run dev
 ```
 
 ## Requirements
-Ensure that the backend server ([jsonms-server](https://github.com/dannycoulombe/jsonms-server)) is up and running. See jsonms-server for setup instructions.
+Ensure that the backend server ([jsonms-server](https://github.com/dannycoulombe/jsonms-server)) is up and running. See link for setup instructions.
+
+## Documentation
+
+Please check `/docs` folder.
 
 ## License
 BSD-3-Clause License

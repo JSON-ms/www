@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { useGlobalStore } from '@/stores/global';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useDisplay } from 'vuetify';
 import { Services } from '@/services';
+import { useRoute } from 'vue-router';
 
 const globalStore = useGlobalStore();
 const { smAndDown } = useDisplay()
 const sessionLoginOut = ref(false);
+const currentRoute = useRoute();
+const isAdmin = currentRoute.path.startsWith('/admin');
 const emit = defineEmits(['logout'])
 const logout = () => {
   globalStore.setPrompt({
@@ -31,40 +34,57 @@ const logout = () => {
     })
   })
 }
+
+const hash = computed((): string => {
+  return currentRoute.params.interface.toString();
+})
 </script>
 
 <template>
-  <v-avatar size="32" color="primary">
-    <v-img
-      v-if="globalStore.session.user.avatar"
-      :src="globalStore.session.user.avatar"
-      alt="Avatar"
-    >
-      <template #placeholder>
-        <v-progress-circular
-          indeterminate
-        />
-      </template>
-    </v-img>
-    <strong v-else>{{ globalStore.session.user.name.substring(0, 1) }}</strong>
-  </v-avatar>
-  <strong v-if="!smAndDown">{{ globalStore.session.user.name }}</strong>
-
-  <v-tooltip
-    text="Logout"
-    location="bottom"
-  >
+  <v-menu>
     <template #activator="{ props }">
-      <v-btn
-        v-bind="props"
-        :loading="sessionLoginOut"
-        :disabled="sessionLoginOut"
-        icon
-        @click="logout"
-      >
-        <v-icon>mdi-logout-variant</v-icon>
+      <v-btn v-bind="props">
+        <v-avatar size="32" color="primary">
+          <v-img
+            v-if="globalStore.session.user.avatar"
+            :src="globalStore.session.user.avatar"
+            alt="Avatar"
+          >
+            <template #placeholder>
+              <v-progress-circular
+                indeterminate
+              />
+            </template>
+          </v-img>
+          <strong v-else>{{ globalStore.session.user.name.substring(0, 1) }}</strong>
+        </v-avatar>
+        <strong v-if="!smAndDown" class="ml-3">{{ globalStore.session.user.name }}</strong>
+        <v-icon end icon="mdi-chevron-down" />
       </v-btn>
     </template>
-  </v-tooltip>
+    <v-list>
+      <v-list-item
+        v-if="isAdmin"
+        :to="'/editor/' + hash"
+        title="Editor"
+        prepend-icon="mdi-pencil-box-outline"
+        append-icon="mdi-arrow-right"
+      />
+      <v-list-item
+        v-else
+        :to="'/admin/' + hash"
+        title="Admin"
+        prepend-icon="mdi-form-textbox"
+        append-icon="mdi-arrow-right"
+      />
+      <v-divider class="my-2" />
+      <v-list-item
+        :disabled="sessionLoginOut"
+        title="Logout"
+        prepend-icon="mdi-logout-variant"
+        @click="logout"
+      />
+    </v-list>
+  </v-menu>
 </template>
 

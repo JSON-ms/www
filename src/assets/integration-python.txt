@@ -45,7 +45,7 @@ def post_data():
     if 'hash' not in data or 'data' not in data:
         return jsonify({'body': 'Hash and data properties are required'}), 400
 
-    file_path = os.path.join(os.path.dirname(__file__), '../../private', f'{data["hash"]}.json')
+    file_path = os.path.join(os.path.dirname(__file__), '/', f'{data["hash"]}.json')
 
     with open(file_path, 'w') as file:
         json.dump(data['data'], file)  # Save the 'data' property back to JSON format

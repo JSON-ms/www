@@ -48,7 +48,7 @@ app.post('/', (req, res) => {
         return res.status(400).json({ body: 'Hash and data properties are required' });
     }
 
-    const filePath = path.join(__dirname, '../../private', `${data.hash}.json`);
+    const filePath = path.join(__dirname, '/', `${data.hash}.json`);
 
     fs.writeFile(filePath, JSON.stringify(data.data), (err) => {
         if (err) {

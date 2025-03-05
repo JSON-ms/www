@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import router from '@/router';
 import { computed } from 'vue';
 import type { IInterface } from '@/interfaces';
 import { useGlobalStore } from '@/stores/global';
 
 const {
   interfaces = [],
-  type = null
+  type = null,
+  actions = false,
 } = defineProps<{
   interfaces?: IInterface[],
   type?: 'admin' | 'interface' | null,
+  actions?: boolean
 }>();
 
 const globalStore = useGlobalStore();
@@ -43,14 +44,23 @@ const computedInterfaces = computed((): (IInterface | { header: string })[] => {
   return results;
 })
 
-const emit = defineEmits(['change'])
+const emit = defineEmits(['change', 'create', 'save', 'delete'])
 const onChange = (item: IInterface) => {
   emit('change', item);
+}
+const create = (item: IInterface) => {
+  emit('create', item);
+}
+const save = (item: IInterface) => {
+  emit('save', item);
+}
+const remove = (item: IInterface) => {
+  emit('delete', item);
 }
 </script>
 
 <template>
-  <v-autocomplete
+  <v-select
     v-model="selectedInterface"
     :items="computedInterfaces"
     :prepend-inner-icon="selectedInterface.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'"
@@ -64,6 +74,66 @@ const onChange = (item: IInterface) => {
     no-data-text="No interface available yet"
     @update:model-value="onChange"
   >
+    <template v-if="actions" #append-inner>
+
+      <!-- CREATE -->
+      <v-tooltip
+        text="New interface"
+        location="bottom"
+      >
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            color="secondary"
+            size="small"
+            icon
+            @mousedown.stop="create"
+          >
+            <v-icon icon="mdi-file-plus" />
+          </v-btn>
+        </template>
+      </v-tooltip>
+
+      <!-- SAVE -->
+      <v-tooltip
+        text="Save"
+        location="bottom"
+      >
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            variant="text"
+            color="primary"
+            size="small"
+            icon
+            @mousedown.stop.prevent="save"
+          >
+            <v-icon icon="mdi-content-save" />
+          </v-btn>
+        </template>
+      </v-tooltip>
+
+      <!-- DELETE -->
+      <v-tooltip
+        text="Delete"
+        location="bottom"
+      >
+        <template #activator="{ props }">
+          <v-btn
+            v-if="selectedInterface.type === 'owner'"
+            v-bind="props"
+            color="error"
+            size="small"
+            icon
+            @mousedown.stop.prevent="remove"
+          >
+            <v-icon>mdi-delete-outline</v-icon>
+          </v-btn>
+        </template>
+      </v-tooltip>
+    </template>
+
+    <!-- ITEM SLOT -->
     <template #item="{ props, item }">
       <v-list-item v-if="item.value.header" class="py-2" style="min-height: 0">
         <v-list-item-subtitle>
@@ -78,5 +148,5 @@ const onChange = (item: IInterface) => {
         :prepend-icon="item.raw.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'"
       ></v-list-item>
     </template>
-  </v-autocomplete>
+  </v-select>
 </template>

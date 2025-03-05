@@ -41,6 +41,7 @@ export class Services {
       .then(response => {
         if (!response.ok) {
           return response.text().then(text => {
+            this.doRequestCount(-1);
             throw new Error(text);
           });
         }

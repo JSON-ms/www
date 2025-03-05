@@ -22,5 +22,6 @@ declare module 'vue-router/auto-routes' {
     '/admin/': RouteRecordInfo<'/admin/', '/admin', Record<never, never>, Record<never, never>>,
     '/admin/[interface]': RouteRecordInfo<'/admin/[interface]', '/admin/:interface', { interface: ParamValue<true> }, { interface: ParamValue<false> }>,
     '/admin/[interface]/': RouteRecordInfo<'/admin/[interface]/', '/admin/:interface', { interface: ParamValue<true> }, { interface: ParamValue<false> }>,
+    '/editor/[interface]': RouteRecordInfo<'/editor/[interface]', '/editor/:interface', { interface: ParamValue<true> }, { interface: ParamValue<false> }>,
   }
 }

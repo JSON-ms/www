@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useDisplay } from 'vuetify'
-import type { IData, IField, IInterface } from '@/interfaces';
+import type { IData, IInterface } from '@/interfaces';
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
 import SessionPanel from '@/components/SessionPanel.vue';
 import InterfaceSelector from '@/components/InterfaceSelector.vue';
@@ -150,7 +150,7 @@ if (autoload && !isDemo.value) {
       </div>
     </v-app-bar-title>
 
-    <div class="d-flex align-center mr-3" style="gap: 1rem">
+    <div class="d-flex align-center mx-3" style="gap: 1rem">
       <v-btn
         v-if="preview"
         :loading="loading"
@@ -200,7 +200,7 @@ if (autoload && !isDemo.value) {
         />
       </template>
     </v-list>
-    <template v-if="smAndDown" #prepend>
+    <template v-if="smAndDown && interfaces.length > 0" #prepend>
       <div class="pa-3">
         <InterfaceSelector
           v-model="selectedInterface"
@@ -234,6 +234,8 @@ if (autoload && !isDemo.value) {
       'w-100': true,
       'pa-4': !smAndDown,
       'overflow-y-scroll': preview,
+      'bg-surface': smAndDown,
+      'fill-height': smAndDown && !preview,
     }"
     :style="{
       maxWidth: preview && !smAndDown ? 'calc(100% - 250px)' : undefined,
@@ -281,9 +283,6 @@ if (autoload && !isDemo.value) {
           :locale="selectedLocale"
         />
       </div>
-      <template v-if="!preview">
-        <v-divider class="mt-3 mx-n4" />
-      </template>
     </v-card>
 
     <v-app-bar location="bottom">

@@ -74,14 +74,14 @@ watch(() => currentRoute.path, reload);
         <v-card-text>
           <v-alert v-if="currentRoute.params.interface" type="warning" :class="{ 'mb-2': interfaceList.length > 0 }">
             Unfortunately, you don't have access to the selected admin panel.
-            <span v-if="interfaceList.length > 0">Please choose from the available options below:</span>
+            <span v-if="ownerInterfaces.length > 0 || sharedInterfaces.length > 0">Please choose from the available options below:</span>
           </v-alert>
           <GoogleSignInButton
             v-if="!globalStore.session.loggedIn"
             class="mt-4"
             block
           />
-          <template v-else-if="interfaceList.length > 0">
+          <template v-else-if="ownerInterfaces.length > 0 || sharedInterfaces.length > 0">
             <v-list color="primary">
               <template v-if="ownerInterfaces.length > 0">
                 <v-list-item-subtitle v-if="ownerInterfaces.length > 0 && sharedInterfaces.length > 0" class="mb-2">
