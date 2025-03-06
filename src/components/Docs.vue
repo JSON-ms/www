@@ -3,6 +3,7 @@ import interfaceMd from '@/docs/interface.md'
 import integrationMd from '@/docs/integration.md'
 import settingsMd from '@/docs/settings.md'
 import { marked } from 'marked';
+import 'ace-builds/src-noconflict/mode-yaml';
 import 'ace-builds/src-noconflict/theme-github_dark';
 import { onMounted, ref } from 'vue';
 import ace from 'ace-builds';
@@ -27,11 +28,11 @@ const applyEditors = () => {
   const instances = document.getElementsByClassName('language-yaml');
   for (let i = 0; i < instances.length; i++) {
     ace.edit(instances[i] as HTMLElement, {
-      readOnly: true,
       value: instances[i].innerHTML.trimEnd(),
       mode: 'ace/mode/yaml',
       theme: 'ace/theme/github_dark',
       maxLines: Infinity,
+      readOnly: true,
       wrap: true,
     });
   }

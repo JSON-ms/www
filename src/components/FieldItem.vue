@@ -1,0 +1,354 @@
+<script setup lang="ts">
+import ListBuilder from '@/components/ListBuilder.vue';
+import type { IField } from '@/interfaces';
+import Rules from '@/rules';
+import { parseFields } from '@/utils';
+import { computed, ref } from 'vue';
+
+const value = defineModel<any>({ required: true });
+const {
+  field,
+  locale,
+  locales = {}
+} = defineProps<{
+  field: IField,
+  locale: string,
+  locales:  { [key: string]: string; },
+}>();
+const showDatePicker = ref(false);
+const getRules = (field: IField): any[] => {
+  const rules: any[] = [];
+  if (field.required) {
+    rules.push((value: string) => Rules.required(value) || 'This field is required');
+  }
+  if (field.type.includes('url')) {
+    rules.push((value: string) => Rules.isUrl(value) || 'This field must be an URL');
+  }
+  if (field.type.includes('number')) {
+    rules.push((value: string) => Rules.digit(value) || 'This field must be a digit');
+  }
+  if (field.type.includes('number')) {
+    rules.push((value: string) => Rules.digit(value) || 'This field must be a digit');
+  }
+  return rules;
+}
+const optionItems = computed((): string[] => {
+  if (Array.isArray(field.items)) {
+    return field.items;
+  }
+  return [];
+})
+const formattedDate = computed({
+  get: (): string => {
+    if (value.value instanceof Date) {
+      return value.value.toISOString().slice(0, 10);
+    }
+    return value.value;
+  },
+  set: (date: Date | string) => {
+    if (date instanceof Date) {
+      value.value = date.toISOString().slice(0, 10);
+    } else {
+      value.value = date;
+    }
+  }
+})
+
+const getDefaultItem = () => {
+  return parseFields(structuredClone(field.items || {}), locales);
+}
+</script>
+
+<template>
+  <!-- I18N / URL / STRING -->
+  <v-text-field
+    v-if="['i18n', 'url', 'i18n:url', 'string', 'i18n:string'].includes(field.type)"
+    v-model="value"
+    :label="field.label"
+    :prepend-inner-icon="field.icon"
+    :hint="field.hint"
+    :persistent-hint="!!field.hint"
+    :required="field.required"
+    :rules="getRules(field)"
+    hide-details="auto"
+    clearable
+  >
+    <template v-if="field.required" #label>
+      <span class="mr-2 text-error">*</span>{{ field.label }}
+    </template>
+    <template v-if="field.type.includes('i18n')" #append-inner>
+      <v-chip label size="x-small">
+        {{ locales[locale] }}
+      </v-chip>
+    </template>
+  </v-text-field>
+
+  <!-- NUMBER -->
+  <v-number-input
+    v-else-if="['i18n:number', 'number'].includes(field.type)"
+    v-model.number="value"
+    :label="field.label"
+    :prepend-inner-icon="field.icon"
+    :hint="field.hint"
+    :persistent-hint="!!field.hint"
+    :required="field.required"
+    :rules="getRules(field)"
+    hide-details="auto"
+    clearable
+  >
+    <template v-if="field.required" #label>
+      <span class="mr-2 text-error">*</span>{{ field.label }}
+    </template>
+    <template v-if="field.type.includes('i18n')" #append-inner>
+      <v-chip label size="x-small">
+        {{ locales[locale] }}
+      </v-chip>
+    </template>
+  </v-number-input>
+
+  <!-- WYSIWYG -->
+  <div v-else-if="['wysiwyg', 'i18n:wysiwyg'].includes(field.type)">
+    <v-list-subheader class="pr-3 w-100 d-block" style="min-height: 2rem">
+      <div class="d-flex align-center justify-space-between">
+        <span>
+          <span v-if="field.required" class="mr-2 text-error">*</span>
+          <span>{{ field.label }}</span>
+        </span>
+        <v-chip v-if="field.type.includes('i18n')" label size="x-small">
+          {{ locales[locale] }}
+        </v-chip>
+      </div>
+    </v-list-subheader>
+    <v-input
+      v-if="value !== null"
+      v-model="value"
+      :label="field.label"
+      :prepend-inner-icon="field.icon"
+      :hint="field.hint"
+      :persistent-hint="!!field.hint"
+      :required="field.required"
+      :rules="getRules(field)"
+      hide-details="auto"
+      clearable
+    >
+      <div class="w-100 mb-12">
+        <QuillEditor
+          v-model="value"
+          theme="snow"
+          style="min-height: 100px"
+        />
+      </div>
+    </v-input>
+  </div>
+
+  <!-- MARKDOWN -->
+  <div v-else-if="['markdown', 'i18n:markdown'].includes(field.type)">
+    <v-list-subheader class="pr-3 w-100 d-block" style="min-height: 2rem">
+      <div class="d-flex align-center justify-space-between">
+        <span>
+          <span v-if="field.required" class="mr-2 text-error">*</span>
+          <span>{{ field.label }}</span>
+        </span>
+        <v-chip v-if="field.type.includes('i18n')" label size="x-small">
+          {{ locales[locale] }}
+        </v-chip>
+      </div>
+    </v-list-subheader>
+    <v-input
+      v-model="value"
+      :label="field.label"
+      :prepend-inner-icon="field.icon"
+      :hint="field.hint"
+      :persistent-hint="!!field.hint"
+      :required="field.required"
+      :rules="getRules(field)"
+      hide-details="auto"
+      clearable
+    >
+      <vue-easymde
+        v-if="value !== null"
+        v-model="value"
+        :options="{
+          minHeight: '100px',
+          placeholder: 'Type here...',
+          spellChecker: false,
+          nativeSpellcheck: false,
+          styleSelectedText: false,
+          sideBySideFullscreen: false,
+          syncSideBySidePreviewScroll: false,
+          status: false,
+          lineNumbers: false,
+          hideIcons: ['guide', 'fullscreen', 'side-by-side', 'preview'],
+        }"
+        class="w-100"
+      />
+    </v-input>
+  </div>
+
+  <!-- TEXTAREA -->
+  <v-textarea
+    v-else-if="['textarea', 'i18n:textarea'].includes(field.type)"
+    v-model="value"
+    :label="field.label"
+    :required="field.required"
+    :rules="getRules(field)"
+    hide-details="auto"
+    clearable
+  >
+    <template v-if="field.required" #label>
+      <span class="mr-2 text-error">*</span>{{ field.label }}
+    </template>
+    <template v-if="field.type.includes('i18n')" #append-inner>
+      <v-chip label size="x-small">
+        {{ locales[locale] }}
+      </v-chip>
+    </template>
+  </v-textarea>
+
+  <!-- SELECT -->
+  <v-autocomplete
+    v-else-if="['select', 'i18n:select'].includes(field.type)"
+    v-model="value"
+    :label="field.label"
+    :required="field.required"
+    :rules="getRules(field)"
+    :items="optionItems"
+    :multiple="!!(field.multiple)"
+    hide-details="auto"
+    clearable
+  >
+    <template v-if="field.required" #label>
+      <span class="mr-2 text-error">*</span>{{ field.label }}
+    </template>
+    <template v-if="field.type.includes('i18n')" #append-inner>
+      <v-chip label size="x-small">
+        {{ locales[locale] }}
+      </v-chip>
+    </template>
+  </v-autocomplete>
+
+  <!-- DATE -->
+  <v-menu
+    v-else-if="['date', 'i18n:date'].includes(field.type)"
+    v-model="showDatePicker"
+    location="bottom"
+  >
+    <template #activator="{ props }">
+      <v-text-field
+        v-model="formattedDate"
+        v-bind="props"
+        :label="field.label"
+        :required="field.required"
+        :rules="getRules(field)"
+        hide-details="auto"
+        clearable
+        @click="showDatePicker = true"
+      >
+        <template v-if="field.required" #label>
+          <span class="mr-2 text-error">*</span>{{ field.label }}
+        </template>
+        <template v-if="field.type.includes('i18n')" #append-inner>
+          <v-chip label size="x-small">
+            {{ locales[locale] }}
+          </v-chip>
+        </template>
+      </v-text-field>
+    </template>
+    <v-date-picker
+      v-model="value"
+      hide-header
+      show-adjacent-months
+    />
+  </v-menu>
+
+  <!-- FILE -->
+  <div v-else-if="['file', 'i18n:file'].includes(field.type)">
+    <v-list-subheader class="pr-3 w-100 d-block" style="min-height: 2rem">
+      <div class="d-flex align-center justify-space-between">
+        <span>
+          <span v-if="field.required" class="mr-2 text-error">*</span>
+          <span>{{ field.label }}</span>
+        </span>
+        <v-chip v-if="field.type.includes('i18n')" label size="x-small">
+          {{ locales[locale] }}
+        </v-chip>
+      </div>
+    </v-list-subheader>
+    <v-file-upload
+      v-model="value"
+      :label="field.label"
+      :prepend-inner-icon="field.icon"
+      :hint="field.hint"
+      :persistent-hint="!!field.hint"
+      :required="field.required"
+      :rules="getRules(field)"
+      hide-details="auto"
+      density="compact"
+      variant="compact"
+      scrim="primary"
+      clearable
+    />
+  </div>
+
+  <!-- ARRAY -->
+  <div v-else-if="field.type.includes('array')">
+    <v-list-subheader class="pr-3 w-100 d-block" style="min-height: 2rem">
+      <div class="d-flex align-center justify-space-between">
+        <span>
+          <span v-if="field.required" class="mr-2 text-error">*</span>
+          <span>{{ field.label }}</span>
+        </span>
+        <v-chip v-if="field.type.includes('i18n')" label size="x-small">
+          {{ locales[locale] }}
+        </v-chip>
+      </div>
+    </v-list-subheader>
+    <ListBuilder
+      v-model="value"
+      :label="field.label"
+      :required="field.required"
+      :rules="getRules(field)"
+      :default-item="getDefaultItem()"
+      class="d-flex flex-column"
+      style="gap: 0.5rem"
+      hide-details="auto"
+      clearable
+    >
+      <template #default="{ item }">
+        <div
+          v-for="(key, keyIdx) in Object.keys(field.items)"
+          :key="key"
+          :class="{ 'mt-4': keyIdx > 0 }"
+        >
+          <template v-if="field.items">
+            <FieldItem
+              v-if="field.items[key].type.includes('i18n')"
+              v-model="item[key][locale]"
+              :field="field.items[key]"
+              :locale="locale"
+              :locales="locales"
+            />
+            <FieldItem
+              v-else-if="field.items[key]"
+              v-model="item[key].general"
+              :field="field.items[key]"
+              :locale="locale"
+              :locales="locales"
+            />
+          </template>
+        </div>
+      </template>
+    </ListBuilder>
+  </div>
+
+  <!-- FALLBACK: FIELD NOT EXISTING -->
+  <v-alert
+    v-else
+    class="mb-0"
+    type="warning"
+    variant="tonal"
+  >
+    {{['i18n', 'url', 'string'].includes(field.type)}}
+    This field type <v-chip size="x-small" label>{{field.type}}</v-chip> does not exist.
+  </v-alert>
+</template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { IInterface } from '@/interfaces';
+import Rules from '@/rules';
 
 const selectedInterface = defineModel<IInterface>({ required: true });
 const {
@@ -31,15 +32,20 @@ const {
         <v-text-field
           v-model="selectedInterface.server_url"
           :disabled="demo || disabled"
+          :rules="[(value: string) => Rules.isUrl(value) || 'This field must contain a valid URL']"
           prepend-inner-icon="mdi-webhook"
-          label="Webhook Endpoint"
           hide-details="auto"
           hint="This feature allows you to specify a URL that will be triggered whenever data is read from or saved to the admin panel. By integrating a webhook, you can synchronize data with a remote server and perform various transformations."
           persistent-hint
           autocomplete="null"
           class="mb-3"
+          required
           clearable
-        />
+        >
+          <template #label>
+            <span class="mr-2 text-error">*</span>Webhook Endpoint
+          </template>
+        </v-text-field>
       </v-card-text>
     </v-card>
 

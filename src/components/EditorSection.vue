@@ -7,7 +7,7 @@ import Docs from '@/components/Docs.vue';
 import Settings from '@/components/Settings.vue';
 import SessionPanel from '@/components/SessionPanel.vue';
 import Integration from '@/components/Integration.vue';
-import { type Ref, ref } from 'vue';
+import { computed, type Ref, ref, watch } from 'vue';
 import { useDisplay } from 'vuetify';
 import GoogleSignInButton from '@/components/GoogleSignInButton.vue';
 import { useGlobalStore } from '@/stores/global';
@@ -18,6 +18,7 @@ import InterfaceSelector from '@/components/InterfaceSelector.vue';
 import NewInterfaceModal from '@/components/NewInterfaceModal.vue';
 import router from '@/router';
 import { useRoute } from 'vue-router';
+import Rules from '@/rules';
 
 const { smAndDown } = useDisplay()
 const drawer = ref(false);
@@ -31,30 +32,46 @@ const gotoTab = (key: string) => {
   drawer.value = false;
 }
 
+let interfaceChangedTimeout: any;
+const interfaceChanging = ref(false);
+const interfaceChanged = ref(false);
+const onInterfaceChanging = () => {
+  interfaceChanging.value = true;
+  interfaceChanged.value = false;
+}
+const onInterfaceChanged = () => {
+  interfaceChanging.value = false;
+  interfaceChanged.value = true;
+  clearTimeout(interfaceChangedTimeout);
+  interfaceChangedTimeout = setTimeout(() => interfaceChanged.value = false, 2000);
+}
+
 const defaultInterface = getDefaultInterfaceContent();
 const globalStore = useGlobalStore();
 const currentRoute = useRoute();
+const hasParamInterfaceAndNotNew = currentRoute.params.interface && currentRoute.params.interface !== 'new';
 const selectedInterface: Ref<IInterface> = ref(getInterface(defaultInterface));
-if (!currentRoute.params.interface && globalStore.session.interfaces.length > 0) {
-  globalStore.session.interfaces.sort((a, b) => {
+const validInterfaces = globalStore.session.interfaces.filter(item => ['owner', 'interface'].includes(item.type));
+
+if (!currentRoute.params.interface && validInterfaces.length > 0) {
+  validInterfaces.sort((a, b) => {
     if (a.type === 'owner' && b.type !== 'owner') {
       return -1;
     }
     if (a.type !== 'owner' && b.type === 'owner') {
       return 1;
     }
-    return new Date(a.created_at) - new Date(b.created_at);
+    return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
   });
-  router.replace('/editor/' + globalStore.session.interfaces[0].hash);
-  selectedInterface.value = globalStore.session.interfaces[0];
+  selectedInterface.value = validInterfaces[0];
 } else if (globalStore.session.loggedIn) {
-  const found = globalStore.session.interfaces.find(item => item.hash === currentRoute.params.interface);
-  if (found && ['owner', 'interface'].includes(found.type || '')) {
+  const found = validInterfaces.find(item => item.hash === currentRoute.params.interface);
+  if (found) {
     selectedInterface.value = found;
-  } else {
+  } else if (hasParamInterfaceAndNotNew) {
     globalStore.catchError(new Error('Unfortunately, you don\'t have access to edit the interface of the selected admin panel.'));
   }
-} else if (currentRoute.params.interface) {
+} else if (hasParamInterfaceAndNotNew) {
   router.replace('/');
 }
 
@@ -64,6 +81,18 @@ const onLogout = () => {
     tab.value = 'interface';
   }
 }
+
+const settingsHasError = computed((): boolean => {
+  return !Rules.isUrl(selectedInterface.value.server_url || '');
+})
+
+const showSettingsHasError = computed((): boolean => {
+  return globalStore.session.loggedIn && settingsHasError.value;
+})
+
+// @ts-expect-error process.env is parsed from backend
+const version = JSON.parse(process.env.APP_VERSION);
+const copyright = ref('JSON.ms v' + version + '. Licensed under the BSD-3-Clause.');
 
 const create = () => {
   globalStore.setPrompt({
@@ -78,13 +107,11 @@ const create = () => {
       tab.value = smAndDown.value ? 'interface' : 'docs';
       selectTemplate.value = true;
       selectedInterface.value = getInterface(blankInterface);
+      selectedInterface.value.hash = 'new';
       resolve();
     })
   })
 }
-
-const version = JSON.parse(process.env.APP_VERSION);
-const copyright = ref('JSON.ms v' + version + '. Licensed under the BSD-3-Clause.');
 
 const saving = ref(false);
 const saved = ref(false);
@@ -130,10 +157,14 @@ const remove = () => {
         interface: selectedInterface.value,
       })
         .then(() => {
-          globalStore.removeInterface(selectedInterface.value);
-          selectedInterface.value = getInterface(blankInterface);
-          tab.value = 'docs';
+          const oldInterface = selectedInterface.value;
+
+          tab.value = smAndDown.value ? 'interface' : 'docs';
           selectTemplate.value = true;
+          selectedInterface.value = getInterface(blankInterface);
+          selectedInterface.value.hash = 'new';
+
+          globalStore.removeInterface(oldInterface);
         })
         .then(resolve)
         .catch(globalStore.catchError)
@@ -145,6 +176,14 @@ const remove = () => {
 const applyTemplate = (template: string) => {
   selectedInterface.value.content = template;
 }
+
+watch(() => selectedInterface.value.hash, (hash: string | undefined) => {
+  if (hash) {
+    router.replace('/editor/' + hash);
+  } else if (hasParamInterfaceAndNotNew) {
+    router.replace('/');
+  }
+}, { immediate: true })
 </script>
 
 <template>
@@ -164,6 +203,7 @@ const applyTemplate = (template: string) => {
         <div v-else class="d-flex align-center" style="gap: 0.5rem">
           <InterfaceSelector
             v-model="selectedInterface"
+            :disabled="selectTemplate"
             :interfaces="globalStore.session.interfaces"
             type="interface"
             style="max-width: 25rem"
@@ -171,8 +211,21 @@ const applyTemplate = (template: string) => {
             @create="create"
             @save="save"
             @delete="remove"
-            @change="item => router.replace('/editor/' + item.hash)"
           />
+
+          <div v-if="interfaceChanging || interfaceChanged" class="ml-4">
+            <v-progress-circular
+              v-if="interfaceChanging"
+              indeterminate
+              color="primary"
+              class="mr-2"
+              size="24"
+              width="2"
+            />
+            <v-icon v-if="interfaceChanged" icon="mdi-check" start color="success" />
+            <span v-if="interfaceChanging">Parsing...</span>
+            <span v-if="interfaceChanged">Parsed!</span>
+          </div>
         </div>
       </div>
     </template>
@@ -212,35 +265,52 @@ const applyTemplate = (template: string) => {
     width="250"
   >
     <v-list v-model="tab" color="primary" nav>
-      <v-list-item :active="tab === 'interface'" @click="gotoTab('interface')">
-        <v-icon start icon="mdi-square-edit-outline" />
-        Editor
+      <v-list-item
+        :active="tab === 'interface'"
+        prepend-icon="mdi-square-edit-outline"
+        title="Editor"
+        @click="gotoTab('interface')"
+      />
+      <v-list-item
+        :active="tab === 'preview'"
+        prepend-icon="mdi-monitor-eye"
+        title="Preview"
+        @click="gotoTab('preview')"
+      />
+      <v-list-item
+        :active="tab === 'settings'"
+        :append-icon="showSettingsHasError ? 'mdi-alert' : undefined"
+        prepend-icon="mdi-cog"
+        title="Settings"
+        @click="gotoTab('settings')"
+      >
+        <template v-if="showSettingsHasError" #append>
+          <v-icon color="warning" class="ml-3">
+            mdi-alert
+          </v-icon>
+        </template>
       </v-list-item>
-      <v-list-item :active="tab === 'preview'" @click="gotoTab('preview')">
-        <v-icon start icon="mdi-monitor-eye" />
-        Preview
-      </v-list-item>
-      <v-list-item :active="tab === 'settings'" @click="gotoTab('settings')">
-        <v-icon start icon="mdi-cog" />
-        Settings
-      </v-list-item>
-      <v-list-item :active="tab === 'integration'" @click="gotoTab('integration')">
-        <v-icon start icon="mdi-progress-download" />
-        Integration
-      </v-list-item>
-      <v-list-item :active="tab === 'docs'" @click="gotoTab('docs')">
-        <v-icon start icon="mdi-book" />
-        Docs
-      </v-list-item>
+      <v-list-item
+        :active="tab === 'integration'"
+        prepend-icon="mdi-progress-download"
+        title="Integration"
+        @click="gotoTab('integration')"
+      />
+      <v-list-item
+        :active="tab === 'docs'"
+        prepend-icon="mdi-book"
+        title="Docs"
+        @click="gotoTab('docs')"
+      />
     </v-list>
     <template v-if="smAndDown && globalStore.session.loggedIn" #prepend>
       <div class="pa-3">
         <InterfaceSelector
           v-model="selectedInterface"
+          :disabled="selectTemplate"
           :interfaces="globalStore.session.interfaces"
           type="admin"
           class="mt-2"
-          @change="item => router.replace('/editor/' + item.hash)"
         />
       </div>
       <v-divider />
@@ -271,6 +341,8 @@ const applyTemplate = (template: string) => {
           style="flex: 1"
           @create="create"
           @save="save"
+          @changing="onInterfaceChanging"
+          @changed="onInterfaceChanged"
         />
       </v-col>
       <v-col cols="12" md="7" class="d-flex flex-column justify-center">
@@ -282,6 +354,9 @@ const applyTemplate = (template: string) => {
           <v-tab value="settings">
             <v-icon start icon="mdi-cog" />
             Settings
+            <v-icon v-if="showSettingsHasError" color="warning" class="ml-3">
+              mdi-alert
+            </v-icon>
           </v-tab>
           <v-tab value="integration">
             <v-icon start icon="mdi-progress-download" />
@@ -307,9 +382,15 @@ const applyTemplate = (template: string) => {
                     class="fill-height w-100"
                   />
                 </v-main>
-                <v-app-bar v-if="globalStore.session.loggedIn" theme="dark" location="bottom" class="px-3">
+                <v-app-bar
+                  v-if="globalStore.session.loggedIn"
+                  theme="dark"
+                  location="bottom"
+                  class="px-3"
+                >
                   <InterfaceSelector
                     v-model="selectedInterface"
+                    :disabled="selectTemplate"
                     :interfaces="globalStore.session.interfaces"
                     :menu-props="{
                       theme: 'light'
@@ -319,7 +400,6 @@ const applyTemplate = (template: string) => {
                     @create="create"
                     @save="save"
                     @delete="remove"
-                    @change="item => router.replace('/editor/' + item.hash)"
                   />
                 </v-app-bar>
               </v-layout>

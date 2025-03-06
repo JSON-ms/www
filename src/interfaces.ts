@@ -53,6 +53,8 @@ export interface IField {
   required?: boolean
   icon?: string
   hint?: string
+  multiple?: boolean
+  items?: {[key: string]: IField} | string[]
 }
 
 export interface ISection {

@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, toRaw, watch } from 'vue';
 import { useDisplay } from 'vuetify'
 import type { IData, IInterface } from '@/interfaces';
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
 import SessionPanel from '@/components/SessionPanel.vue';
 import InterfaceSelector from '@/components/InterfaceSelector.vue';
-import FieldList from '@/components/FieldList.vue';
+import FieldItem from '@/components/FieldItem.vue';
 import { useGlobalStore } from '@/stores/global';
-import { getDefaultInterfaceContent, getInterface, getParsedInterface, parseInterfaceDataToAdminData } from '@/utils';
+import { getDefaultInterfaceContent, getInterface, getParsedInterface, objectAreDifferent, parseInterfaceDataToAdminData } from '@/utils';
 import router from '@/router';
 import { Services } from '@/services';
+import { useRoute } from 'vue-router';
 
 const selectedInterface = defineModel<IInterface>({ required: true });
 const { preview = false, interfaces = [], autoload = false } = defineProps<{
@@ -24,8 +25,23 @@ const showAppBar = computed((): boolean => {
   return true;
 })
 
+const showActionBar = computed((): boolean => {
+  return globalStore.session.loggedIn
+    && canInteractWithServer.value;
+})
+
+const showFetchUserData = computed((): boolean => {
+  return preview
+    && globalStore.session.loggedIn
+    && canInteractWithServer.value;
+})
+
+const showLocaleSwitcher = computed((): boolean => {
+  return Object.keys(locales.value).length > 1;
+})
+
 const showNavigationDrawer = computed((): boolean => {
-  return Object.keys(data.value.sections).length > 0;
+  return Object.keys(interfaceData.value.sections).length > 1;
 })
 
 const showContent = computed((): boolean => {
@@ -43,7 +59,7 @@ const gotoTab = (key: string) => {
   }
 }
 
-const data = computed((): IData => {
+const interfaceData = computed((): IData => {
   return getParsedInterface(selectedInterface.value);
 })
 
@@ -52,17 +68,24 @@ const canInteractWithServer = computed((): boolean => {
    && !!(selectedInterface.value.hash);
 })
 
-const userData = ref(parseInterfaceDataToAdminData(data.value));
+const currentRoute = useRoute();
+const adminData = parseInterfaceDataToAdminData(interfaceData.value);
+const userData = ref(adminData);
+const originalUserData = ref(adminData);
 
 const selectedSection = computed(() => {
-  return data.value.sections[selectedSectionKey.value];
+  return interfaceData.value.sections[selectedSectionKey.value];
 })
 
 const locales = computed(() => {
-  return Object.entries(data.value.locales).map(item => ({ value: item[0], title: item[1] }));
+  return Object.entries(interfaceData.value.locales).map(item => ({ value: item[0], title: item[1] }));
 })
-const selectedLocale = ref(Object.entries(data.value.locales)[0][0]);
-const selectedSectionKey = ref(Object.keys(data.value.sections)[0]);
+const selectedLocale = ref(Object.entries(interfaceData.value.locales)[0][0]);
+const selectedSectionKey = ref(Object.keys(interfaceData.value.sections)[0]);
+const routeSection = interfaceData.value.sections[currentRoute.params.section?.toString()];
+if (currentRoute.params.section && routeSection) {
+  selectedSectionKey.value = currentRoute.params.section.toString();
+}
 
 const globalStore = useGlobalStore();
 
@@ -80,6 +103,9 @@ const save = (): Promise<any> => {
     hash: selectedInterface.value.hash,
     data: userData.value,
   })
+    .then(() => {
+      originalUserData.value = structuredClone(toRaw(userData.value));
+    })
     .catch(globalStore.catchError)
     .finally(() => {
       saving.value = false;
@@ -92,10 +118,11 @@ const isDemo = ref(selectedInterface.value.hash === 'demo');
 const loading = ref(false);
 const refresh = () => {
   return new Promise((resolve, reject) => {
-    if (selectedInterface.value.hash) {
+    if (selectedInterface.value.hash && selectedInterface.value.server_url) {
       Services.get((selectedInterface.value.server_url + '?hash=' + selectedInterface.value.hash) || '')
         .then(response => {
-          userData.value = parseInterfaceDataToAdminData(data.value, response);
+          userData.value = parseInterfaceDataToAdminData(interfaceData.value, response);
+          originalUserData.value = structuredClone(toRaw(userData.value));
           resolve(userData.value);
         })
         .catch(reason => {
@@ -108,14 +135,52 @@ const refresh = () => {
 }
 
 const cancel = () => {
+  userData.value = structuredClone(toRaw(originalUserData.value));
+}
+const dataHasChanged = computed((): boolean => {
+  return objectAreDifferent(userData.value, originalUserData.value);
+})
 
+const canSave = computed((): boolean => {
+  return !saving.value && formIsValid.value && canInteractWithServer.value && dataHasChanged.value
+})
+
+const theme = computed((): { primary: string } => {
+  // @ts-expect-error It will always be available
+  return interfaceData.value.global.theme[globalStore.theme];
+})
+
+if (!preview) {
+  watch(selectedSectionKey, () => {
+    router.replace('/admin/' + selectedInterface.value.hash + '/' + selectedSectionKey.value);
+  });
 }
 
-watch(selectedInterface, () => {
+watch(() => selectedInterface.value.content, () => {
+
+  // Locale does not exist, fallback to first one
+  if (!interfaceData.value.locales[selectedLocale.value]) {
+    selectedLocale.value = Object.entries(interfaceData.value.locales)[0][0]
+  }
+
+  // Section does not exist, fallback to first one
+  const sections = Object.keys(interfaceData.value.sections);
+  if (!interfaceData.value.sections[selectedSectionKey.value] && sections.length > 0) {
+    selectedSectionKey.value = sections[0];
+  }
+
+  // Make sure current data structure matches the userData
+  userData.value = parseInterfaceDataToAdminData(interfaceData.value);
+});
+
+watch(() => selectedInterface.value.hash, () => {
+  userData.value = structuredClone(adminData);
+  originalUserData.value = structuredClone(adminData);
   if (autoload && selectedInterface.value.hash && !isDemo.value) {
     setTimeout(() => {
       refresh().catch(() => {
-        userData.value = parseInterfaceDataToAdminData(data.value);
+        userData.value = parseInterfaceDataToAdminData(interfaceData.value);
+        originalUserData.value = structuredClone(toRaw(userData.value));
       });
     })
   }
@@ -124,8 +189,6 @@ watch(selectedInterface, () => {
 if (autoload && !isDemo.value) {
   refresh();
 }
-
-
 </script>
 
 <template>
@@ -141,18 +204,18 @@ if (autoload && !isDemo.value) {
     <v-app-bar-title>
       <div class="d-flex align-center" style="gap: 1rem">
         <img
-          v-if="data.global.logo"
-          :src="data.global.logo"
+          v-if="interfaceData.global.logo"
+          :src="interfaceData.global.logo"
           height="32"
           alt="Logo"
         >
-        <span class="text-truncate overflow-hidden">{{ data.global.title }}</span>
+        <span class="text-truncate overflow-hidden">{{ interfaceData.global.title }}</span>
       </div>
     </v-app-bar-title>
 
     <div class="d-flex align-center mx-3" style="gap: 1rem">
       <v-btn
-        v-if="preview"
+        v-if="showFetchUserData"
         :loading="loading"
         :icon="smAndDown"
         :disabled="loading || !canInteractWithServer"
@@ -185,7 +248,7 @@ if (autoload && !isDemo.value) {
   >
     <v-list v-model="selectedSectionKey" nav>
       <template
-        v-for="(section, sectionKey) in data.sections"
+        v-for="(section, sectionKey) in interfaceData.sections"
         :key="sectionKey"
       >
         <v-divider v-if="sectionKey === 'separator'" class="my-2" />
@@ -195,12 +258,12 @@ if (autoload && !isDemo.value) {
           :title="section.label || sectionKey"
           :active="selectedSectionKey === sectionKey"
           :prepend-icon="section.icon"
-          :color="data.global.theme[globalStore.theme].primary"
+          :color="theme.primary"
           @click="gotoTab(sectionKey.toString())"
         />
       </template>
     </v-list>
-    <template v-if="smAndDown && interfaces.length > 0" #prepend>
+    <template v-if="smAndDown && interfaces.length > 1" #prepend>
       <div class="pa-3">
         <InterfaceSelector
           v-model="selectedInterface"
@@ -213,16 +276,8 @@ if (autoload && !isDemo.value) {
     </template>
     <template #append>
       <v-divider />
-      <div v-if="smAndDown" class="pa-3">
-        <LocaleSwitcher
-          v-model="selectedLocale"
-          :locales="locales"
-          class="w-100"
-          style="width: 12rem"
-        />
-      </div>
       <v-footer color="#f9f9f9">
-        <small style="font-size: 0.6rem">{{ data.global.copyright }}</small>
+        <small style="font-size: 0.6rem">{{ interfaceData.global.copyright }}</small>
       </v-footer>
     </template>
   </v-navigation-drawer>
@@ -238,10 +293,10 @@ if (autoload && !isDemo.value) {
       'fill-height': smAndDown && !preview,
     }"
     :style="{
-      maxWidth: preview && !smAndDown ? 'calc(100% - 250px)' : undefined,
+      maxWidth: preview && !smAndDown && showNavigationDrawer ? 'calc(100% - 250px)' : undefined,
       marginTop: preview ? '64px' : undefined,
-      marginLeft: preview && !smAndDown ? '250px' : undefined,
-      marginBottom: preview ? '64px' : undefined,
+      marginLeft: preview && !smAndDown && showNavigationDrawer ? '250px' : undefined,
+      marginBottom: showActionBar ? '64px' : undefined,
     }"
   >
     <v-card
@@ -255,19 +310,15 @@ if (autoload && !isDemo.value) {
         gap: '1rem',
       }"
     >
-      <div
-        :class="{
-          'd-flex flex-column': true,
-        }"
-        style="gap: 1rem"
-      >
+      <div class="d-flex flex-column" style="gap: 1rem">
         <div>
-          <div class="d-flex align-center justify-space-between">
+          <div class="d-flex align-center justify-space-between" style="gap: 1rem">
             <h1>{{ selectedSection.label }}</h1>
             <LocaleSwitcher
-              v-if="!smAndDown"
+              v-if="showLocaleSwitcher"
               v-model="selectedLocale"
               :locales="locales"
+              :dense="smAndDown"
               style="max-width: 12rem"
             />
           </div>
@@ -276,25 +327,38 @@ if (autoload && !isDemo.value) {
             {{ selectedSection.prepend }}
           </p>
         </div>
-
-        <FieldList
-          :fields="selectedSection.fields"
-          :data="userData"
-          :locale="selectedLocale"
-        />
+        <template
+          v-for="(field, key) in interfaceData.sections[selectedSectionKey].fields"
+          :key="key"
+        >
+          <FieldItem
+            v-if="field.type.includes('i18n')"
+            v-model="userData[selectedSectionKey][key][selectedLocale]"
+            :field="field"
+            :locale="selectedLocale"
+            :locales="interfaceData.locales"
+          />
+          <FieldItem
+            v-else
+            v-model="userData[selectedSectionKey][key].general"
+            :field="field"
+            :locale="selectedLocale"
+            :locales="interfaceData.locales"
+          />
+        </template>
       </div>
     </v-card>
 
-    <v-app-bar location="bottom">
+    <v-app-bar v-if="showActionBar" location="bottom">
       <v-spacer />
       <div class="d-flex align-center pr-3" style="gap: 0.5rem">
 
         <v-btn
           :loading="saving"
-          :disabled="saving || !formIsValid || !canInteractWithServer"
+          :disabled="!canSave"
           :variant="saved ? 'outlined' : 'flat'"
           :readonly="saved"
-          color="primary"
+          :color="canSave ? 'primary' : undefined"
           @click.stop.prevent="save"
         >
           <template v-if="!saved">
@@ -307,6 +371,7 @@ if (autoload && !isDemo.value) {
           </template>
         </v-btn>
         <v-btn
+          :disabled="!dataHasChanged"
           variant="text"
           @click="cancel"
         >

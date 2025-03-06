@@ -4,7 +4,7 @@
 
 Let's get started on building your ideal admin interface with JSON.ms!
 
-## Global configuration
+## Global Configuration
 Let's start with the global configuration. You can copy paste and adjust the following code in your _YAML_ interface:
 ```yaml
 global:
@@ -85,7 +85,7 @@ For instance:
         label: Title
 ```
 
-#### Supported types
+#### Supported Types
 - `string`: A single-line text input.
 - `markdown`: A fully-featured Markdown editor that allows for easy formatting of text using simple syntax.
 - `wysiwyg`: A fully-featured WYSIWYG (What You See Is What You Get) editor for rich text formatting.
@@ -95,7 +95,7 @@ For instance:
 - `i18n`
 - `i18n:[TYPE]`: You can use any of the above types to make them translatable. For example, you can specify `i18n:string`, `i18n:wysiwyg`, or even `i18n:file` to indicate that these fields should support multiple languages.
 
-#### Field values:
+#### Field Values:
 - `type`: Specifies a supported field type as defined earlier.
 - `label`: The title that will be displayed within the field.
 - `icon`: (Optional) An icon that will be displayed next to the menu item.

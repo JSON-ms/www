@@ -37,18 +37,20 @@ export class Services {
       params.body = JSON.stringify(body)
     }
     this.doRequestCount(1)
-    return fetch(url, params)
-      .then(response => {
-        if (!response.ok) {
-          return response.text().then(text => {
-            this.doRequestCount(-1);
-            throw new Error(text);
-          });
-        }
-        return new Promise((resolve) => {
-          response.json().then(resolve);
-        });
-      })
-      .finally(() => this.doRequestCount(-1));
+    return new Promise((resolve, reject) => {
+      fetch(url, params)
+        .then(response => {
+          if (!response.ok) {
+            return response.text().then(text => {
+              this.doRequestCount(-1);
+              throw new Error(text);
+            });
+          }
+          return response.json().then(resolve);
+        })
+        .then(resolve)
+        .catch(reject)
+        .finally(() => this.doRequestCount(-1));
+    })
   }
 }

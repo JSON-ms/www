@@ -115,7 +115,7 @@ sections:
             label: Countri(es)
             multiple: true
           body:
-            type: i18n:mardown
+            type: i18n:markdown
             label: Body
             required: true
   faq:

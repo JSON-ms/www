@@ -65,6 +65,7 @@ const remove = (item: IInterface) => {
     :items="computedInterfaces"
     :prepend-inner-icon="selectedInterface.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'"
     item-title="label"
+    item-value="hash"
     label="Interface"
     variant="outlined"
     color="primary"

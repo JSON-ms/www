@@ -51,9 +51,13 @@ const hash = computed((): string => {
             alt="Avatar"
           >
             <template #placeholder>
-              <v-progress-circular
-                indeterminate
-              />
+              <v-overlay>
+                <v-progress-circular
+                  indeterminate
+                  size="16"
+                  width="2"
+                />
+              </v-overlay>
             </template>
           </v-img>
           <strong v-else>{{ globalStore.session.user.name.substring(0, 1) }}</strong>

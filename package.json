@@ -2,12 +2,12 @@
   "name": "@json.ms/www",
   "private": true,
   "type": "module",
-  "version": "0.0.6",
+  "version": "0.0.12",
   "scripts": {
     "dev": "vite --host",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
-    "build-only": "vite build",
+    "build-only": "npm version patch --no-git-tag-version && vite build",
     "type-check": "vue-tsc --build --force",
     "lint": "eslint . --fix"
   },
