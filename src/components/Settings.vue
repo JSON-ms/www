@@ -3,6 +3,7 @@ import type { IInterface } from '@/interfaces';
 import Rules from '@/rules';
 
 const selectedInterface = defineModel<IInterface>({ required: true });
+const emit = defineEmits(['save'])
 const {
   demo = false,
   disabled = false,
@@ -47,9 +48,7 @@ const {
           </template>
         </v-text-field>
       </v-card-text>
-    </v-card>
 
-    <v-card>
       <v-card-title>Permissions</v-card-title>
       <v-card-text class="d-flex flex-column" style="gap: 1rem">
         <v-alert variant="tonal" icon="mdi-information-slab-box-outline">
@@ -84,6 +83,19 @@ const {
           multiple
         />
       </v-card-text>
+<!--      <v-card-actions>-->
+<!--        <v-spacer />-->
+<!--        <v-btn-->
+<!--          color="primary"-->
+<!--          variant="flat"-->
+<!--          prepend-icon="mdi-content-save"-->
+<!--          size="large"-->
+<!--          class="px-3"-->
+<!--          @click="() => emit('save')"-->
+<!--        >-->
+<!--          Save-->
+<!--        </v-btn>-->
+<!--      </v-card-actions>-->
     </v-card>
   </div>
 </template>

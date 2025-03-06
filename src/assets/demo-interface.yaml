@@ -10,7 +10,7 @@
 #   the overall appearance and functionality.
 global:
   title: Dynamic Admin Panel Example
-  copyright: JSON.ms [VERSION]. Licensed under the BSD-3-Clause.
+  copyright: JSON.ms v{{version}}. Licensed under the BSD-3-Clause.
   logo: [INTERFACE_EDITOR_URL]/favicon.ico
   theme:
     default: light

@@ -123,6 +123,7 @@ const remove = (item: IInterface) => {
           <v-btn
             v-if="selectedInterface.type === 'owner'"
             v-bind="props"
+            :disabled="!selectedInterface.uuid"
             color="error"
             size="small"
             icon

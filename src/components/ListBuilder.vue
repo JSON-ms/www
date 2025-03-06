@@ -2,7 +2,9 @@
 import draggable from 'vuedraggable'
 import { generateHash } from '@/utils';
 import { useDisplay } from 'vuetify';
+import { useGlobalStore } from '@/stores/global';
 
+const globalStore = useGlobalStore();
 const { smAndDown } = useDisplay()
 const list = defineModel<any[]>({ required: true });
 const {
@@ -16,7 +18,19 @@ const addItem = () => {
   list.value.push(newItem);
 }
 const removeItem = (index: number) => {
-  list.value.splice(index, 1);
+  globalStore.setPrompt({
+    ...globalStore.prompt,
+    visible: true,
+    title: 'Remove item',
+    body: 'Are you sure you want to remove this item?',
+    btnText: 'Remove',
+    btnIcon: 'mdi-delete-outline',
+    btnColor: 'error',
+    callback: () => new Promise(resolve => {
+      list.value.splice(index, 1);
+      resolve();
+    })
+  })
 }
 const canMoveUp = (index: number): boolean => {
   return index > 0;
@@ -46,50 +60,97 @@ const moveDown = (index: number) => {
     handle=".handle"
   >
     <template #item="{ element, index }">
-      <v-row no-gutters>
-        <v-col style="flex: 0" class="pt-4">
-          <v-icon v-if="!smAndDown" class="handle" icon="mdi-drag-vertical" />
-          <span v-else>{{ index + 1 }})</span>
-        </v-col>
-        <v-col style="flex: 1" class="mx-3">
-          <slot
-            name="default"
-            :item="element"
-            :index="index"
-          />
-        </v-col>
-        <v-col style="flex: 0" class="pt-2">
-          <v-btn
-            color="error"
-            size="small"
-            variant="text"
-            icon
-            @click="() => removeItem(index)"
-          >
-            <v-icon icon="mdi-delete-outline" />
-          </v-btn>
-          <template v-if="smAndDown && list.length > 1">
+      <v-container
+        :class="{
+          'pa-0': true,
+          'mt-4': !smAndDown && list.length > 0,
+        }"
+        fluid
+      >
+        <template v-if="smAndDown && list.length > 0">
+          <v-divider class="my-4 mt-3" />
+          <v-row class="mb-0">
+            <v-col cols="12">
+              <div class="d-flex align-center justify-space-between" style="gap: 0.5rem">
+                <h3>
+                  <v-icon icon="mdi-circle-edit-outline" start />
+                  Item #{{ index + 1 }}
+                </h3>
+                <div>
+                  <v-tooltip location="bottom" text="Remove item">
+                    <template #activator="{ props }">
+                      <v-btn
+                        v-bind="props"
+                        color="error"
+                        size="small"
+                        variant="text"
+                        icon
+                        @click="() => removeItem(index)"
+                      >
+                        <v-icon icon="mdi-delete-outline" />
+                      </v-btn>
+                    </template>
+                  </v-tooltip>
+
+                  <template v-if="list.length > 1">
+                    <v-tooltip location="bottom" text="Move up">
+                      <template #activator="{ props }">
+                        <v-btn
+                          v-bind="props"
+                          :disabled="!canMoveUp(index)"
+                          size="small"
+                          variant="text"
+                          icon
+                          @click="() => moveUp(index)"
+                        >
+                          <v-icon icon="mdi-arrow-up" />
+                        </v-btn>
+                      </template>
+                    </v-tooltip>
+                    <v-tooltip location="bottom" text="Move down">
+                      <template #activator="{ props }">
+                        <v-btn
+                          v-bind="props"
+                          :disabled="!canMoveDown(index)"
+                          size="small"
+                          variant="text"
+                          icon
+                          @click="() => moveDown(index)"
+                        >
+                          <v-icon icon="mdi-arrow-down" />
+                        </v-btn>
+                      </template>
+                    </v-tooltip>
+                  </template>
+                </div>
+              </div>
+            </v-col>
+          </v-row>
+        </template>
+        <v-row no-gutters>
+          <v-col v-if="!smAndDown" style="flex: 0" class="pt-4 mr-3">
+            <v-icon class="handle" icon="mdi-drag-vertical" />
+          </v-col>
+          <v-col style="flex: 1">
+            <slot
+              name="default"
+              :item="element"
+              :index="index"
+            />
+          </v-col>
+          <v-col v-if="!smAndDown" style="flex: 0" class="pt-2 ml-3">
             <v-btn
-              :disabled="!canMoveUp(index)"
+              color="error"
               size="small"
               variant="text"
               icon
-              @click="() => moveUp(index)"
+              @click="() => removeItem(index)"
             >
-              <v-icon icon="mdi-arrow-up" />
+              <v-icon icon="mdi-delete-outline" />
             </v-btn>
-            <v-btn
-              :disabled="!canMoveDown(index)"
-              size="small"
-              variant="text"
-              icon
-              @click="() => moveDown(index)"
-            >
-              <v-icon icon="mdi-arrow-down" />
-            </v-btn>
-          </template>
-        </v-col>
-      </v-row>
+          </v-col>
+        </v-row>
+      </v-container>
     </template>
     <template #footer>
       <v-btn

@@ -5,6 +5,7 @@ import defaultInterfaceStructure from '@/assets/default-interface-structure.json
 import merge from 'ts-deepmerge';
 
 export const getParsedInterface = (data: IInterface): IData => {
+  let parseData: any = {};
   try {
     const json: IData | string = YAML.parse(data.content) || {};
     if (typeof json === 'string') {
@@ -14,10 +15,14 @@ export const getParsedInterface = (data: IInterface): IData => {
     if (Object.keys(mergedInterface.locales).length === 0) {
       mergedInterface.locales = { 'en-US': 'English (US)' };
     }
-    return mergedInterface as IData;
+    parseData = mergedInterface as IData;
   } catch {
-    return defaultInterfaceStructure as IData;
+    parseData = defaultInterfaceStructure as IData;
   }
+  // @ts-expect-error process.env is parsed from backend
+  const version = JSON.parse(process.env.APP_VERSION);
+  parseData.global.copyright = (parseData.global.copyright || '').replace('{{version}}', version)
+  return parseData;
 }
 
 export const getInterface = (content: string = getDefaultInterfaceContent()): IInterface => {
@@ -32,10 +37,7 @@ export const getInterface = (content: string = getDefaultInterfaceContent()): II
 }
 
 export const getDefaultInterfaceContent = (): string => {
-  // @ts-expect-error Because process is printed in JS at compilation time
-  const version = JSON.parse(process.env.APP_VERSION);
   return (demoInterface as string)
-    .replace('[VERSION]', 'v' + version)
     .replace('[INTERFACE_EDITOR_URL]', window.location.origin);
 }
 

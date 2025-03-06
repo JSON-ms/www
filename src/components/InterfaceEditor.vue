@@ -9,7 +9,7 @@ import type { VAceEditorInstance } from 'vue3-ace-editor/types';
 const emit = defineEmits(['save', 'create', 'changing', 'changed'])
 const selectedInterface = defineModel<IInterface>({ required: true });
 const {
-  updateTimeout = 2000,
+  updateTimeout = 1000,
 } = defineProps<{
   updateTimeout?: number,
 }>();

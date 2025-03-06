@@ -41,7 +41,8 @@ const showLocaleSwitcher = computed((): boolean => {
 })
 
 const showNavigationDrawer = computed((): boolean => {
-  return Object.keys(interfaceData.value.sections).length > 1;
+  return Object.keys(interfaceData.value.sections).length > 1
+    || !!(interfaces.length > 1 && smAndDown);
 })
 
 const showContent = computed((): boolean => {
@@ -197,7 +198,7 @@ if (autoload && !isDemo.value) {
   </div>
 
   <v-app-bar v-if="showAppBar" flat border>
-    <template v-if="smAndDown" #prepend>
+    <template v-if="showNavigationDrawer" #prepend>
       <v-app-bar-nav-icon @click="toggleDrawer" />
     </template>
 
@@ -296,7 +297,7 @@ if (autoload && !isDemo.value) {
       maxWidth: preview && !smAndDown && showNavigationDrawer ? 'calc(100% - 250px)' : undefined,
       marginTop: preview ? '64px' : undefined,
       marginLeft: preview && !smAndDown && showNavigationDrawer ? '250px' : undefined,
-      marginBottom: showActionBar ? '64px' : undefined,
+      marginBottom: showActionBar && !smAndDown ? '64px' : undefined,
     }"
   >
     <v-card

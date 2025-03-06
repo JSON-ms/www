@@ -348,7 +348,6 @@ const getDefaultItem = () => {
     type="warning"
     variant="tonal"
   >
-    {{['i18n', 'url', 'string'].includes(field.type)}}
-    This field type <v-chip size="x-small" label>{{field.type}}</v-chip> does not exist.
+    This field type <v-chip size="x-small" label>{{field.type}}</v-chip> is not supported. Check and adjust your YAML interface accordingly.
   </v-alert>
 </template>
