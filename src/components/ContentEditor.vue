@@ -198,7 +198,7 @@ if (autoload && !isDemo.value) {
   </div>
 
   <v-app-bar v-if="showAppBar" flat border>
-    <template v-if="showNavigationDrawer" #prepend>
+    <template v-if="showNavigationDrawer && smAndDown" #prepend>
       <v-app-bar-nav-icon @click="toggleDrawer" />
     </template>
 
@@ -353,7 +353,6 @@ if (autoload && !isDemo.value) {
     <v-app-bar v-if="showActionBar" location="bottom">
       <v-spacer />
       <div class="d-flex align-center pr-3" style="gap: 0.5rem">
-
         <v-btn
           :loading="saving"
           :disabled="!canSave"
