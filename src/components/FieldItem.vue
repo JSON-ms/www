@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import ListBuilder from '@/components/ListBuilder.vue';
-import type { IField } from '@/interfaces';
+import FieldHeader from '@/components/FieldHeader.vue';
+import type { IData, IField } from '@/interfaces';
 import Rules from '@/rules';
 import { parseFields } from '@/utils';
 import { computed, ref } from 'vue';
@@ -9,11 +10,13 @@ const value = defineModel<any>({ required: true });
 const {
   field,
   locale,
-  locales = {}
+  locales = {},
+  structure,
 } = defineProps<{
   field: IField,
   locale: string,
-  locales:  { [key: string]: string; },
+  locales: { [key: string]: string; },
+  structure: IData
 }>();
 const showDatePicker = ref(false);
 const getRules = (field: IField): any[] => {
@@ -32,11 +35,24 @@ const getRules = (field: IField): any[] => {
   }
   return rules;
 }
-const optionItems = computed((): string[] => {
+const optionItems = computed((): { title: string, value: string }[] => {
   if (Array.isArray(field.items)) {
-    return field.items;
+    return field.items.map(title => ({ title, value: title }));
   }
-  return [];
+  if (field.items?.toString().startsWith('enums.')) {
+    const enumType = field.items?.toString().split('enums.')[1];
+    const enumData = structure.enums[enumType];
+    if (enumData) {
+      if (Array.isArray(enumData)) {
+        return enumData.map(title => ({ title, value: title }));
+      }
+      return Object.entries(enumData || {}).map(([value, title]) => ({ title, value }));
+    }
+  }
+  return Object.entries(field.items || {}).map(([value, title]) => ({ title, value }));
+})
+const arrayFields = computed((): {[key: string]: IField} => {
+  return field.fields || {};
 })
 const formattedDate = computed({
   get: (): string => {
@@ -108,17 +124,7 @@ const getDefaultItem = () => {
 
   <!-- WYSIWYG -->
   <div v-else-if="['wysiwyg', 'i18n:wysiwyg'].includes(field.type)">
-    <v-list-subheader class="pr-3 w-100 d-block" style="min-height: 2rem">
-      <div class="d-flex align-center justify-space-between">
-        <span>
-          <span v-if="field.required" class="mr-2 text-error">*</span>
-          <span>{{ field.label }}</span>
-        </span>
-        <v-chip v-if="field.type.includes('i18n')" label size="x-small">
-          {{ locales[locale] }}
-        </v-chip>
-      </div>
-    </v-list-subheader>
+    <FieldHeader :field="field" :locales="locales" :locale="locale" />
     <v-input
       v-if="value !== null"
       v-model="value"
@@ -143,17 +149,7 @@ const getDefaultItem = () => {
 
   <!-- MARKDOWN -->
   <div v-else-if="['markdown', 'i18n:markdown'].includes(field.type)">
-    <v-list-subheader class="pr-3 w-100 d-block" style="min-height: 2rem">
-      <div class="d-flex align-center justify-space-between">
-        <span>
-          <span v-if="field.required" class="mr-2 text-error">*</span>
-          <span>{{ field.label }}</span>
-        </span>
-        <v-chip v-if="field.type.includes('i18n')" label size="x-small">
-          {{ locales[locale] }}
-        </v-chip>
-      </div>
-    </v-list-subheader>
+    <FieldHeader :field="field" :locales="locales" :locale="locale" />
     <v-input
       v-model="value"
       :label="field.label"
@@ -227,6 +223,43 @@ const getDefaultItem = () => {
     </template>
   </v-autocomplete>
 
+  <!-- CHECKBOX -->
+  <div v-else-if="['checkbox', 'i18n:checkbox'].includes(field.type)">
+    <FieldHeader :field="field" :locales="locales" :locale="locale" />
+    <v-checkbox
+      v-for="item in optionItems"
+      :key="item.value"
+      v-model="value"
+      :label="item.title"
+      :value="item.value"
+      :required="field.required"
+      color="primary"
+      hide-details="auto"
+      style="min-height: auto"
+    />
+  </div>
+
+  <!-- RADIO -->
+  <div v-else-if="['radio', 'i18n:radio'].includes(field.type)">
+    <FieldHeader :field="field" :locales="locales" :locale="locale" />
+    <v-radio-group
+      v-model="value"
+      :required="field.required"
+      :rules="getRules(field)"
+      :inline="field.inline"
+      color="primary"
+      hide-details="auto"
+      clearable
+    >
+      <v-radio
+        v-for="item in optionItems"
+        :key="item.value"
+        :label="item.title"
+        :value="item.value"
+      />
+    </v-radio-group>
+  </div>
+
   <!-- DATE -->
   <v-menu
     v-else-if="['date', 'i18n:date'].includes(field.type)"
@@ -263,17 +296,7 @@ const getDefaultItem = () => {
 
   <!-- FILE -->
   <div v-else-if="['file', 'i18n:file'].includes(field.type)">
-    <v-list-subheader class="pr-3 w-100 d-block" style="min-height: 2rem">
-      <div class="d-flex align-center justify-space-between">
-        <span>
-          <span v-if="field.required" class="mr-2 text-error">*</span>
-          <span>{{ field.label }}</span>
-        </span>
-        <v-chip v-if="field.type.includes('i18n')" label size="x-small">
-          {{ locales[locale] }}
-        </v-chip>
-      </div>
-    </v-list-subheader>
+    <FieldHeader :field="field" :locales="locales" :locale="locale" />
     <v-file-upload
       v-model="value"
       :label="field.label"
@@ -292,17 +315,7 @@ const getDefaultItem = () => {
 
   <!-- ARRAY -->
   <div v-else-if="field.type.includes('array')">
-    <v-list-subheader class="pr-3 w-100 d-block" style="min-height: 2rem">
-      <div class="d-flex align-center justify-space-between">
-        <span>
-          <span v-if="field.required" class="mr-2 text-error">*</span>
-          <span>{{ field.label }}</span>
-        </span>
-        <v-chip v-if="field.type.includes('i18n')" label size="x-small">
-          {{ locales[locale] }}
-        </v-chip>
-      </div>
-    </v-list-subheader>
+    <FieldHeader :field="field" :locales="locales" :locale="locale" />
     <ListBuilder
       v-model="value"
       :label="field.label"
@@ -316,24 +329,26 @@ const getDefaultItem = () => {
     >
       <template #default="{ item }">
         <div
-          v-for="(key, keyIdx) in Object.keys(field.items)"
+          v-for="(key, keyIdx) in Object.keys(arrayFields)"
           :key="key"
           :class="{ 'mt-4': keyIdx > 0 }"
         >
           <template v-if="field.items">
             <FieldItem
-              v-if="field.items[key].type.includes('i18n')"
+              v-if="arrayFields[key].type.includes('i18n')"
               v-model="item[key][locale]"
-              :field="field.items[key]"
+              :field="arrayFields[key]"
               :locale="locale"
               :locales="locales"
+              :structure="structure"
             />
             <FieldItem
-              v-else-if="field.items[key]"
+              v-else-if="arrayFields[key]"
               v-model="item[key].general"
-              :field="field.items[key]"
+              :field="arrayFields[key]"
               :locale="locale"
               :locales="locales"
+              :structure="structure"
             />
           </template>
         </div>
@@ -348,6 +363,10 @@ const getDefaultItem = () => {
     type="warning"
     variant="tonal"
   >
-    This field type <v-chip size="x-small" label>{{field.type}}</v-chip> is not supported. Check and adjust your YAML interface accordingly.
+    This field type
+    <v-chip size="x-small" label>
+      {{ field.type }}
+    </v-chip>
+    is not supported. Check and adjust your YAML interface accordingly.
   </v-alert>
 </template>

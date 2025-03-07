@@ -339,6 +339,7 @@ if (autoload && !isDemo.value) {
             :field="field"
             :locale="selectedLocale"
             :locales="interfaceData.locales"
+            :structure="interfaceData"
           />
           <FieldItem
             v-else
@@ -346,6 +347,7 @@ if (autoload && !isDemo.value) {
             :field="field"
             :locale="selectedLocale"
             :locales="interfaceData.locales"
+            :structure="interfaceData"
           />
         </template>
       </div>

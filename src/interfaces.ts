@@ -54,7 +54,9 @@ export interface IField {
   icon?: string
   hint?: string
   multiple?: boolean
-  items?: {[key: string]: IField} | string[]
+  inline?: boolean
+  fields?: {[key: string]: IField}
+  items?: {[key: string]: string} | string[]
 }
 
 export interface ISection {
@@ -81,6 +83,7 @@ export interface IData {
       }
     }
   },
+  enums: {[key: string]: string[]} | {[key: string]: {[key: string]: string}},
   locales: {[key: string]: string}
   sections: {[key: string]: ISection}
 }
