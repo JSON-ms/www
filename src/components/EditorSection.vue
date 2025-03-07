@@ -7,7 +7,7 @@ import Docs from '@/components/Docs.vue';
 import Settings from '@/components/Settings.vue';
 import SessionPanel from '@/components/SessionPanel.vue';
 import Integration from '@/components/Integration.vue';
-import { computed, type Ref, ref, watch } from 'vue';
+import { computed, type Ref, ref, toRaw, watch } from 'vue';
 import { useDisplay } from 'vuetify';
 import GoogleSignInButton from '@/components/GoogleSignInButton.vue';
 import { useGlobalStore } from '@/stores/global';
@@ -44,6 +44,10 @@ const onInterfaceChanged = () => {
   interfaceChanged.value = true;
   clearTimeout(interfaceChangedTimeout);
   interfaceChangedTimeout = setTimeout(() => interfaceChanged.value = false, 2000);
+}
+const currentRawValue = ref('');
+const onInterfaceRawChange = (value: string) => {
+  currentRawValue.value = value;
 }
 
 const defaultInterface = getDefaultInterfaceContent();
@@ -115,7 +119,13 @@ const create = () => {
 
 const saving = ref(false);
 const saved = ref(false);
+const canSave = computed((): boolean => {
+  return originalSelectedInterface.value.content !== currentRawValue.value;
+})
 const save = () => {
+  if (!canSave.value) {
+    return;
+  }
   saving.value = true;
 
   const wasNew = !(selectedInterface.value.uuid);
@@ -128,6 +138,8 @@ const save = () => {
   })
     .then(response => {
       selectedInterface.value = response.interface;
+      originalSelectedInterface.value = structuredClone(response.interface);
+      currentRawValue.value = selectedInterface.value.content;
       selectedInterface.value.type = wasNew ? 'owner' : selectedInterface.value.type;
       if (wasNew) {
         globalStore.addInterface(selectedInterface.value);
@@ -184,6 +196,10 @@ watch(() => selectedInterface.value.hash, (hash: string | undefined) => {
     router.replace('/');
   }
 }, { immediate: true })
+
+// Keep at the end..
+const originalSelectedInterface: Ref<IInterface> = ref(structuredClone(toRaw(selectedInterface.value)));
+currentRawValue.value = selectedInterface.value.content;
 </script>
 
 <template>
@@ -205,6 +221,10 @@ watch(() => selectedInterface.value.hash, (hash: string | undefined) => {
             v-model="selectedInterface"
             :disabled="selectTemplate"
             :interfaces="globalStore.session.interfaces"
+            :saving="saving"
+            :saved="saved"
+            :can-save="canSave"
+            :deleting="deleting"
             type="interface"
             style="max-width: 25rem"
             actions
@@ -312,6 +332,10 @@ watch(() => selectedInterface.value.hash, (hash: string | undefined) => {
       <div class="pa-3">
         <InterfaceSelector
           v-model="selectedInterface"
+          :saving="saving"
+          :saved="saved"
+          :can-save="canSave"
+          :deleting="deleting"
           :disabled="selectTemplate"
           :interfaces="globalStore.session.interfaces"
           type="admin"
@@ -348,6 +372,7 @@ watch(() => selectedInterface.value.hash, (hash: string | undefined) => {
           @save="save"
           @changing="onInterfaceChanging"
           @changed="onInterfaceChanged"
+          @raw-change="onInterfaceRawChange"
         />
       </v-col>
       <v-col cols="12" md="7" class="d-flex flex-column justify-center">
@@ -395,6 +420,10 @@ watch(() => selectedInterface.value.hash, (hash: string | undefined) => {
                 >
                   <InterfaceSelector
                     v-model="selectedInterface"
+                    :saving="saving"
+                    :saved="saved"
+                    :can-save="canSave"
+                    :deleting="deleting"
                     :disabled="selectTemplate"
                     :interfaces="globalStore.session.interfaces"
                     :menu-props="{

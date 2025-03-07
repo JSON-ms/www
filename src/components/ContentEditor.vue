@@ -7,7 +7,7 @@ import SessionPanel from '@/components/SessionPanel.vue';
 import InterfaceSelector from '@/components/InterfaceSelector.vue';
 import FieldItem from '@/components/FieldItem.vue';
 import { useGlobalStore } from '@/stores/global';
-import { getDefaultInterfaceContent, getInterface, getParsedInterface, objectAreDifferent, parseInterfaceDataToAdminData } from '@/utils';
+import { getDefaultInterfaceContent, getInterface, getParsedInterface, objectsAreDifferent, parseInterfaceDataToAdminData } from '@/utils';
 import router from '@/router';
 import { Services } from '@/services';
 import { useRoute } from 'vue-router';
@@ -139,7 +139,7 @@ const cancel = () => {
   userData.value = structuredClone(toRaw(originalUserData.value));
 }
 const dataHasChanged = computed((): boolean => {
-  return objectAreDifferent(userData.value, originalUserData.value);
+  return objectsAreDifferent(userData.value, originalUserData.value);
 })
 
 const canSave = computed((): boolean => {

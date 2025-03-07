@@ -7,10 +7,18 @@ const {
   interfaces = [],
   type = null,
   actions = false,
+  saving = false,
+  saved = false,
+  canSave = false,
+  deleting = false,
 } = defineProps<{
   interfaces?: IInterface[],
   type?: 'admin' | 'interface' | null,
-  actions?: boolean
+  actions?: boolean,
+  saving?: boolean,
+  saved?: boolean,
+  canSave?: boolean,
+  deleting?: boolean
 }>();
 
 const globalStore = useGlobalStore();
@@ -76,7 +84,6 @@ const remove = (item: IInterface) => {
     @update:model-value="onChange"
   >
     <template v-if="actions" #append-inner>
-
       <!-- CREATE -->
       <v-tooltip
         text="New interface"
@@ -103,13 +110,16 @@ const remove = (item: IInterface) => {
         <template #activator="{ props }">
           <v-btn
             v-bind="props"
+            :loading="saving"
+            :disabled="saving || saved || !canSave"
             variant="text"
             color="primary"
             size="small"
             icon
             @mousedown.stop.prevent="save"
           >
-            <v-icon icon="mdi-content-save" />
+            <v-icon v-if="!saved" icon="mdi-content-save" />
+            <v-icon v-else icon="mdi-check" />
           </v-btn>
         </template>
       </v-tooltip>
@@ -123,7 +133,8 @@ const remove = (item: IInterface) => {
           <v-btn
             v-if="selectedInterface.type === 'owner'"
             v-bind="props"
-            :disabled="!selectedInterface.uuid"
+            :disabled="!selectedInterface.uuid || deleting"
+            :loading="deleting"
             color="error"
             size="small"
             icon
@@ -148,7 +159,7 @@ const remove = (item: IInterface) => {
         :subtitle="item.raw.updated_at"
         :title="item.raw.label"
         :prepend-icon="item.raw.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'"
-      ></v-list-item>
+      />
     </template>
   </v-select>
 </template>

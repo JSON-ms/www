@@ -126,7 +126,7 @@ export const parseInterfaceDataToAdminData = (data: IData, override: any = {}): 
   return result;
 }
 
-export const objectAreDifferent = (obj1: any, obj2: any) => {
+export const objectsAreDifferent = (obj1: any, obj2: any) => {
 
   if (obj1 === obj2) return false;
 
@@ -154,11 +154,11 @@ export const objectAreDifferent = (obj1: any, obj2: any) => {
         return true;
       }
       for (let i = 0; i < value1.length; i++) {
-        if (objectAreDifferent(value1[i], value2[i])) {
+        if (objectsAreDifferent(value1[i], value2[i])) {
           return true;
         }
       }
-    } else if (objectAreDifferent(value1, value2)) {
+    } else if (objectsAreDifferent(value1, value2)) {
       return true;
     }
   }

@@ -6,7 +6,7 @@ import 'ace-builds/src-noconflict/theme-github_dark';
 import type { IInterface } from '@/interfaces';
 import type { VAceEditorInstance } from 'vue3-ace-editor/types';
 
-const emit = defineEmits(['save', 'create', 'changing', 'changed'])
+const emit = defineEmits(['save', 'create', 'changing', 'changed', 'rawChange'])
 const selectedInterface = defineModel<IInterface>({ required: true });
 const {
   updateTimeout = 1000,
@@ -20,6 +20,7 @@ const value = computed({
     return selectedInterface.value.content;
   },
   set(value: string) {
+    emit('rawChange', value);
     emit('changing', value);
     clearTimeout(changeTimeout);
     changeTimeout = setTimeout(() => {
