@@ -171,7 +171,7 @@ watch(() => selectedInterface.value.content, () => {
   }
 
   // Make sure current data structure matches the userData
-  userData.value = parseInterfaceDataToAdminData(interfaceData.value);
+  userData.value = parseInterfaceDataToAdminData(interfaceData.value, userData.value);
 });
 
 watch(() => selectedInterface.value.hash, () => {
