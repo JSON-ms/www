@@ -68,8 +68,8 @@ const moveDown = (index: number) => {
         fluid
       >
         <template v-if="smAndDown && list.length > 0">
-          <v-divider class="my-4 mt-3" />
-          <v-row class="mb-0">
+          <v-divider v-if="index > 0" class="my-3" />
+          <v-row>
             <v-col cols="12">
               <div class="d-flex align-center justify-space-between" style="gap: 0.5rem">
                 <h3>

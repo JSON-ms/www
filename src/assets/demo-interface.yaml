@@ -102,7 +102,7 @@ sections:
       items:
         type: array
         label: Comments
-        items:
+        fields:
           thumbnail:
             type: url
             label: Thumbnail
@@ -111,9 +111,10 @@ sections:
             label: Name
             required: true
           country:
-            type: enum:countries
+            type: select
             label: Countri(es)
             multiple: true
+            items: enum:countries
           body:
             type: i18n:markdown
             label: Body
@@ -129,7 +130,7 @@ sections:
       questions:
         type: array
         label: Questions
-        items:
+        fields:
           icon:
             type: string
             label: Icon

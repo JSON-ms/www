@@ -4,7 +4,7 @@ import FieldHeader from '@/components/FieldHeader.vue';
 import type { IData, IField } from '@/interfaces';
 import Rules from '@/rules';
 import { parseFields } from '@/utils';
-import { computed, ref } from 'vue';
+import { computed, ref, toRaw } from 'vue';
 
 const value = defineModel<any>({ required: true });
 const {
@@ -71,7 +71,7 @@ const formattedDate = computed({
 })
 
 const getDefaultItem = () => {
-  return parseFields(structuredClone(field.items || {}), locales);
+  return parseFields(structuredClone(toRaw(arrayFields.value) || {}), locales);
 }
 </script>
 
@@ -333,24 +333,22 @@ const getDefaultItem = () => {
           :key="key"
           :class="{ 'mt-4': keyIdx > 0 }"
         >
-          <template v-if="field.items">
-            <FieldItem
-              v-if="arrayFields[key].type.includes('i18n')"
-              v-model="item[key][locale]"
-              :field="arrayFields[key]"
-              :locale="locale"
-              :locales="locales"
-              :structure="structure"
-            />
-            <FieldItem
-              v-else-if="arrayFields[key]"
-              v-model="item[key].general"
-              :field="arrayFields[key]"
-              :locale="locale"
-              :locales="locales"
-              :structure="structure"
-            />
-          </template>
+          <FieldItem
+            v-if="arrayFields[key].type.includes('i18n')"
+            v-model="item[key][locale]"
+            :field="arrayFields[key]"
+            :locale="locale"
+            :locales="locales"
+            :structure="structure"
+          />
+          <FieldItem
+            v-else-if="arrayFields[key]"
+            v-model="item[key].general"
+            :field="arrayFields[key]"
+            :locale="locale"
+            :locales="locales"
+            :structure="structure"
+          />
         </div>
       </template>
     </ListBuilder>
