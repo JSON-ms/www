@@ -222,7 +222,12 @@ watch(() => selectedInterface.value.hash, (hash: string | undefined) => {
               size="24"
               width="2"
             />
-            <v-icon v-if="interfaceChanged" icon="mdi-check" start color="success" />
+            <v-icon
+              v-if="interfaceChanged"
+              icon="mdi-check"
+              start
+              color="success"
+            />
             <span v-if="interfaceChanging">Parsing...</span>
             <span v-if="interfaceChanged">Parsed!</span>
           </div>

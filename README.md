@@ -44,7 +44,7 @@ npm run dev
 ```
 
 ## Requirements
-Ensure that the backend server ([jsonms-server](https://github.com/dannycoulombe/jsonms-server)) is up and running. See link for setup instructions.
+Ensure that the backend server ([jsonms-server](https://github.com/JSON-ms/server)) is up and running. See link for setup instructions.
 
 ## Documentation
 
