@@ -175,12 +175,13 @@ watch(() => selectedInterface.value.content, () => {
 });
 
 watch(() => selectedInterface.value.hash, () => {
-  userData.value = structuredClone(adminData);
-  originalUserData.value = structuredClone(adminData);
+  const newUserData = parseInterfaceDataToAdminData(interfaceData.value);
+  userData.value = structuredClone(newUserData);
+  originalUserData.value = structuredClone(newUserData);
   if (autoload && selectedInterface.value.hash && !isDemo.value) {
     setTimeout(() => {
       refresh().catch(() => {
-        userData.value = parseInterfaceDataToAdminData(interfaceData.value);
+        userData.value = newUserData;
         originalUserData.value = structuredClone(toRaw(userData.value));
       });
     })
