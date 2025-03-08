@@ -152,6 +152,11 @@ const theme = computed((): { primary: string } => {
   return interfaceData.value.global.theme[globalStore.theme];
 })
 
+const appBarFlat = ref(true);
+const onScroll = (event: Event) => {
+  appBarFlat.value = (event.target as HTMLElement).scrollTop === 0;
+}
+
 if (!preview) {
   watch(selectedSectionKey, () => {
     router.replace('/admin/' + selectedInterface.value.hash + '/' + selectedSectionKey.value);
@@ -199,7 +204,7 @@ if (autoload && !isDemo.value) {
     No section yet
   </div>
 
-  <v-app-bar v-if="showAppBar" flat border>
+  <v-app-bar v-if="showAppBar" :flat="appBarFlat" border>
     <template v-if="showNavigationDrawer && smAndDown" #prepend>
       <v-app-bar-nav-icon @click="toggleDrawer" />
     </template>
@@ -288,6 +293,7 @@ if (autoload && !isDemo.value) {
   <v-form
     v-if="showContent"
     v-model="formIsValid"
+    v-scroll.self="onScroll"
     :class="{
       'w-100': true,
       'pa-4': !smAndDown,
