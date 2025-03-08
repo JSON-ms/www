@@ -64,21 +64,23 @@ const optionItems = computed((): { title: string, value: string }[] => {
 const arrayFields = computed((): {[key: string]: IField} => {
   return field.fields || {};
 })
-const formattedDate = computed({
-  get: (): string => {
-    if (value.value instanceof Date) {
-      return value.value.toISOString().slice(0, 10);
+const computedDate = computed({
+  get: (): Date | null => {
+    if (typeof value.value === 'string') {
+      return new Date(value.value);
     }
     return value.value;
   },
-  set: (date: Date | string) => {
-    if (date instanceof Date) {
-      value.value = date.toISOString().slice(0, 10);
-    } else {
-      value.value = date;
-    }
+  set: (date: Date) => {
+    value.value = date.toISOString().slice(0, 10);
   }
 })
+const computedReadOnlyDate = computed((): string => {
+  if (value.value instanceof Date) {
+    return value.value.toISOString().slice(0, 10);
+  }
+  return value.value || null;
+});
 
 const getDefaultItem = () => {
   return parseFields(structuredClone(toRaw(arrayFields.value) || {}), locales);
@@ -342,14 +344,18 @@ const fileIcons: {[key: string]: string} = {
   >
     <template #activator="{ props }">
       <v-text-field
-        v-model="formattedDate"
+        v-model="computedReadOnlyDate"
         v-bind="props"
         :label="field.label"
         :required="field.required"
         :rules="getRules(field)"
+        :hint="field.hint"
+        :persistent-hint="!!field.hint"
+        readonly
         hide-details="auto"
         clearable
         @click="showDatePicker = true"
+        @click:clear="value = null"
       >
         <template v-if="field.required" #label>
           <span class="mr-2 text-error">*</span>{{ field.label }}
@@ -363,7 +369,7 @@ const fileIcons: {[key: string]: string} = {
     </template>
     <div>
       <v-date-picker
-        v-model="value"
+        v-model="computedDate"
         hide-header
         show-adjacent-months
       />
@@ -392,13 +398,19 @@ const fileIcons: {[key: string]: string} = {
           </v-avatar>
         </div>
         <div class="pa-3 pl-0">
-          <v-card-title class="py-0 text-break text-truncate text-body-1" style="text-wrap: auto !important">
+          <v-card-title
+            :class="{
+              'py-0 text-break text-truncate': true,
+              'text-body-1': smAndDown,
+            }"
+            style="text-wrap: auto !important"
+          >
             {{ fileName }}
           </v-card-title>
           <v-card-subtitle class="py-0 text-capitalize">
             {{ fileType }}
           </v-card-subtitle>
-          <v-card-actions>
+          <v-card-actions class="pb-0">
             <v-btn
               color="error"
               variant="text"
@@ -498,4 +510,5 @@ const fileIcons: {[key: string]: string} = {
 
 <style lang="scss">
 .v-file-upload-items { display: none; }
+.v-checkbox .v-selection-control { min-height: 0 !important; }
 </style>
