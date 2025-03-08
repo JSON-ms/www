@@ -367,13 +367,13 @@ const fileIcons: {[key: string]: string} = {
         </template>
       </v-text-field>
     </template>
-    <div>
+    <v-card>
       <v-date-picker
         v-model="computedDate"
         hide-header
         show-adjacent-months
       />
-    </div>
+    </v-card>
   </v-menu>
 
   <!-- FILE -->
