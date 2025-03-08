@@ -287,7 +287,6 @@ const onFileChange = (file: File | null) => {
       :required="field.required"
       color="primary"
       hide-details="auto"
-      style="min-height: auto"
     />
   </div>
 
@@ -339,11 +338,13 @@ const onFileChange = (file: File | null) => {
         </template>
       </v-text-field>
     </template>
-    <v-date-picker
-      v-model="value"
-      hide-header
-      show-adjacent-months
-    />
+    <div>
+      <v-date-picker
+        v-model="value"
+        hide-header
+        show-adjacent-months
+      />
+    </div>
   </v-menu>
 
   <!-- FILE -->

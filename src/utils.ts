@@ -49,7 +49,6 @@ export const parseFields = (fields: any, locales = {}) => {
     const type = fields[key].type || '';
     let value;
     if (multipleTypes.includes(type) || (mayBeMultipleTypes.includes(type) && !!(fields[key].multiple))) {
-      console.log(type, fields[key])
       value = [];
     } else {
       value = emptyStringTypes.includes(type) ? '' : null;
@@ -78,7 +77,7 @@ export const parseFields = (fields: any, locales = {}) => {
 }
 
 export const processObject = (obj: any, callback: (parent: any, key: string, path: string) => void, path = '', parent = null, parentKey: string | null = null) => {
-  if (obj !== null && typeof obj === 'object') {
+  if (obj !== null && typeof obj === 'object' && !Array.isArray(obj)) {
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
         const currentPath = path ? `${path}.${key}` : key;
@@ -110,16 +109,16 @@ export const parseInterfaceDataToAdminData = (data: IData, override: any = {}): 
   processObject(result, (parent, key, path) => {
     const overrideValue = getValueByPath(override, path);
     if (Array.isArray(parent[key]) && Array.isArray(overrideValue)) {
-      parent[key] = overrideValue;
+      return parent[key] = overrideValue;
     }
     if (
       typeof parent[key] === 'object' && parent[key] !== null &&
       typeof overrideValue === 'object' && overrideValue !== null
     ) {
-      parent[key] = overrideValue;
+      return parent[key] = overrideValue;
     }
-    if (overrideValue !== null && overrideValue !== undefined && typeof parent[key] === typeof overrideValue) {
-      parent[key] = overrideValue;
+    if (overrideValue !== undefined) {
+      return parent[key] = overrideValue;
     }
     return parent[key];
   });
