@@ -17,14 +17,14 @@ const {
   locale,
   locales,
   structure,
-  handler = '',
+  handler,
   serverSettings,
 } = defineProps<{
   field: IField,
   locale: string,
   locales: { [key: string]: string; },
   structure: IData,
-  handler?: string,
+  handler: string,
   serverSettings: IServerSettings
 }>();
 const showDatePicker = ref(false);
@@ -468,6 +468,7 @@ const fileIcons: {[key: string]: string} = {
             :locale="locale"
             :locales="locales"
             :structure="structure"
+            :handler="handler"
             :server-settings="serverSettings"
           />
           <FieldItem
@@ -477,6 +478,7 @@ const fileIcons: {[key: string]: string} = {
             :locale="locale"
             :locales="locales"
             :structure="structure"
+            :handler="handler"
             :server-settings="serverSettings"
           />
         </div>
