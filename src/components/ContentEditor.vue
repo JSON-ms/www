@@ -120,6 +120,7 @@ const loading = ref(false);
 const refresh = () => {
   return new Promise((resolve, reject) => {
     if (selectedInterface.value.hash && selectedInterface.value.server_url) {
+      loading.value = true;
       Services.get((selectedInterface.value.server_url + '?hash=' + selectedInterface.value.hash) || '')
         .then(response => {
           userData.value = parseInterfaceDataToAdminData(interfaceData.value, response);
