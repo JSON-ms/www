@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import ListBuilder from '@/components/ListBuilder.vue';
 import FieldHeader from '@/components/FieldHeader.vue';
-import type { IData, IField } from '@/interfaces';
+import VueEasymde from 'vue3-easymde'
+import type { IData, IField, IServerSettings } from '@/interfaces';
 import Rules from '@/rules';
 import { parseFields } from '@/utils';
 import { computed, ref, toRaw } from 'vue';
