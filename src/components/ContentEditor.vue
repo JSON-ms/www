@@ -332,7 +332,7 @@ if (autoload && !isDemo.value) {
             />
           </div>
 
-          <p v-if="selectedSection.prepend" class="mb-6">
+          <p v-if="selectedSection.prepend" class="mt-6">
             {{ selectedSection.prepend }}
           </p>
         </div>
@@ -359,6 +359,10 @@ if (autoload && !isDemo.value) {
             :handler="selectedInterface.server_url"
           />
         </template>
+
+        <p v-if="selectedSection.append" class="mt-3">
+          {{ selectedSection.append }}
+        </p>
       </div>
     </v-card>
 

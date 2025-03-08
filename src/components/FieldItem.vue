@@ -104,6 +104,9 @@ const onFileChange = (file: File | null) => {
 </script>
 
 <template>
+  <!-- PREPEND -->
+  <p v-if="field.prepend">{{ field.prepend }}</p>
+
   <!-- I18N / URL / STRING -->
   <v-text-field
     v-if="['i18n', 'url', 'i18n:url', 'string', 'i18n:string'].includes(field.type)"
@@ -396,4 +399,7 @@ const onFileChange = (file: File | null) => {
     </v-chip>
     is not supported. Check and adjust your YAML interface accordingly.
   </v-alert>
+
+  <!-- APPEND -->
+  <p v-if="field.append">{{ field.append }}</p>
 </template>

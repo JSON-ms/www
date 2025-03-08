@@ -55,6 +55,8 @@ export interface IField {
   hint?: string
   multiple?: boolean
   inline?: boolean
+  prepend?: string
+  append?: string
   fields?: {[key: string]: IField}
   items?: {[key: string]: string} | string[]
 }
