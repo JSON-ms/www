@@ -315,7 +315,7 @@ if (autoload && !isDemo.value) {
       maxWidth: preview && !smAndDown && showNavigationDrawer ? 'calc(100% - 250px)' : undefined,
       marginTop: preview ? '64px' : undefined,
       marginLeft: preview && !smAndDown && showNavigationDrawer ? '250px' : undefined,
-      marginBottom: showActionBar && !smAndDown ? '64px' : undefined,
+      marginBottom: showActionBar && !smAndDown && preview ? '64px' : undefined,
     }"
   >
     <v-card
