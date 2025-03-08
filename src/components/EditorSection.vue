@@ -463,6 +463,10 @@ currentRawValue.value = selectedInterface.value.content;
                   v-model="selectedInterface"
                   :demo="!globalStore.session.loggedIn"
                   :disabled="selectedInterface.type !== 'owner'"
+                  :saving="saving"
+                  :saved="saved"
+                  :can-save="canSave"
+                  @save="save"
                 />
               </div>
             </v-tabs-window-item>
