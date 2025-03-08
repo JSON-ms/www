@@ -347,6 +347,7 @@ if (autoload && !isDemo.value) {
             :locale="selectedLocale"
             :locales="interfaceData.locales"
             :structure="interfaceData"
+            :handler="selectedInterface.server_url"
           />
           <FieldItem
             v-else
@@ -355,6 +356,7 @@ if (autoload && !isDemo.value) {
             :locale="selectedLocale"
             :locales="interfaceData.locales"
             :structure="interfaceData"
+            :handler="selectedInterface.server_url"
           />
         </template>
       </div>

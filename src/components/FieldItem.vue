@@ -5,18 +5,23 @@ import type { IData, IField } from '@/interfaces';
 import Rules from '@/rules';
 import { parseFields } from '@/utils';
 import { computed, ref, toRaw } from 'vue';
+import { Services } from '@/services';
+import { useGlobalStore } from '@/stores/global';
 
+const globalStore = useGlobalStore();
 const value = defineModel<any>({ required: true });
 const {
   field,
   locale,
   locales = {},
   structure,
+  handler = '',
 } = defineProps<{
   field: IField,
   locale: string,
   locales: { [key: string]: string; },
-  structure: IData
+  structure: IData,
+  handler?: string,
 }>();
 const showDatePicker = ref(false);
 const getRules = (field: IField): any[] => {
@@ -70,8 +75,31 @@ const formattedDate = computed({
   }
 })
 
+const fileValue = computed({
+  get: (): string | null | File => {
+    const file = new File([], value.value);
+    return value.value instanceof File ? value.value : file;
+  },
+  set: (file: File | null) => {
+    value.value = file;
+  }
+})
+
 const getDefaultItem = () => {
   return parseFields(structuredClone(toRaw(arrayFields.value) || {}), locales);
+}
+
+const uploading = ref(false);
+const uploadProgress = ref(0);
+const onFileChange = (file: File | null) => {
+  if (file && Rules.isUrl(handler)) {
+    uploading.value = true;
+    uploadProgress.value = 0;
+    Services.upload(handler, file, progress => uploadProgress.value = progress)
+      .then(response => value.value = response.publicPath)
+      .catch(globalStore.catchError)
+      .finally(() => uploading.value = false);
+  }
 }
 </script>
 
@@ -298,7 +326,7 @@ const getDefaultItem = () => {
   <div v-else-if="['file', 'i18n:file'].includes(field.type)">
     <FieldHeader :field="field" :locales="locales" :locale="locale" />
     <v-file-upload
-      v-model="value"
+      v-model="fileValue"
       :label="field.label"
       :prepend-inner-icon="field.icon"
       :hint="field.hint"
@@ -310,6 +338,7 @@ const getDefaultItem = () => {
       variant="compact"
       scrim="primary"
       clearable
+      @update:model-value="onFileChange"
     />
   </div>
 
