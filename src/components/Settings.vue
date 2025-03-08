@@ -7,9 +7,15 @@ const emit = defineEmits(['save'])
 const {
   demo = false,
   disabled = false,
+  saving = false,
+  saved = false,
+  canSave = false,
 } = defineProps<{
   demo?: boolean,
   disabled?: boolean,
+  saving?: boolean,
+  saved?: boolean,
+  canSave?: boolean,
 }>();
 
 </script>
@@ -39,7 +45,6 @@ const {
           hint="This feature allows you to specify a URL that will be triggered whenever data is read from or saved to the admin panel. By integrating a webhook, you can synchronize data with a remote server and perform various transformations."
           persistent-hint
           autocomplete="null"
-          class="mb-3"
           required
           clearable
         >
@@ -83,19 +88,22 @@ const {
           multiple
         />
       </v-card-text>
-<!--      <v-card-actions>-->
-<!--        <v-spacer />-->
-<!--        <v-btn-->
-<!--          color="primary"-->
-<!--          variant="flat"-->
-<!--          prepend-icon="mdi-content-save"-->
-<!--          size="large"-->
-<!--          class="px-3"-->
-<!--          @click="() => emit('save')"-->
-<!--        >-->
-<!--          Save-->
-<!--        </v-btn>-->
-<!--      </v-card-actions>-->
+      <v-card-actions>
+        <v-spacer />
+        <v-btn
+          :loading="saving"
+          :disabled="saving || !canSave"
+          :variant="saved ? 'tonal' : 'flat'"
+          :color="!canSave && !saved ? undefined : 'primary'"
+          class="px-3"
+          @click="() => emit('save')"
+        >
+          <v-icon v-if="!saved" icon="mdi-content-save" start />
+          <v-icon v-else icon="mdi-check" start />
+          <span v-if="!saved">Save</span>
+          <span v-else>Saved!</span>
+        </v-btn>
+      </v-card-actions>
     </v-card>
   </div>
 </template>
