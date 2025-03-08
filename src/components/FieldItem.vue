@@ -24,7 +24,7 @@ const {
   locale: string,
   locales: { [key: string]: string; },
   structure: IData,
-  handler: string,
+  handler?: string | null,
   serverSettings: IServerSettings
 }>();
 const showDatePicker = ref(false);
@@ -85,7 +85,7 @@ const getDefaultItem = () => {
 const uploading = ref(false);
 const uploadProgress = ref(0);
 const onFileChange = (file: File | File[] | null) => {
-  if (file && Rules.isUrl(handler) && !Array.isArray(file)) {
+  if (file && handler && Rules.isUrl(handler) && !Array.isArray(file)) {
     uploading.value = true;
     uploadProgress.value = 0;
     Services.upload(handler, file, progress => uploadProgress.value = progress)
@@ -437,7 +437,7 @@ const fileIcons: {[key: string]: string} = {
       clearable
       @update:model-value="onFileChange"
     >
-      <template #item></template>
+      <template #item />
     </v-file-upload>
   </div>
 

@@ -42,6 +42,8 @@ export const getDefaultInterfaceContent = (): string => {
 }
 
 export const parseFields = (fields: any = {}, locales = {}) => {
+  fields = fields ? fields : {}; // Make sure it's an object
+
   const emptyStringTypes = ['i18n', 'wysiwyg', 'i18n:wysiwyg', 'markdown', 'i18n:markdown', 'date', 'i18n:date'];
   const multipleTypes = ['array', 'i18n:array'];
   const mayBeMultipleTypes = ['select', 'i18n:select', 'checkbox', 'i18n:checkbox', 'radio', 'i18n:radio'];

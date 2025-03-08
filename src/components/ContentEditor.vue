@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, toRaw, watch } from 'vue';
+import { computed, onUnmounted, ref, toRaw, watch } from 'vue';
 import { useDisplay } from 'vuetify'
 import type { IData, IInterface, IServerSettings } from '@/interfaces';
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
@@ -47,7 +47,7 @@ const showLocaleSwitcher = computed((): boolean => {
 
 const showNavigationDrawer = computed((): boolean => {
   return Object.keys(interfaceData.value.sections).length > 1
-    || !!(interfaces.length > 1 && smAndDown);
+    || (interfaces.length > 1 && smAndDown.value);
 })
 
 const showContent = computed((): boolean => {
@@ -56,13 +56,6 @@ const showContent = computed((): boolean => {
 
 const toggleDrawer = () => {
   drawer.value = !drawer.value;
-}
-
-const gotoTab = (key: string) => {
-  selectedSectionKey.value = key;
-  if (smAndDown.value) {
-    drawer.value = false;
-  }
 }
 
 const interfaceData = computed((): IData => {
@@ -96,9 +89,55 @@ if (currentRoute.params.section && routeSection) {
 const globalStore = useGlobalStore();
 
 const onLogout = () => {
-  router.replace('/admin/' + selectedInterface.value.hash);
+  goToSection();
   selectedInterface.value = getInterface(getDefaultInterfaceContent());
 }
+
+const changesWillBeLostMsg = 'You have unsaved changes on this page. If you proceed, your changes will be lost.';
+const beforeUnloadCallback = (event: any) => {
+  if (dataHasChanged.value) {
+    event.returnValue = changesWillBeLostMsg;
+    return changesWillBeLostMsg;
+  }
+};
+window.addEventListener('beforeunload', beforeUnloadCallback);
+
+// Check for changes and ask user before redirecting
+const goToSection = (section: string = '') => {
+  router.push('/admin/' + selectedInterface.value.hash + '/' + section)
+}
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', beforeUnloadCallback);
+})
+
+router.afterEach((to) => {
+  userData.value = structuredClone(toRaw(originalUserData.value));
+  if (to.params.section) {
+    selectedSectionKey.value = to.params.section.toString();
+  }
+  if (smAndDown.value) {
+    drawer.value = false;
+  }
+})
+router.beforeResolve((to, from, next) => {
+  if (!dataHasChanged.value) {
+    next();
+  } else {
+    globalStore.setPrompt({
+      ...globalStore.prompt,
+      visible: true,
+      title: 'Changes detected',
+      body: changesWillBeLostMsg,
+      btnText: 'Proceed',
+      btnIcon: 'mdi-arrow-right-bold-box',
+      btnColor: 'warning',
+      callback: () => new Promise(resolve => {
+        next();
+        resolve();
+      })
+    });
+  }
+})
 
 const formIsValid = ref(false);
 const saving = ref(false);
@@ -165,7 +204,7 @@ const onScroll = (event: Event) => {
 
 if (!preview) {
   watch(selectedSectionKey, () => {
-    router.replace('/admin/' + selectedInterface.value.hash + '/' + selectedSectionKey.value);
+    goToSection(selectedSectionKey.value);
   });
 }
 
@@ -247,7 +286,7 @@ if (autoload && !isDemo.value) {
             :interfaces="interfaces"
             type="admin"
             style="max-width: 25rem; width: 15rem"
-            @change="item => router.replace('/admin/' + item.hash)"
+            @change="goToSection('')"
           />
           <v-divider class="mx-3" inset vertical />
         </template>
@@ -276,7 +315,7 @@ if (autoload && !isDemo.value) {
           :active="selectedSectionKey === sectionKey"
           :prepend-icon="section.icon"
           :color="theme.primary"
-          @click="gotoTab(sectionKey.toString())"
+          @click="goToSection(sectionKey.toString())"
         />
       </template>
     </v-list>
@@ -286,7 +325,7 @@ if (autoload && !isDemo.value) {
           v-model="selectedInterface"
           :interfaces="interfaces"
           type="admin"
-          @change="item => router.replace('/admin/' + item.hash)"
+          @change="goToSection('')"
         />
       </div>
       <v-divider />
@@ -404,7 +443,7 @@ if (autoload && !isDemo.value) {
           variant="text"
           @click="cancel"
         >
-          Cancel
+          Reset
         </v-btn>
       </div>
     </v-app-bar>
