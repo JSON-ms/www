@@ -254,6 +254,27 @@ const onFileChange = (file: File | null) => {
     </template>
   </v-autocomplete>
 
+  <!-- SWITCH -->
+  <v-switch
+    v-else-if="['switch', 'i18n:switch'].includes(field.type)"
+    v-model="value"
+    :label="field.label"
+    :required="field.required"
+    :rules="getRules(field)"
+    :hint="field.hint"
+    :persistent-hint="!!field.hint"
+    color="primary"
+    hide-details="auto"
+    inset
+  >
+    <template #label>
+      <span v-if="field.required" class="mr-2 text-error">*</span>{{ field.label }}
+      <v-chip v-if="field.type.includes('i18n')" label size="x-small" class="ml-4">
+        {{ locales[locale] }}
+      </v-chip>
+    </template>
+  </v-switch>
+
   <!-- CHECKBOX -->
   <div v-else-if="['checkbox', 'i18n:checkbox'].includes(field.type)">
     <FieldHeader :field="field" :locales="locales" :locale="locale" />
