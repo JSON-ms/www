@@ -31,6 +31,7 @@ export interface IInterface {
   label: string
   content: string
   server_url?: string
+  server_secret?: string
   type: 'owner' | 'interface' | 'admin',
   owner_name?: string,
   permission_interface: string[],

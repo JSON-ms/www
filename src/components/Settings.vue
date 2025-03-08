@@ -52,7 +52,17 @@ const {
             <span class="mr-2 text-error">*</span>Webhook Endpoint
           </template>
         </v-text-field>
-      </v-card-text>
+        <v-text-field
+          v-model="selectedInterface.server_secret"
+          :disabled="demo || disabled"
+          label="API Secret Key"
+          type="password"
+          prepend-inner-icon="mdi-key-chain"
+          hide-details="auto"
+          hint="The secret field, used for authentication, will be passed as X-API-Key in your API call headers. This ensures secure access to the API's functionalities. Keep it confidential to protect your data."
+          persistent-hint
+          clearable
+        /></v-card-text>
 
       <v-card-title>Permissions</v-card-title>
       <v-card-text class="d-flex flex-column" style="gap: 1rem">
