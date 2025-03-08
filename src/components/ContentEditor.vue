@@ -104,7 +104,11 @@ window.addEventListener('beforeunload', beforeUnloadCallback);
 
 // Check for changes and ask user before redirecting
 const goToSection = (section: string = '') => {
-  router.push('/admin/' + selectedInterface.value.hash + '/' + section)
+  if (preview) {
+    selectedSectionKey.value = section;
+  } else {
+    router.push('/admin/' + selectedInterface.value.hash + '/' + section)
+  }
 }
 onUnmounted(() => {
   window.removeEventListener('beforeunload', beforeUnloadCallback);
