@@ -10,7 +10,7 @@ import { registerPlugins } from '@/plugins'
 // Components
 import App from './App.vue'
 
-// Composables
+// Composable
 import { createApp } from 'vue'
 import { createPinia } from 'pinia';
 import { useGlobalStore } from '@/stores/global';
@@ -29,7 +29,7 @@ app.component('QuillEditor', QuillEditor)
 registerPlugins(app)
 
 const globalStore = useGlobalStore();
-const loadSession = (): Promise<any> => {
+const loadSession = async (): Promise<any> => {
   return Services.get(import.meta.env.VITE_SERVER_URL + '/session')
     .then(globalStore.setSession)
 }

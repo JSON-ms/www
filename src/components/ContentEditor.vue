@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, toRaw, watch } from 'vue';
 import { useDisplay } from 'vuetify'
-import type { IData, IInterface } from '@/interfaces';
+import type { IData, IInterface, IServerSettings } from '@/interfaces';
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
 import SessionPanel from '@/components/SessionPanel.vue';
 import InterfaceSelector from '@/components/InterfaceSelector.vue';
@@ -13,6 +13,11 @@ import { Services } from '@/services';
 import { useRoute } from 'vue-router';
 
 const selectedInterface = defineModel<IInterface>({ required: true });
+const serverSettings = ref<IServerSettings>({
+  postMaxSize: '8M',
+  publicUrl: '',
+  uploadMaxSize: '2M',
+})
 const { preview = false, interfaces = [], autoload = false } = defineProps<{
   preview?: boolean,
   autoload?: boolean,
@@ -123,7 +128,8 @@ const refresh = () => {
       loading.value = true;
       Services.get((selectedInterface.value.server_url + '?hash=' + selectedInterface.value.hash) || '')
         .then(response => {
-          userData.value = parseInterfaceDataToAdminData(interfaceData.value, response);
+          serverSettings.value = response.settings;
+          userData.value = parseInterfaceDataToAdminData(interfaceData.value, response.data);
           originalUserData.value = structuredClone(toRaw(userData.value));
           resolve(userData.value);
         })
@@ -200,10 +206,12 @@ if (autoload && !isDemo.value) {
 </script>
 
 <template>
+  <!-- EMPTY -->
   <div v-if="!showNavigationDrawer && !showContent" class="d-flex align-center justify-center text-center w-100">
     No section yet
   </div>
 
+  <!-- TOOLBAR -->
   <v-app-bar v-if="showAppBar" :flat="appBarFlat" border>
     <template v-if="showNavigationDrawer && smAndDown" #prepend>
       <v-app-bar-nav-icon @click="toggleDrawer" />
@@ -248,6 +256,7 @@ if (autoload && !isDemo.value) {
     </div>
   </v-app-bar>
 
+  <!-- SIDEBAR -->
   <v-navigation-drawer
     v-if="showNavigationDrawer"
     v-model="drawer"
@@ -290,6 +299,7 @@ if (autoload && !isDemo.value) {
     </template>
   </v-navigation-drawer>
 
+  <!-- MAIN CONTENT -->
   <v-form
     v-if="showContent"
     v-model="formIsValid"
@@ -348,6 +358,7 @@ if (autoload && !isDemo.value) {
             :locales="interfaceData.locales"
             :structure="interfaceData"
             :handler="selectedInterface.server_url"
+            :server-settings="serverSettings"
           />
           <FieldItem
             v-else
@@ -357,6 +368,7 @@ if (autoload && !isDemo.value) {
             :locales="interfaceData.locales"
             :structure="interfaceData"
             :handler="selectedInterface.server_url"
+            :server-settings="serverSettings"
           />
         </template>
 
@@ -366,6 +378,7 @@ if (autoload && !isDemo.value) {
       </div>
     </v-card>
 
+    <!-- ACTION BAR -->
     <v-app-bar v-if="showActionBar" location="bottom">
       <v-spacer />
       <div class="d-flex align-center pr-3" style="gap: 0.5rem">

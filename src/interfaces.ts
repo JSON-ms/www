@@ -1,3 +1,10 @@
+type PHPMegabyte = `${number}M`;
+export interface IServerSettings {
+  postMaxSize: PHPMegabyte,
+  publicUrl: string,
+  uploadMaxSize: PHPMegabyte,
+}
+
 export interface IPrompt {
   visible: boolean,
   type?: 'warning' | 'info' | 'error' | undefined,

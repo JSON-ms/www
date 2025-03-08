@@ -7,21 +7,25 @@ import { parseFields } from '@/utils';
 import { computed, ref, toRaw } from 'vue';
 import { Services } from '@/services';
 import { useGlobalStore } from '@/stores/global';
+import { useDisplay } from 'vuetify';
 
+const { smAndDown } = useDisplay()
 const globalStore = useGlobalStore();
 const value = defineModel<any>({ required: true });
 const {
   field,
   locale,
-  locales = {},
+  locales,
   structure,
   handler = '',
+  serverSettings,
 } = defineProps<{
   field: IField,
   locale: string,
   locales: { [key: string]: string; },
   structure: IData,
   handler?: string,
+  serverSettings: IServerSettings
 }>();
 const showDatePicker = ref(false);
 const getRules = (field: IField): any[] => {
@@ -75,24 +79,14 @@ const formattedDate = computed({
   }
 })
 
-const fileValue = computed({
-  get: (): string | null | File => {
-    const file = new File([], value.value);
-    return value.value instanceof File ? value.value : file;
-  },
-  set: (file: File | null) => {
-    value.value = file;
-  }
-})
-
 const getDefaultItem = () => {
   return parseFields(structuredClone(toRaw(arrayFields.value) || {}), locales);
 }
 
 const uploading = ref(false);
 const uploadProgress = ref(0);
-const onFileChange = (file: File | null) => {
-  if (file && Rules.isUrl(handler)) {
+const onFileChange = (file: File | File[] | null) => {
+  if (file && Rules.isUrl(handler) && !Array.isArray(file)) {
     uploading.value = true;
     uploadProgress.value = 0;
     Services.upload(handler, file, progress => uploadProgress.value = progress)
@@ -101,11 +95,34 @@ const onFileChange = (file: File | null) => {
       .finally(() => uploading.value = false);
   }
 }
+const fileValue = computed({
+  get: ():  File | File[] | undefined => {
+    const file = new File([], value.value);
+    return value.value instanceof File ? value.value : file;
+  },
+  set: (file: File | undefined) => {
+    value.value = file;
+  }
+})
+const fileName = computed((): string => {
+  return value.value.replace(serverSettings.publicUrl, '');
+})
+const fileType = computed((): string => {
+  return field.type.replace('i18n:', '');
+})
+const fileIcons: {[key: string]: string} = {
+  'i18n:file': 'mdi-file-outline',
+  'file': 'mdi-file-outline',
+  'i18n:video': 'mdi-video-outline',
+  'video': 'mdi-video-outline',
+}
 </script>
 
 <template>
   <!-- PREPEND -->
-  <p v-if="field.prepend">{{ field.prepend }}</p>
+  <p v-if="field.prepend">
+    {{ field.prepend }}
+  </p>
 
   <!-- I18N / URL / STRING -->
   <v-text-field
@@ -269,7 +286,12 @@ const onFileChange = (file: File | null) => {
   >
     <template #label>
       <span v-if="field.required" class="mr-2 text-error">*</span>{{ field.label }}
-      <v-chip v-if="field.type.includes('i18n')" label size="x-small" class="ml-4">
+      <v-chip
+        v-if="field.type.includes('i18n')"
+        label
+        size="x-small"
+        class="ml-4"
+      >
         {{ locales[locale] }}
       </v-chip>
     </template>
@@ -348,9 +370,48 @@ const onFileChange = (file: File | null) => {
   </v-menu>
 
   <!-- FILE -->
-  <div v-else-if="['file', 'i18n:file'].includes(field.type)">
+  <div v-else-if="['file', 'i18n:file', 'image', 'i18n:image'].includes(field.type)">
     <FieldHeader :field="field" :locales="locales" :locale="locale" />
+    <v-card v-if="typeof value === 'string'" variant="tonal" class="w-100">
+      <div class="d-flex align-center">
+        <div class="pa-3 pr-0">
+          <v-icon v-if="!['image', 'i18n:image'].includes(field.type)" :icon="fileIcons[field.type]" :size="smAndDown ? 96 : 128" />
+          <v-avatar v-else :size="smAndDown ? 96 : 128" rounded="0">
+            <v-img :src="value">
+              <template #placeholder>
+                <v-overlay>
+                  <v-progress-circular
+                    indeterminate
+                    size="32"
+                    width="2"
+                  />
+                </v-overlay>
+              </template>
+            </v-img>
+          </v-avatar>
+        </div>
+        <div class="pa-3 pl-0">
+          <v-card-title class="py-0 text-break text-truncate text-body-1" style="text-wrap: auto !important">
+            {{ fileName }}
+          </v-card-title>
+          <v-card-subtitle class="py-0 text-capitalize">
+            {{ fileType }}
+          </v-card-subtitle>
+          <v-card-actions>
+            <v-btn
+              color="error"
+              variant="text"
+              prepend-icon="mdi-trash-can-outline"
+              @click="value = null"
+            >
+              Remove
+            </v-btn>
+          </v-card-actions>
+        </div>
+      </div>
+    </v-card>
     <v-file-upload
+      v-else
       v-model="fileValue"
       :label="field.label"
       :prepend-inner-icon="field.icon"
@@ -358,13 +419,17 @@ const onFileChange = (file: File | null) => {
       :persistent-hint="!!field.hint"
       :required="field.required"
       :rules="getRules(field)"
+      :icon="smAndDown ? 'mdi-gesture-tap-button' : undefined"
+      :title="smAndDown ? 'Touch to upload' : undefined"
       hide-details="auto"
       density="compact"
       variant="compact"
       scrim="primary"
       clearable
       @update:model-value="onFileChange"
-    />
+    >
+      <template #item></template>
+    </v-file-upload>
   </div>
 
   <!-- ARRAY -->
@@ -394,6 +459,7 @@ const onFileChange = (file: File | null) => {
             :locale="locale"
             :locales="locales"
             :structure="structure"
+            :server-settings="serverSettings"
           />
           <FieldItem
             v-else-if="arrayFields[key]"
@@ -402,6 +468,7 @@ const onFileChange = (file: File | null) => {
             :locale="locale"
             :locales="locales"
             :structure="structure"
+            :server-settings="serverSettings"
           />
         </div>
       </template>
@@ -423,5 +490,11 @@ const onFileChange = (file: File | null) => {
   </v-alert>
 
   <!-- APPEND -->
-  <p v-if="field.append">{{ field.append }}</p>
+  <p v-if="field.append">
+    {{ field.append }}
+  </p>
 </template>
+
+<style lang="scss">
+.v-file-upload-items { display: none; }
+</style>
