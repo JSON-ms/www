@@ -34,6 +34,11 @@ const applyEditors = () => {
       maxLines: Infinity,
       readOnly: true,
       wrap: true,
+      showLineNumbers: false,
+      showPrintMargin: false,
+      highlightActiveLine: false,
+      showFoldWidgets: false,
+      showGutter: false,
     });
   }
 }
