@@ -41,7 +41,7 @@ export const getDefaultInterfaceContent = (): string => {
     .replace('[INTERFACE_EDITOR_URL]', window.location.origin);
 }
 
-export const parseFields = (fields: any, locales = {}) => {
+export const parseFields = (fields: any = {}, locales = {}) => {
   const emptyStringTypes = ['i18n', 'wysiwyg', 'i18n:wysiwyg', 'markdown', 'i18n:markdown', 'date', 'i18n:date'];
   const multipleTypes = ['array', 'i18n:array'];
   const mayBeMultipleTypes = ['select', 'i18n:select', 'checkbox', 'i18n:checkbox', 'radio', 'i18n:radio'];
