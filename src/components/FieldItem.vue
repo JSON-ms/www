@@ -33,13 +33,10 @@ const getRules = (field: IField): any[] => {
   if (field.required) {
     rules.push((value: string) => Rules.required(value) || 'This field is required');
   }
-  if (field.type.includes('url')) {
+  if (field.type.includes('url') && value.value) {
     rules.push((value: string) => Rules.isUrl(value) || 'This field must be an URL');
   }
-  if (field.type.includes('number')) {
-    rules.push((value: string) => Rules.digit(value) || 'This field must be a digit');
-  }
-  if (field.type.includes('number')) {
+  if (field.type.includes('number') && value.value) {
     rules.push((value: string) => Rules.digit(value) || 'This field must be a digit');
   }
   return rules;
