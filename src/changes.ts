@@ -44,11 +44,13 @@ export default class Changes {
     if (!this.list[key]) {
       return false;
     }
-    console.log(key, this.list[key][0].value, this.list[key][1].value)
     return objectsAreDifferent(this.list[key][0].value, this.list[key][1].value);
   }
 
   static hasChanges(): boolean {
+    if (!globalStore.session.loggedIn) {
+      return false;
+    }
     const keys = Object.keys(this.list);
     for (let i = 0; i < keys.length; i++) {
       if (this.hasSetChanges(keys[i])) {
