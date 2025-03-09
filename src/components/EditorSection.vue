@@ -146,10 +146,12 @@ const save = () => {
   saving.value = true;
 
   const wasNew = !(selectedInterface.value.uuid);
-  const parsedInterface = getParsedInterface(selectedInterface.value);
+  const clonedInterface = structuredClone(toRaw(selectedInterface.value));
+  clonedInterface.content = currentRawValue.value;
+  const parsedInterface = getParsedInterface(clonedInterface);
   Services.post(import.meta.env.VITE_SERVER_URL + '/interface', {
     interface: {
-      ...selectedInterface.value,
+      ...clonedInterface,
       label: parsedInterface.global.title || 'Untitled',
     },
   })
