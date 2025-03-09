@@ -108,9 +108,7 @@ const getCyperKey = () => {
           label="API Server Secret"
           hint="The secret field, used for authentication, will be passed as X-API-Key in your API call headers. This ensures secure access to the API's functionalities. Keep it confidential to protect your data."
           readonly
-          required
           persistent-hint
-          clearable
           name="server_secret"
           autocomplete="new-password"
         >
@@ -133,9 +131,7 @@ const getCyperKey = () => {
           label="API Cypher Key"
           hint="A securely generated key used to decrypt the API secret key. This key must be kept confidential and protected to ensure the integrity and security of sensitive data."
           readonly
-          required
           persistent-hint
-          clearable
           name="cypher_key"
           autocomplete="new-password"
         >
