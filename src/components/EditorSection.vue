@@ -120,7 +120,10 @@ const create = () => {
 const saving = ref(false);
 const saved = ref(false);
 const canSave = computed((): boolean => {
-  return originalSelectedInterface.value.content !== currentRawValue.value;
+  if (originalSelectedInterface.value.content !== currentRawValue.value) {
+    return true
+  }
+  return objectsAreDifferent(originalSelectedInterface.value, selectedInterface.value);
 })
 const save = () => {
   if (!canSave.value) {

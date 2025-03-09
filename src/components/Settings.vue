@@ -39,7 +39,7 @@ const {
         <v-text-field
           v-model="selectedInterface.server_url"
           :disabled="demo || disabled"
-          :rules="[(value: string) => Rules.isUrl(value) || 'This field must contain a valid URL']"
+          :rules="[(value: string) => !value || Rules.isUrl(value) || 'This field must contain a valid URL']"
           prepend-inner-icon="mdi-webhook"
           hide-details="auto"
           hint="This feature allows you to specify a URL that will be triggered whenever data is read from or saved to the admin panel. By integrating a webhook, you can synchronize data with a remote server and perform various transformations."
@@ -50,6 +50,9 @@ const {
         >
           <template #label>
             <span class="mr-2 text-error">*</span>Webhook Endpoint
+          </template>
+          <template #append-inner>
+            <v-icon color="warning">mdi-alert</v-icon>
           </template>
         </v-text-field>
         <v-text-field
