@@ -290,27 +290,37 @@ router.afterEach((to) => {
 
     <div class="d-flex align-center mr-3" style="gap: 1rem">
       <div>
-        <v-tooltip
-          text="Github"
-          location="bottom"
-        >
-          <template #activator="{ props }">
-            <v-btn
-              v-bind="props"
-              icon
-              href="https://github.com/JSON-ms"
-              target="_blank"
-            >
-              <v-icon icon="mdi-github" />
-            </v-btn>
-          </template>
-        </v-tooltip>
+<!--        <v-tooltip-->
+<!--          text="Github"-->
+<!--          location="bottom"-->
+<!--        >-->
+<!--          <template #activator="{ props }">-->
+<!--            <v-btn-->
+<!--              v-bind="props"-->
+<!--              icon-->
+<!--              href="https://github.com/JSON-ms"-->
+<!--              target="_blank"-->
+<!--            >-->
+<!--              <v-icon icon="mdi-github" />-->
+<!--            </v-btn>-->
+<!--          </template>-->
+<!--        </v-tooltip>-->
       </div>
+      <v-btn
+        v-if="!smAndDown"
+        to="/admin"
+        color="secondary"
+        prepend-icon="mdi-shield-account"
+        variant="flat"
+      >
+        Admin Panel
+      </v-btn>
       <GoogleSignInButton
         v-if="!globalStore.session.loggedIn"
       />
       <SessionPanel
         v-else
+        dense
         @logout="onLogout"
       />
     </div>
@@ -378,6 +388,17 @@ router.afterEach((to) => {
     </template>
     <template #append>
       <v-divider />
+      <div v-if="smAndDown" class="pa-3">
+        <v-btn
+          to="/admin"
+          color="secondary"
+          prepend-icon="mdi-shield-account"
+          variant="flat"
+          block
+        >
+          Admin Panel
+        </v-btn>
+      </div>
       <v-footer color="#f9f9f9">
         <small style="font-size: 0.6rem">{{ copyright }}</small>
       </v-footer>

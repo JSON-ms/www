@@ -62,26 +62,11 @@ const hash = computed((): string => {
           </v-img>
           <strong v-else>{{ globalStore.session.user.name.substring(0, 1) }}</strong>
         </v-avatar>
-        <strong v-if="!smAndDown" class="ml-3">{{ globalStore.session.user.name }}</strong>
+<!--        <strong v-if="!smAndDown" class="ml-3">{{ globalStore.session.user.name }}</strong>-->
         <v-icon end icon="mdi-chevron-down" />
       </v-btn>
     </template>
     <v-list>
-      <v-list-item
-        v-if="isAdmin"
-        :to="'/editor/' + hash"
-        title="Editor"
-        prepend-icon="mdi-pencil-box-outline"
-        append-icon="mdi-arrow-right"
-      />
-      <v-list-item
-        v-else
-        :to="hash === 'new' ? '/admin' : '/admin/' + hash"
-        title="Admin"
-        prepend-icon="mdi-form-textbox"
-        append-icon="mdi-arrow-right"
-      />
-      <v-divider class="my-2" />
       <v-list-item
         :disabled="sessionLoginOut"
         title="Logout"
