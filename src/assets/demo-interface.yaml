@@ -114,7 +114,7 @@ sections:
             type: select
             label: Countri(es)
             multiple: true
-            items: enum:countries
+            items: enums.countries
           body:
             type: i18n:markdown
             label: Body

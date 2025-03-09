@@ -337,6 +337,7 @@ const fileIcons: {[key: string]: string} = {
   <v-menu
     v-else-if="['date', 'i18n:date'].includes(field.type)"
     v-model="showDatePicker"
+    :close-on-content-click="false"
     location="bottom"
   >
     <template #activator="{ props }">
@@ -364,13 +365,12 @@ const fileIcons: {[key: string]: string} = {
         </template>
       </v-text-field>
     </template>
-    <v-card>
-      <v-date-picker
-        v-model="computedDate"
-        hide-header
-        show-adjacent-months
-      />
-    </v-card>
+    <v-date-picker
+      v-model="computedDate"
+      hide-header
+      show-adjacent-months
+      @update:model-value="showDatePicker = false"
+    />
   </v-menu>
 
   <!-- FILE -->

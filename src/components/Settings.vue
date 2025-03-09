@@ -3,6 +3,8 @@ import type { IInterface } from '@/interfaces';
 import Rules from '@/rules';
 import { computed, ref } from 'vue';
 import { Services } from '@/services';
+import { useDisplay } from 'vuetify';
+import { useGlobalStore } from '@/stores/global';
 
 const formIsValid = ref(false);
 const selectedInterface = defineModel<IInterface>({ required: true });
@@ -20,6 +22,38 @@ const {
   saved?: boolean,
   canSave?: boolean,
 }>();
+
+const copied = ref(false);
+const globalStore = useGlobalStore();
+const { smAndDown } = useDisplay()
+const canOpenAdminUrl = computed((): boolean => {
+  return !!(selectedInterface.value.uuid) || !globalStore.session.loggedIn;
+})
+const adminBaseUrl = ref(import.meta.env.VITE_ADMIN_DEMO_URL);
+const adminUrl = computed((): string => {
+  return adminBaseUrl.value + '/' + (selectedInterface.value.hash || (globalStore.session.loggedIn ? 'new' : 'demo'));
+})
+
+const openAdminLink = () => {
+  window.open(adminUrl.value, '_blank');
+}
+
+const copy = () => {
+  const field: HTMLInputElement = document.getElementById('adminRef') as HTMLInputElement;
+  if (field) {
+    field.select();
+    document.execCommand('copy');
+    copied.value = true;
+    setTimeout(() => copied.value = false, 2000);
+  }
+}
+
+const select = () => {
+  const field: HTMLInputElement = document.getElementById('adminRef') as HTMLInputElement;
+  if (field) {
+    field.select();
+  }
+}
 
 const loadingSecretKey = ref(false);
 const secretKeyLoaded = ref(false);
@@ -75,6 +109,55 @@ const getCyperKey = () => {
     </v-alert>
 
     <v-card>
+      <v-card-title>
+        Admin
+      </v-card-title>
+      <v-card-text class="d-flex flex-column" style="gap: 1rem">
+        <v-text-field
+          id="adminRef"
+          v-model="adminUrl"
+          :disabled="!canOpenAdminUrl"
+          label="URL"
+          hint="This read-only field displays the generated URL for accessing the admin panel. Feel free to share this link with authorized users to grant them access to manage the application."
+          persistent-hint
+          readonly
+          @click="select"
+        >
+          <template #append-inner>
+            <div class="d-flex align-center" style="gap: 0.5rem">
+              <v-btn
+                size="small"
+                variant="text"
+                :color="copied ? 'primary' : undefined"
+                :readonly="copied"
+                :disabled="!canOpenAdminUrl"
+                :icon="smAndDown"
+                @click="copy"
+              >
+                <template v-if="!copied || smAndDown">
+                  <v-icon :start="!smAndDown" icon="mdi-content-copy" />
+                  <span v-if="!smAndDown">Copy</span>
+                </template>
+                <template v-else>
+                  <v-icon start icon="mdi-check" />
+                  <span>Copied!</span>
+                </template>
+              </v-btn>
+              <v-btn
+                :disabled="!canOpenAdminUrl"
+                :icon="smAndDown"
+                color="primary"
+                size="small"
+                variant="flat"
+                @click="openAdminLink"
+              >
+                <v-icon :start="!smAndDown" icon="mdi-open-in-new" />
+                <span v-if="!smAndDown">Open</span>
+              </v-btn>
+            </div>
+          </template>
+        </v-text-field>
+      </v-card-text>
       <v-card-title>Server</v-card-title>
       <v-card-text class="d-flex flex-column" style="gap: 1rem">
         <v-text-field
@@ -103,6 +186,7 @@ const getCyperKey = () => {
           v-model="computedServerSecretKey"
           :loading="loadingSecretKey"
           :type="secretKeyLoaded ? 'text' : 'password'"
+          :disabled="demo || disabled || !selectedInterface.uuid"
           prepend-inner-icon="mdi-key-chain"
           hide-details="auto"
           label="API Server Secret"
@@ -114,6 +198,7 @@ const getCyperKey = () => {
         >
           <template v-if="!secretKeyLoaded" #append-inner>
             <v-btn
+              :disabled="!selectedInterface.uuid"
               variant="outlined"
               size="small"
               @click="getServerSecretKey()"
@@ -126,6 +211,7 @@ const getCyperKey = () => {
           v-model="computedCypherKey"
           :loading="loadingCypherKey"
           :type="cypherKeyLoaded ? 'text' : 'password'"
+          :disabled="demo || disabled || !selectedInterface.uuid"
           prepend-inner-icon="mdi-script-text-key-outline"
           hide-details="auto"
           label="API Cypher Key"
@@ -137,6 +223,7 @@ const getCyperKey = () => {
         >
           <template v-if="!cypherKeyLoaded" #append-inner>
             <v-btn
+              :disabled="!selectedInterface.uuid"
               variant="outlined"
               size="small"
               @click="getCyperKey()"
