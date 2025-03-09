@@ -9,8 +9,10 @@ const { smAndDown } = useDisplay()
 const list = defineModel<any[]>({ required: true });
 const {
   defaultItem,
+  disabled = false
 } = defineProps<{
-  defaultItem: any
+  defaultItem: any,
+  disabled: boolean,
 }>()
 const addItem = () => {
   const newItem = structuredClone(defaultItem);
@@ -33,10 +35,10 @@ const removeItem = (index: number) => {
   })
 }
 const canMoveUp = (index: number): boolean => {
-  return index > 0;
+  return !disabled && index > 0;
 }
 const canMoveDown = (index: number): boolean => {
-  return index < list.value.length - 1;
+  return !disabled && index < list.value.length - 1;
 }
 const moveUp = (index: number) => {
   if (canMoveUp(index)) {
@@ -81,6 +83,7 @@ const moveDown = (index: number) => {
                     <template #activator="{ props }">
                       <v-btn
                         v-bind="props"
+                        :disabled="disabled"
                         color="error"
                         size="small"
                         variant="text"
@@ -140,6 +143,7 @@ const moveDown = (index: number) => {
           </v-col>
           <v-col v-if="!smAndDown" style="flex: 0" class="pt-2 ml-3">
             <v-btn
+              :disabled="disabled"
               color="error"
               size="small"
               variant="text"
@@ -154,6 +158,7 @@ const moveDown = (index: number) => {
     </template>
     <template #footer>
       <v-btn
+        :disabled="disabled"
         :class="{
           'mt-4': list.length > 0
         }"

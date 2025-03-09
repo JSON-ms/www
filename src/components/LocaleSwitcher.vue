@@ -4,9 +4,10 @@ interface ILocale {
   title: string
 }
 const selectedLocale = defineModel({ type: String, default: null })
-const { locales, dense = false } = defineProps<{
+const { locales, dense = false, disabled = false } = defineProps<{
   locales: ILocale[],
-  dense?: boolean
+  dense?: boolean,
+  disabled: boolean,
 }>();
 </script>
 
@@ -33,6 +34,7 @@ const { locales, dense = false } = defineProps<{
     v-else
     v-model="selectedLocale"
     :items="locales"
+    :disabled="disabled"
     label="Locale"
     hide-details
     density="compact"

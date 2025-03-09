@@ -83,8 +83,8 @@ const canInteractWithServer = computed((): boolean => {
 
 const currentRoute = useRoute();
 const adminData = parseInterfaceDataToAdminData(interfaceData.value);
-const userData = ref(adminData);
-const originalUserData = ref(adminData);
+const userData = ref(structuredClone(adminData));
+const originalUserData = ref(structuredClone(adminData));
 
 const selectedSection = computed(() => {
   return interfaceData.value.sections[selectedSectionKey.value];
@@ -149,6 +149,14 @@ const save = async (): Promise<any> => {
       saved.value = true;
       setTimeout(() => saved.value = false, 1000);
     });
+}
+
+const fetched = ref(false);
+const fetchData = () => {
+  refresh().then(() => {
+    fetched.value = true;
+    setTimeout(() => fetched.value = false, 2000);
+  })
 }
 
 const isDemo = ref(selectedInterface.value.hash === 'demo');
@@ -287,11 +295,13 @@ router.afterEach((to) => {
         v-if="showFetchUserData"
         :loading="loading"
         :icon="smAndDown"
-        :disabled="loading || !canInteractWithServer"
-        @click="refresh"
+        :disabled="loading || !canInteractWithServer || fetched"
+        @click="fetchData"
       >
-        <v-icon :start="!smAndDown" icon="mdi-monitor-arrow-down" />
-        <span v-if="!smAndDown">Fetch user data</span>
+        <v-icon v-if="!fetched" :start="!smAndDown" icon="mdi-monitor-arrow-down" />
+        <v-icon v-else :start="!smAndDown" icon="mdi-check" />
+        <span v-if="!smAndDown && !fetched">Fetch user data</span>
+        <span v-else-if="!smAndDown">Fetched!</span>
       </v-btn>
       <template v-if="!preview && globalStore.session.loggedIn">
         <template v-if="!smAndDown && interfaces.length > 1">
@@ -391,6 +401,7 @@ router.afterEach((to) => {
               v-model="selectedLocale"
               :locales="locales"
               :dense="smAndDown"
+              :disabled="loading"
               style="max-width: 12rem"
             />
           </div>
@@ -412,6 +423,7 @@ router.afterEach((to) => {
             :structure="interfaceData"
             :interface="selectedInterface"
             :server-settings="serverSettings"
+            :disabled="loading"
           />
           <FieldItem
             v-else
@@ -422,6 +434,7 @@ router.afterEach((to) => {
             :structure="interfaceData"
             :interface="selectedInterface"
             :server-settings="serverSettings"
+            :disabled="loading"
           />
         </template>
 

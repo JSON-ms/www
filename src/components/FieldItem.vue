@@ -19,13 +19,15 @@ const {
   structure,
   serverSettings,
   interface: selectedInterface,
+  disabled = false,
 } = defineProps<{
   field: IField,
   locale: string,
   locales: { [key: string]: string; },
   structure: IData,
   interface: IInterface,
-  serverSettings: IServerSettings
+  serverSettings: IServerSettings,
+  disabled: boolean
 }>();
 const showDatePicker = ref(false);
 const getRules = (field: IField): any[] => {
@@ -143,6 +145,7 @@ const fileIcons: {[key: string]: string} = {
     :persistent-hint="!!field.hint"
     :required="field.required"
     :rules="getRules(field)"
+    :disabled="disabled"
     hide-details="auto"
     clearable
   >
@@ -166,6 +169,7 @@ const fileIcons: {[key: string]: string} = {
     :persistent-hint="!!field.hint"
     :required="field.required"
     :rules="getRules(field)"
+    :disabled="disabled"
     hide-details="auto"
     clearable
   >
@@ -191,6 +195,7 @@ const fileIcons: {[key: string]: string} = {
       :persistent-hint="!!field.hint"
       :required="field.required"
       :rules="getRules(field)"
+      :disabled="disabled"
       hide-details="auto"
       clearable
     >
@@ -215,12 +220,14 @@ const fileIcons: {[key: string]: string} = {
       :persistent-hint="!!field.hint"
       :required="field.required"
       :rules="getRules(field)"
+      :disabled="disabled"
       hide-details="auto"
       clearable
     >
       <vue-easymde
         v-if="value !== null"
         v-model="value"
+        :disabled="disabled"
         :options="{
           minHeight: '100px',
           placeholder: 'Type here...',
@@ -245,6 +252,7 @@ const fileIcons: {[key: string]: string} = {
     :label="field.label"
     :required="field.required"
     :rules="getRules(field)"
+    :disabled="disabled"
     hide-details="auto"
     clearable
   >
@@ -267,6 +275,7 @@ const fileIcons: {[key: string]: string} = {
     :rules="getRules(field)"
     :items="optionItems"
     :multiple="!!(field.multiple)"
+    :disabled="disabled"
     hide-details="auto"
     clearable
   >
@@ -289,6 +298,7 @@ const fileIcons: {[key: string]: string} = {
     :rules="getRules(field)"
     :hint="field.hint"
     :persistent-hint="!!field.hint"
+    :disabled="disabled"
     color="primary"
     hide-details="auto"
     inset
@@ -316,6 +326,7 @@ const fileIcons: {[key: string]: string} = {
       :label="item.title"
       :value="item.value"
       :required="field.required"
+      :disabled="disabled"
       color="primary"
       hide-details="auto"
     />
@@ -329,6 +340,7 @@ const fileIcons: {[key: string]: string} = {
       :required="field.required"
       :rules="getRules(field)"
       :inline="field.inline"
+      :disabled="disabled"
       color="primary"
       hide-details="auto"
       clearable
@@ -338,6 +350,7 @@ const fileIcons: {[key: string]: string} = {
         :key="item.value"
         :label="item.title"
         :value="item.value"
+        :disabled="disabled"
       />
     </v-radio-group>
   </div>
@@ -347,6 +360,7 @@ const fileIcons: {[key: string]: string} = {
     v-else-if="['date', 'i18n:date'].includes(field.type)"
     v-model="showDatePicker"
     :close-on-content-click="false"
+    :disabled="disabled"
     location="bottom"
   >
     <template #activator="{ props }">
@@ -358,6 +372,7 @@ const fileIcons: {[key: string]: string} = {
         :rules="getRules(field)"
         :hint="field.hint"
         :persistent-hint="!!field.hint"
+        :disabled="disabled"
         readonly
         hide-details="auto"
         clearable
@@ -376,6 +391,7 @@ const fileIcons: {[key: string]: string} = {
     </template>
     <v-date-picker
       v-model="computedDate"
+      :disabled="disabled"
       hide-header
       show-adjacent-months
       @update:model-value="showDatePicker = false"
@@ -418,6 +434,7 @@ const fileIcons: {[key: string]: string} = {
           </v-card-subtitle>
           <v-card-actions class="pb-0">
             <v-btn
+              :disabled="disabled"
               color="error"
               variant="text"
               prepend-icon="mdi-trash-can-outline"
@@ -440,6 +457,7 @@ const fileIcons: {[key: string]: string} = {
       :rules="getRules(field)"
       :icon="smAndDown ? 'mdi-gesture-tap-button' : undefined"
       :title="smAndDown ? 'Touch to upload' : undefined"
+      :disabled="disabled"
       hide-details="auto"
       density="compact"
       variant="compact"
@@ -460,6 +478,7 @@ const fileIcons: {[key: string]: string} = {
       :required="field.required"
       :rules="getRules(field)"
       :default-item="getDefaultItem()"
+      :disabled="disabled"
       class="d-flex flex-column"
       style="gap: 0.5rem"
       hide-details="auto"
@@ -480,6 +499,7 @@ const fileIcons: {[key: string]: string} = {
             :structure="structure"
             :interface="selectedInterface"
             :server-settings="serverSettings"
+            :disabled="disabled"
           />
           <FieldItem
             v-else-if="arrayFields[key]"
@@ -490,6 +510,7 @@ const fileIcons: {[key: string]: string} = {
             :structure="structure"
             :interface="selectedInterface"
             :server-settings="serverSettings"
+            :disabled="disabled"
           />
         </div>
       </template>
