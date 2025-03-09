@@ -35,7 +35,10 @@ const loadSession = async (): Promise<any> => {
 }
 
 loadSession().then(() => app.mount('#app'))
-  .catch(globalStore.catchError)
+  .catch(reason => {
+    app.mount('#app')
+    globalStore.catchError(reason);
+  })
 
 document.addEventListener('visibilitychange', () => {
   const wasLoggedIn = globalStore.session.loggedIn;
@@ -48,6 +51,5 @@ document.addEventListener('visibilitychange', () => {
           globalStore.setSession(response);
         }
       })
-      .catch(globalStore.catchError)
   }
 });

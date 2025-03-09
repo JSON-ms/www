@@ -178,7 +178,7 @@ const getCyperKey = () => {
           <template #label>
             <span class="mr-2 text-error">*</span>Webhook Endpoint
           </template>
-          <template v-if="!selectedInterface.server_url || !Rules.isUrl(selectedInterface.server_url)" #append-inner>
+          <template v-if="!demo && (!selectedInterface.server_url || !Rules.isUrl(selectedInterface.server_url))" #append-inner>
             <v-icon color="warning" icon="mdi-alert" />
           </template>
         </v-text-field>
@@ -190,7 +190,7 @@ const getCyperKey = () => {
           prepend-inner-icon="mdi-key-chain"
           hide-details="auto"
           label="API Server Secret"
-          hint="The secret field, used for authentication, will be passed as X-API-Key in your API call headers. This ensures secure access to the API's functionalities. Keep it confidential to protect your data."
+          hint="The secret field, used for authentication, will be passed as X-Jms-Api-Key in your API call headers. This ensures secure access to the API's functionalities. Keep it confidential to protect your data."
           readonly
           persistent-hint
           name="server_secret"
