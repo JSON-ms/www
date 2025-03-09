@@ -183,7 +183,9 @@ const theme = computed((): { primary: string } => {
 
 const appBarFlat = ref(true);
 const onScroll = (event: Event) => {
-  appBarFlat.value = (event.target as HTMLElement).scrollTop === 0;
+  appBarFlat.value = event.target === document
+    ? window.scrollY === 0
+    : (event.target as HTMLElement).scrollTop === 0;
 }
 
 if (!preview) {
@@ -337,6 +339,7 @@ router.afterEach((to) => {
   <v-form
     v-if="showContent"
     v-model="formIsValid"
+    v-scroll="onScroll"
     v-scroll.self="onScroll"
     :class="{
       'w-100': true,

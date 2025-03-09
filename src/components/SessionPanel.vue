@@ -36,7 +36,7 @@ const logout = () => {
 }
 
 const hash = computed((): string => {
-  return currentRoute.params.interface.toString();
+  return (currentRoute.params.interface || '').toString();
 })
 </script>
 
