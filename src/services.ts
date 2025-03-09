@@ -20,10 +20,10 @@ export class Services {
     });
   }
 
-  static upload(url: string, file: File, callback: (percentage: number, completed: boolean) => void = () => {}): Promise<any> {
+  static upload(url: string, file: File, callback: (percentage: number, completed: boolean) => void = () => {}, headers: {[key: string]: any} = {}): Promise<any> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.handle(url, 'POST', formData, undefined, {
+    return this.handle(url, 'POST', formData, headers, {
       onUploadProgress: (event: ProgressEvent) => {
         if (event.lengthComputable) {
           const percentComplete = (event.loaded / event.total) * 100;

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import ListBuilder from '@/components/ListBuilder.vue';
 import FieldHeader from '@/components/FieldHeader.vue';
-import type { IData, IField, IServerSettings } from '@/interfaces';
+import type { IData, IField, IInterface, IServerSettings } from '@/interfaces';
 import Rules from '@/rules';
 import { parseFields } from '@/utils';
 import { computed, ref, toRaw } from 'vue';
@@ -17,14 +17,14 @@ const {
   locale,
   locales,
   structure,
-  handler,
   serverSettings,
+  interface: selectedInterface,
 } = defineProps<{
   field: IField,
   locale: string,
   locales: { [key: string]: string; },
   structure: IData,
-  handler?: string | null,
+  interface: IInterface,
   serverSettings: IServerSettings
 }>();
 const showDatePicker = ref(false);
@@ -85,10 +85,13 @@ const getDefaultItem = () => {
 const uploading = ref(false);
 const uploadProgress = ref(0);
 const onFileChange = (file: File | File[] | null) => {
-  if (file && handler && Rules.isUrl(handler) && !Array.isArray(file)) {
+  if (file && selectedInterface.server_url && Rules.isUrl(selectedInterface.server_url) && !Array.isArray(file)) {
     uploading.value = true;
     uploadProgress.value = 0;
-    Services.upload(handler, file, progress => uploadProgress.value = progress)
+    Services.upload(selectedInterface.server_url, file, progress => uploadProgress.value = progress, {
+      'X-Jms-Interface-Hash': selectedInterface.hash,
+      'X-Jms-Api-Key': selectedInterface.server_secret,
+    })
       .then(response => value.value = response.publicPath)
       .catch(globalStore.catchError)
       .finally(() => uploading.value = false);
@@ -469,7 +472,7 @@ const fileIcons: {[key: string]: string} = {
             :locale="locale"
             :locales="locales"
             :structure="structure"
-            :handler="handler"
+            :interface="selectedInterface"
             :server-settings="serverSettings"
           />
           <FieldItem
@@ -479,7 +482,7 @@ const fileIcons: {[key: string]: string} = {
             :locale="locale"
             :locales="locales"
             :structure="structure"
-            :handler="handler"
+            :interface="selectedInterface"
             :server-settings="serverSettings"
           />
         </div>

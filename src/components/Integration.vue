@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import { VAceEditor } from 'vue3-ace-editor';
 import PHPIntegration from '@/assets/integration-php.txt';
 import PythonIntegration from '@/assets/integration-python.txt';

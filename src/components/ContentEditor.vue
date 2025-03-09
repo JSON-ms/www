@@ -134,7 +134,7 @@ const save = async (): Promise<any> => {
     data: userData.value,
   }, {
     'Content-Type': 'application/json',
-    'X-API-Key': selectedInterface.value.server_secret,
+    'X-Jms-Api-Key': selectedInterface.value.server_secret,
   })
     .then(() => {
       originalUserData.value = structuredClone(toRaw(userData.value));
@@ -156,7 +156,7 @@ const refresh = () => {
       loading.value = true;
       Services.get((selectedInterface.value.server_url + '?hash=' + selectedInterface.value.hash) || '', {
         'Content-Type': 'application/json',
-        'X-API-Key': selectedInterface.value.server_secret,
+        'X-Jms-Api-Key': selectedInterface.value.server_secret,
       })
         .then(response => {
           form.value?.resetValidation();
@@ -407,7 +407,7 @@ router.afterEach((to) => {
             :locale="selectedLocale"
             :locales="interfaceData.locales"
             :structure="interfaceData"
-            :handler="selectedInterface.server_url"
+            :interface="selectedInterface"
             :server-settings="serverSettings"
           />
           <FieldItem
@@ -417,7 +417,7 @@ router.afterEach((to) => {
             :locale="selectedLocale"
             :locales="interfaceData.locales"
             :structure="interfaceData"
-            :handler="selectedInterface.server_url"
+            :interface="selectedInterface"
             :server-settings="serverSettings"
           />
         </template>
