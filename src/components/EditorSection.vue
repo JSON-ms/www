@@ -6,7 +6,6 @@ import ContentEditor from '@/components/ContentEditor.vue';
 import Docs from '@/components/Docs.vue';
 import Settings from '@/components/Settings.vue';
 import SessionPanel from '@/components/SessionPanel.vue';
-import Integration from '@/components/Integration.vue';
 import { computed, type Ref, ref, toRaw } from 'vue';
 import { useDisplay } from 'vuetify';
 import GoogleSignInButton from '@/components/GoogleSignInButton.vue';
@@ -359,12 +358,6 @@ router.afterEach((to) => {
         </template>
       </v-list-item>
       <v-list-item
-        :active="tab === 'integration'"
-        prepend-icon="mdi-progress-download"
-        title="Integration"
-        @click="gotoTab('integration')"
-      />
-      <v-list-item
         :active="tab === 'docs'"
         prepend-icon="mdi-book"
         title="Docs"
@@ -449,10 +442,6 @@ router.afterEach((to) => {
               mdi-alert
             </v-icon>
           </v-tab>
-          <v-tab value="integration">
-            <v-icon start icon="mdi-progress-download" />
-            Integration
-          </v-tab>
           <v-tab value="docs">
             <v-icon start icon="mdi-book" />
             Docs
@@ -532,13 +521,6 @@ router.afterEach((to) => {
                   :saved="saved"
                   :can-save="canSave"
                   @save="save"
-                />
-              </div>
-            </v-tabs-window-item>
-            <v-tabs-window-item value="integration" class="fill-height">
-              <div class="pa-4 fill-height">
-                <Integration
-                  v-model="selectedInterface"
                 />
               </div>
             </v-tabs-window-item>

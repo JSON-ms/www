@@ -40,6 +40,29 @@ locales:
   es-MX: Spanish (Mexico)
 ```
 
+## Enums
+
+Reusable enumerations (enums) are a powerful feature that allows you to define a set of predefined values that can be referenced multiple times throughout your document or schema. This promotes consistency in your data definitions and reduces redundancy, making your code cleaner and easier to maintain.
+
+```yaml
+enums:
+  countries:
+    ca: Canada
+    us: United-States
+    mx: Mexico
+```
+
+You can later use these enums seperated by commas (ex: enums.countries) as `items` value for supported types: `select`, `checkbox` and `radio`.
+
+Here's an example of a field using a enum:
+
+```yaml
+      country: 
+        type: select
+        label: Title
+        items: enums.countries
+```
+
 ## Sections
 The following YAML example defines a simplified section for an admin panel, specifically for managing content related to the home page. Here’s a breakdown of its components:
 
@@ -90,6 +113,11 @@ For instance:
 - `markdown`: A fully-featured Markdown editor that allows for easy formatting of text using simple syntax.
 - `wysiwyg`: A fully-featured WYSIWYG (What You See Is What You Get) editor for rich text formatting.
 - `number`: A numeric input field for entering numbers.
+- `select`: A dropdown menu that allows users to choose one option from a predefined list.
+- `checkbox`: A binary input that allows users to select one or more options from a set of choices.
+- `radio`: A set of options where only one can be selected at a time, typically displayed as buttons.
+- `date`: A date picker input for selecting a specific date.
+- `switch`: A toggle switch that allows users to turn a setting on or off.
 - `array`: A collection of fields that can hold multiple values or items.
 - `file`: An option to upload a file.
 - `i18n`
@@ -98,8 +126,13 @@ For instance:
 #### Field Values:
 - `type`: Specifies a supported field type as defined earlier.
 - `label`: The title that will be displayed within the field.
+- `multiple`: A boolean value that indicates whether the field can accept multiple values (e.g., for `select` or `checkbox` types).
+- `prepend`: An optional string that will be displayed before the input field.
+- `append`: An optional string that will be displayed after the input field.
+- `hint`: An optional string that provides additional information or guidance to the user about the field, displayed below the field.
 - `icon`: (Optional) An icon that will be displayed next to the menu item.
   - Make sure to prefix all icons with "mdi-". For instance: mdi-check will show the "check" icon.
   - Documentation: https://pictogrammers.com/library/mdi/
 - `required`: (Optional) It ensures that the user must provide a value, preventing the form from being submitted until the field is completed.
-- `items`: This is applicable only for `array` types. You can use any supported type here, and you can nest sub-arrays as needed to create complex data structures and hierarchies.
+- `fields`: This is applicable only for `array` types. You can use any supported type here, and you can nest sub-arrays as needed to create complex data structures and hierarchies.
+- `items`: This is applicable only for `select`, `checkbox` and `radio` types. You can list all available values or even use an enum.

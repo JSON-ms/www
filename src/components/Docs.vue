@@ -1,16 +1,22 @@
 <script setup lang="ts">
 import interfaceMd from '@/docs/interface.md'
-import integrationMd from '@/docs/integration.md'
 import settingsMd from '@/docs/settings.md'
 import { marked } from 'marked';
 import 'ace-builds/src-noconflict/mode-yaml';
 import 'ace-builds/src-noconflict/theme-github_dark';
+import 'ace-builds/src-noconflict/mode-php';
+import 'ace-builds/src-noconflict/mode-python';
+import 'ace-builds/src-noconflict/mode-javascript';
+import 'ace-builds/src-noconflict/theme-github_dark';
 import { onMounted, ref } from 'vue';
 import ace from 'ace-builds';
 import { useDisplay } from 'vuetify';
+import PHPIntegration from '@/assets/integration-php.txt';
+import PythonIntegration from '@/assets/integration-python.txt';
+import NodeIntegration from '@/assets/integration-node.txt';
+import { VAceEditor } from 'vue3-ace-editor';
 
 const { smAndDown } = useDisplay()
-const tab = ref('interface');
 
 const renderer = new marked.Renderer();
 renderer.link = ({ href, title, text }) => {
@@ -43,6 +49,17 @@ const applyEditors = () => {
   }
 }
 
+const languageTab = ref('php');
+
+const applyEnvVar = (content: string) => {
+  return content.replace('[INTERFACE_EDITOR_URL]', window.location.origin);
+}
+const content = ref({
+  php: applyEnvVar(PHPIntegration),
+  python: applyEnvVar(PythonIntegration),
+  node: applyEnvVar(NodeIntegration),
+});
+
 onMounted(() => {
   applyEditors();
 })
@@ -51,45 +68,62 @@ onMounted(() => {
 <template>
   <v-container class="docs fill-height pa-0 align-start" style="gap: 0.66rem" fluid>
     <v-row :no-gutters="smAndDown">
-      <v-col cols="12" md="9">
+      <v-col cols="12">
         <v-card>
-          <v-tabs
-            v-if="smAndDown"
-            v-model="tab"
-            color="primary"
-            grow
-            style="position: sticky; top: 0"
-          >
-            <v-tab prepend-icon="mdi-list-box-outline" value="interface" />
-            <v-tab prepend-icon="mdi-cog" value="settings" />
-            <v-tab prepend-icon="mdi-progress-download" value="integration" />
-          </v-tabs>
-          <v-card-text>
-            <v-tabs-window v-model="tab" transition="none">
-              <v-tabs-window-item value="interface">
-                <div v-html="parsedHtml(interfaceMd)" />
-              </v-tabs-window-item>
-              <v-tabs-window-item value="settings">
-                <div v-html="parsedHtml(settingsMd)" />
-              </v-tabs-window-item>
-              <v-tabs-window-item value="integration">
-                <div v-html="parsedHtml(integrationMd)" />
-              </v-tabs-window-item>
-            </v-tabs-window>
+          <v-card-text class="d-flex flex-column" style="gap: 2rem">
+            <div v-html="parsedHtml(interfaceMd)" />
+            <div v-html="parsedHtml(settingsMd)" />
+
+            <div>
+              <h1>Server Integration</h1>
+              <hr />
+              <v-card>
+                <v-tabs v-model="languageTab" color="primary">
+                  <v-tab value="php">
+                    <v-icon start icon="mdi-language-php" />
+                    PHP
+                  </v-tab>
+                  <v-tab value="python">
+                    <v-icon start icon="mdi-language-python" />
+                    Python
+                  </v-tab>
+                  <v-tab value="node">
+                    <v-icon start icon="mdi-nodejs" />
+                    Node
+                  </v-tab>
+                </v-tabs>
+                <v-tabs-window v-model="languageTab">
+                  <v-tabs-window-item value="php">
+                    <v-ace-editor
+                      v-model:value="content.php"
+                      lang="php"
+                      theme="github_dark"
+                      max-lines="Infinity"
+                      readonly
+                    />
+                  </v-tabs-window-item>
+                  <v-tabs-window-item value="python">
+                    <v-ace-editor
+                      v-model:value="content.python"
+                      lang="python"
+                      theme="github_dark"
+                      max-lines="Infinity"
+                      readonly
+                    />
+                  </v-tabs-window-item>
+                  <v-tabs-window-item value="node">
+                    <v-ace-editor
+                      v-model:value="content.node"
+                      lang="javascript"
+                      theme="github_dark"
+                      max-lines="Infinity"
+                      readonly
+                    />
+                  </v-tabs-window-item>
+                </v-tabs-window>
+              </v-card>
+            </div>
           </v-card-text>
-        </v-card>
-      </v-col>
-      <v-col v-if="!smAndDown" cols="12" md="3">
-        <v-card style="position: sticky; top: 0">
-          <v-tabs
-            v-model="tab"
-            color="primary"
-            direction="vertical"
-          >
-            <v-tab prepend-icon="mdi-list-box-outline" text="Interface" value="interface" />
-            <v-tab prepend-icon="mdi-cog" text="Settings" value="settings" />
-            <v-tab prepend-icon="mdi-progress-download" text="Integration" value="integration" />
-          </v-tabs>
         </v-card>
       </v-col>
     </v-row>
@@ -118,7 +152,7 @@ onMounted(() => {
   h4 + * {
     margin-top: 0.25rem;
   }
-  ul {
+  ul, ol {
     margin: 0.5rem 0 0.5rem 1.5rem;
   }
   code:not([class]) {
