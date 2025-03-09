@@ -123,11 +123,12 @@ const fileIcons: {[key: string]: string} = {
     {{ field.prepend }}
   </p>
 
-  <!-- I18N / URL / STRING -->
+  <!-- I18N / URL / STRING / PASSWORD -->
   <v-text-field
-    v-if="['i18n', 'url', 'i18n:url', 'string', 'i18n:string'].includes(field.type)"
+    v-if="['i18n', 'url', 'i18n:url', 'string', 'i18n:string', 'password', 'i18n:password'].includes(field.type)"
     v-model="value"
     :label="field.label"
+    :type="field.type.includes('password') ? 'password' : 'text'"
     :prepend-inner-icon="field.icon"
     :hint="field.hint"
     :persistent-hint="!!field.hint"
