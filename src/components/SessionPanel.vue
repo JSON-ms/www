@@ -76,7 +76,7 @@ const hash = computed((): string => {
       />
       <v-list-item
         v-else
-        :to="'/admin/' + hash"
+        :to="hash === 'new' ? '/admin' : '/admin/' + hash"
         title="Admin"
         prepend-icon="mdi-form-textbox"
         append-icon="mdi-arrow-right"
