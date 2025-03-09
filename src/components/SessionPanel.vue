@@ -6,10 +6,8 @@ import { Services } from '@/services';
 import { useRoute } from 'vue-router';
 
 const globalStore = useGlobalStore();
-const { smAndDown } = useDisplay()
 const sessionLoginOut = ref(false);
 const currentRoute = useRoute();
-const isAdmin = currentRoute.path.startsWith('/admin');
 const emit = defineEmits(['logout'])
 const logout = () => {
   globalStore.setPrompt({
@@ -34,10 +32,6 @@ const logout = () => {
     })
   })
 }
-
-const hash = computed((): string => {
-  return (currentRoute.params.interface || '').toString();
-})
 </script>
 
 <template>

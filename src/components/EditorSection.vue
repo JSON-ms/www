@@ -289,22 +289,22 @@ router.afterEach((to) => {
     </template>
 
     <div class="d-flex align-center mr-3" style="gap: 1rem">
-      <div>
-<!--        <v-tooltip-->
-<!--          text="Github"-->
-<!--          location="bottom"-->
-<!--        >-->
-<!--          <template #activator="{ props }">-->
-<!--            <v-btn-->
-<!--              v-bind="props"-->
-<!--              icon-->
-<!--              href="https://github.com/JSON-ms"-->
-<!--              target="_blank"-->
-<!--            >-->
-<!--              <v-icon icon="mdi-github" />-->
-<!--            </v-btn>-->
-<!--          </template>-->
-<!--        </v-tooltip>-->
+      <div v-if="!smAndDown">
+        <v-tooltip
+          text="Github"
+          location="bottom"
+        >
+          <template #activator="{ props }">
+            <v-btn
+              v-bind="props"
+              icon
+              href="https://github.com/JSON-ms"
+              target="_blank"
+            >
+              <v-icon icon="mdi-github" />
+            </v-btn>
+          </template>
+        </v-tooltip>
       </div>
       <v-btn
         v-if="!smAndDown"
@@ -369,6 +369,14 @@ router.afterEach((to) => {
         prepend-icon="mdi-book"
         title="Docs"
         @click="gotoTab('docs')"
+      />
+      <v-divider class="my-3" />
+      <v-list-item
+        prepend-icon="mdi-github"
+        append-icon="mdi-open-in-new"
+        title="Github"
+        href="https://github.com/JSON-ms"
+        target="_blank"
       />
     </v-list>
     <template v-if="smAndDown && globalStore.session.loggedIn" #prepend>
