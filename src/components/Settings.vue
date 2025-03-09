@@ -22,7 +22,6 @@ const {
 
 <template>
   <div class="d-flex flex-column" style="gap: 0.66rem">
-
     <v-alert
       v-if="demo || disabled"
       border="start"
@@ -51,8 +50,8 @@ const {
           <template #label>
             <span class="mr-2 text-error">*</span>Webhook Endpoint
           </template>
-          <template #append-inner>
-            <v-icon color="warning">mdi-alert</v-icon>
+          <template v-if="!selectedInterface.server_url || !Rules.isUrl(selectedInterface.server_url)" #append-inner>
+            <v-icon color="warning" icon="mdi-alert" />
           </template>
         </v-text-field>
         <v-text-field
@@ -65,7 +64,8 @@ const {
           hint="The secret field, used for authentication, will be passed as X-API-Key in your API call headers. This ensures secure access to the API's functionalities. Keep it confidential to protect your data."
           persistent-hint
           clearable
-        /></v-card-text>
+        />
+      </v-card-text>
 
       <v-card-title>Permissions</v-card-title>
       <v-card-text class="d-flex flex-column" style="gap: 1rem">
@@ -74,7 +74,7 @@ const {
         </v-alert>
         <v-combobox
           v-model="selectedInterface.permission_interface"
-          :disabled="!!demo || disabled"
+          :disabled="demo || disabled"
           :items="[]"
           prepend-inner-icon="mdi-account-multiple-check"
           label="Interface User(s)"
@@ -88,7 +88,7 @@ const {
         />
         <v-combobox
           v-model="selectedInterface.permission_admin"
-          :disabled="!!demo || disabled"
+          :disabled="demo || disabled"
           :items="[]"
           prepend-inner-icon="mdi-account-multiple-check"
           label="Admin User(s)"
