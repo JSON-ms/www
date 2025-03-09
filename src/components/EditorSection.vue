@@ -273,23 +273,23 @@ router.afterEach((to) => {
     </template>
 
     <div class="d-flex align-center mr-3" style="gap: 1rem">
-      <!--      <div>-->
-      <!--        <v-tooltip-->
-      <!--          text="Github"-->
-      <!--          location="bottom"-->
-      <!--        >-->
-      <!--          <template #activator="{ props }">-->
-      <!--            <v-btn-->
-      <!--              v-bind="props"-->
-      <!--              icon-->
-      <!--              href="https://github.com/dannycoulombe/jsonms"-->
-      <!--              target="_blank"-->
-      <!--            >-->
-      <!--              <v-icon icon="mdi-github" />-->
-      <!--            </v-btn>-->
-      <!--          </template>-->
-      <!--        </v-tooltip>-->
-      <!--      </div>-->
+      <div>
+        <v-tooltip
+          text="Github"
+          location="bottom"
+        >
+          <template #activator="{ props }">
+            <v-btn
+              v-bind="props"
+              icon
+              href="https://github.com/JSON-ms"
+              target="_blank"
+            >
+              <v-icon icon="mdi-github" />
+            </v-btn>
+          </template>
+        </v-tooltip>
+      </div>
       <GoogleSignInButton
         v-if="!globalStore.session.loggedIn"
       />
