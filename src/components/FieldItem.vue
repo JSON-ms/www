@@ -3,7 +3,7 @@ import ListBuilder from '@/components/ListBuilder.vue';
 import FieldHeader from '@/components/FieldHeader.vue';
 import type { IData, IField, IInterface, IServerSettings } from '@/interfaces';
 import Rules from '@/rules';
-import { parseFields } from '@/utils';
+import { parseFields, phpStringSizeToBytes } from '@/utils';
 import { computed, ref, toRaw } from 'vue';
 import { Services } from '@/services';
 import { useGlobalStore } from '@/stores/global';
@@ -86,15 +86,21 @@ const uploading = ref(false);
 const uploadProgress = ref(0);
 const onFileChange = (file: File | File[] | null) => {
   if (file && selectedInterface.server_url && Rules.isUrl(selectedInterface.server_url) && !Array.isArray(file)) {
-    uploading.value = true;
-    uploadProgress.value = 0;
-    Services.upload(selectedInterface.server_url, file, progress => uploadProgress.value = progress, {
-      'X-Jms-Interface-Hash': selectedInterface.hash,
-      'X-Jms-Api-Key': selectedInterface.server_secret,
-    })
-      .then(response => value.value = response.publicPath)
-      .catch(globalStore.catchError)
-      .finally(() => uploading.value = false);
+    if (file.size > phpStringSizeToBytes(serverSettings.uploadMaxSize)) {
+      globalStore.catchError(new Error(
+        'This file is exceeding the maximum size of ' + serverSettings.uploadMaxSize + ' defined by the server.'
+      ));
+    } else {
+      uploading.value = true;
+      uploadProgress.value = 0;
+      Services.upload(selectedInterface.server_url, file, progress => uploadProgress.value = progress, {
+        'X-Jms-Interface-Hash': selectedInterface.hash,
+        'X-Jms-Api-Key': selectedInterface.server_secret,
+      })
+        .then(response => value.value = response.publicPath)
+        .catch(globalStore.catchError)
+        .finally(() => uploading.value = false);
+    }
   }
 }
 const fileValue = computed({

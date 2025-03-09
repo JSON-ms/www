@@ -177,3 +177,21 @@ export const generateHash = (length = 10) => {
   }
   return hash;
 }
+
+export const phpStringSizeToBytes = (sizeString: string) => {
+  const size = parseFloat(sizeString);
+  const unit = sizeString[sizeString.length - 1].toUpperCase();
+
+  switch (unit) {
+    case 'K':
+      return size * 1024;
+    case 'M':
+      return size * 1024 * 1024
+    case 'G':
+      return size * 1024 * 1024 * 1024;
+    case 'T':
+      return size * 1024 * 1024 * 1024 * 1024;
+    default:
+      return size;
+  }
+}
