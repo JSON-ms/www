@@ -71,7 +71,6 @@ const remove = (item: IInterface) => {
   <v-select
     v-model="selectedInterface"
     :items="computedInterfaces"
-    :prepend-inner-icon="selectedInterface.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'"
     item-title="label"
     item-value="hash"
     label="Interface"
@@ -83,6 +82,18 @@ const remove = (item: IInterface) => {
     no-data-text="No interface available yet"
     @update:model-value="onChange"
   >
+    <!-- ICON/LOGO -->
+    <template #prepend-inner>
+      <v-icon v-if="!selectedInterface.logo" :icon="selectedInterface.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'" />
+      <v-img
+        v-else
+        :src="selectedInterface.logo"
+        width="24"
+        height="24"
+      />
+    </template>
+
+    <!-- ACTIONS -->
     <template v-if="actions" #append-inner>
       <!-- CREATE -->
       <v-tooltip
@@ -156,10 +167,20 @@ const remove = (item: IInterface) => {
       <v-list-item
         v-else
         v-bind="props"
-        :subtitle="item.raw.updated_at"
-        :title="item.raw.label"
-        :prepend-icon="item.raw.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'"
-      />
+      >
+        <template #prepend>
+          <v-icon v-if="!item.raw.logo" :icon="item.raw.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'" />
+          <v-img
+            v-else
+            :src="item.raw.logo"
+            width="24"
+            height="24"
+            class="mr-3"
+          />
+        </template>
+
+        <v-list-item-subtitle>{{ item.raw.updated_at }}</v-list-item-subtitle>
+      </v-list-item>
     </template>
   </v-select>
 </template>

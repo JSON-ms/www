@@ -92,9 +92,19 @@ watch(() => currentRoute.path, reload);
                   :key="adminPanel.hash"
                   :subtitle="'Owner: ' + adminPanel.owner_name"
                   :title="adminPanel.label"
-                  :prepend-icon="adminPanel.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'"
                   :to="'/admin/' + adminPanel.hash"
-                />
+                >
+                  <template #prepend>
+                    <v-icon v-if="!adminPanel.logo" :icon="adminPanel.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'" />
+                    <v-img
+                      v-else
+                      :src="adminPanel.logo"
+                      width="24"
+                      height="24"
+                      class="mr-6"
+                    />
+                  </template>
+                </v-list-item>
               </template>
               <v-spacer v-if="ownerInterfaces.length > 0 && sharedInterfaces.length > 0" class="my-4" />
               <template v-if="sharedInterfaces.length > 0">
@@ -106,9 +116,19 @@ watch(() => currentRoute.path, reload);
                   :key="adminPanel.hash"
                   :subtitle="'Owner: ' + adminPanel.owner_name"
                   :title="adminPanel.label"
-                  :prepend-icon="adminPanel.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'"
                   :to="'/admin/' + adminPanel.hash"
-                />
+                >
+                  <template #prepend>
+                    <v-icon v-if="!adminPanel.logo" :icon="adminPanel.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'" />
+                    <v-img
+                      v-else
+                      :src="adminPanel.logo"
+                      width="24"
+                      height="24"
+                      class="mr-6"
+                    />
+                  </template>
+                </v-list-item>
               </template>
             </v-list>
           </template>

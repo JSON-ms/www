@@ -153,6 +153,7 @@ const save = () => {
     interface: {
       ...clonedInterface,
       label: parsedInterface.global.title || 'Untitled',
+      logo: parsedInterface.global.logo,
     },
   })
     .then(response => {
