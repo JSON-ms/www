@@ -343,8 +343,8 @@ router.afterEach((to) => {
 
   <!-- MAIN CONTENT -->
   <v-form
-    ref="form"
     v-if="showContent"
+    ref="form"
     v-model="formIsValid"
     v-scroll="onScroll"
     v-scroll.self="onScroll"
