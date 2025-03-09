@@ -7,18 +7,19 @@ import Docs from '@/components/Docs.vue';
 import Settings from '@/components/Settings.vue';
 import SessionPanel from '@/components/SessionPanel.vue';
 import Integration from '@/components/Integration.vue';
-import { computed, type Ref, ref, toRaw, watch } from 'vue';
+import { computed, type Ref, ref, toRaw } from 'vue';
 import { useDisplay } from 'vuetify';
 import GoogleSignInButton from '@/components/GoogleSignInButton.vue';
 import { useGlobalStore } from '@/stores/global';
 import type { IInterface } from '@/interfaces';
-import { getDefaultInterfaceContent, getParsedInterface, getInterface } from '@/utils';
+import { getDefaultInterfaceContent, getParsedInterface, getInterface, objectsAreDifferent } from '@/utils';
 import { Services } from '@/services';
 import InterfaceSelector from '@/components/InterfaceSelector.vue';
 import NewInterfaceModal from '@/components/NewInterfaceModal.vue';
 import router from '@/router';
 import { useRoute } from 'vue-router';
 import Rules from '@/rules';
+import Changes from '@/changes';
 
 const { smAndDown } = useDisplay()
 const drawer = ref(false);
@@ -56,6 +57,15 @@ const currentRoute = useRoute();
 const hasParamInterfaceAndNotNew = currentRoute.params.interface && currentRoute.params.interface !== 'new';
 const selectedInterface: Ref<IInterface> = ref(getInterface(defaultInterface));
 const validInterfaces = globalStore.session.interfaces.filter(item => ['owner', 'interface'].includes(item.type));
+
+const computedSelectedInterface = computed({
+  get(): IInterface {
+    return selectedInterface.value;
+  },
+  set(model: IInterface): void {
+    router.push('/editor/' + model.hash);
+  }
+})
 
 if (!currentRoute.params.interface && validInterfaces.length > 0) {
   validInterfaces.sort((a, b) => {
@@ -123,7 +133,7 @@ const canSave = computed((): boolean => {
   if (originalSelectedInterface.value.content !== currentRawValue.value) {
     return true
   }
-  return objectsAreDifferent(originalSelectedInterface.value, selectedInterface.value);
+  return dataHasChanged.value;
 })
 const save = () => {
   if (!canSave.value) {
@@ -192,17 +202,21 @@ const applyTemplate = (template: string) => {
   selectedInterface.value.content = template;
 }
 
-watch(() => selectedInterface.value.hash, (hash: string | undefined) => {
-  if (hash) {
-    router.replace('/editor/' + hash);
-  } else if (hasParamInterfaceAndNotNew) {
-    router.replace('/');
-  }
-}, { immediate: true })
-
 // Keep at the end..
 const originalSelectedInterface: Ref<IInterface> = ref(structuredClone(toRaw(selectedInterface.value)));
 currentRawValue.value = selectedInterface.value.content;
+
+// Detect changes..
+Changes.applySet('editor', originalSelectedInterface, selectedInterface);
+const dataHasChanged = computed((): boolean => objectsAreDifferent(originalSelectedInterface.value, selectedInterface.value));
+router.afterEach((to) => {
+  const toInterface = validInterfaces.find(item => item.hash === to.params.interface);
+  if (toInterface) {
+    Object.assign(selectedInterface.value, structuredClone(toRaw(originalSelectedInterface.value)));
+    selectedInterface.value = toInterface;
+    originalSelectedInterface.value = structuredClone(toRaw(selectedInterface.value));
+  }
+})
 </script>
 
 <template>
@@ -221,7 +235,7 @@ currentRawValue.value = selectedInterface.value.content;
         </template>
         <div v-else class="d-flex align-center" style="gap: 0.5rem">
           <InterfaceSelector
-            v-model="selectedInterface"
+            v-model="computedSelectedInterface"
             :disabled="selectTemplate"
             :interfaces="globalStore.session.interfaces"
             :saving="saving"
@@ -334,7 +348,7 @@ currentRawValue.value = selectedInterface.value.content;
     <template v-if="smAndDown && globalStore.session.loggedIn" #prepend>
       <div class="pa-3">
         <InterfaceSelector
-          v-model="selectedInterface"
+          v-model="computedSelectedInterface"
           :saving="saving"
           :saved="saved"
           :can-save="canSave"
@@ -422,7 +436,7 @@ currentRawValue.value = selectedInterface.value.content;
                   class="px-3"
                 >
                   <InterfaceSelector
-                    v-model="selectedInterface"
+                    v-model="computedSelectedInterface"
                     :saving="saving"
                     :saved="saved"
                     :can-save="canSave"

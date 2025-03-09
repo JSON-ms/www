@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, toRaw, watch } from 'vue';
+import { computed, ref, toRaw, watch } from 'vue';
 import { useDisplay } from 'vuetify'
 import type { IData, IInterface, IServerSettings } from '@/interfaces';
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
@@ -11,8 +11,21 @@ import { getDefaultInterfaceContent, getInterface, getParsedInterface, objectsAr
 import router from '@/router';
 import { Services } from '@/services';
 import { useRoute } from 'vue-router';
+import Changes from '@/changes';
 
 const selectedInterface = defineModel<IInterface>({ required: true });
+const computedSelectedInterface = computed({
+  get(): IInterface {
+    return selectedInterface.value;
+  },
+  set(model: IInterface): void {
+    if (preview) {
+      goToSection('');
+    } else {
+      router.push('/admin/' + model.hash);
+    }
+  }
+})
 const serverSettings = ref<IServerSettings>({
   postMaxSize: '8M',
   publicUrl: '',
@@ -79,7 +92,15 @@ const selectedSection = computed(() => {
 const locales = computed(() => {
   return Object.entries(interfaceData.value.locales).map(item => ({ value: item[0], title: item[1] }));
 })
-const selectedLocale = ref(Object.entries(interfaceData.value.locales)[0][0]);
+
+const getDefaultLocale = (data: IData) => {
+  const entries = Object.entries(data.locales);
+  if (entries[0] && entries[0][0]) {
+    return entries[0][0];
+  }
+  return 'en-US';
+}
+const selectedLocale = ref(getDefaultLocale(interfaceData.value));
 const selectedSectionKey = ref(Object.keys(interfaceData.value.sections)[0]);
 const routeSection = interfaceData.value.sections[currentRoute.params.section?.toString()];
 if (currentRoute.params.section && routeSection) {
@@ -93,15 +114,6 @@ const onLogout = () => {
   selectedInterface.value = getInterface(getDefaultInterfaceContent());
 }
 
-const changesWillBeLostMsg = 'You have unsaved changes on this page. If you proceed, your changes will be lost.';
-const beforeUnloadCallback = (event: any) => {
-  if (dataHasChanged.value) {
-    event.returnValue = changesWillBeLostMsg;
-    return changesWillBeLostMsg;
-  }
-};
-window.addEventListener('beforeunload', beforeUnloadCallback);
-
 // Check for changes and ask user before redirecting
 const goToSection = (section: string = '') => {
   if (preview) {
@@ -110,43 +122,11 @@ const goToSection = (section: string = '') => {
     router.push('/admin/' + selectedInterface.value.hash + '/' + section)
   }
 }
-onUnmounted(() => {
-  window.removeEventListener('beforeunload', beforeUnloadCallback);
-})
-
-router.afterEach((to) => {
-  userData.value = structuredClone(toRaw(originalUserData.value));
-  if (to.params.section) {
-    selectedSectionKey.value = to.params.section.toString();
-  }
-  if (smAndDown.value) {
-    drawer.value = false;
-  }
-})
-router.beforeResolve((to, from, next) => {
-  if (!dataHasChanged.value) {
-    next();
-  } else {
-    globalStore.setPrompt({
-      ...globalStore.prompt,
-      visible: true,
-      title: 'Changes detected',
-      body: changesWillBeLostMsg,
-      btnText: 'Proceed',
-      btnIcon: 'mdi-arrow-right-bold-box',
-      btnColor: 'warning',
-      callback: () => new Promise(resolve => {
-        next();
-        resolve();
-      })
-    });
-  }
-})
 
 const formIsValid = ref(false);
 const saving = ref(false);
 const saved = ref(false);
-const save = (): Promise<any> => {
+const save = async (): Promise<any> => {
   saving.value = true;
   return Services.post(selectedInterface.value.server_url || '', {
     hash: selectedInterface.value.hash,
@@ -188,12 +168,12 @@ const refresh = () => {
 const cancel = () => {
   userData.value = structuredClone(toRaw(originalUserData.value));
 }
-const dataHasChanged = computed((): boolean => {
-  return objectsAreDifferent(userData.value, originalUserData.value);
-})
 
 const canSave = computed((): boolean => {
-  return !saving.value && formIsValid.value && canInteractWithServer.value && dataHasChanged.value
+  return !saving.value
+    && formIsValid.value
+    && canInteractWithServer.value
+    && dataHasChanged.value
 })
 
 const theme = computed((): { primary: string } => {
@@ -216,7 +196,7 @@ watch(() => selectedInterface.value.content, () => {
 
   // Locale does not exist, fallback to first one
   if (!interfaceData.value.locales[selectedLocale.value]) {
-    selectedLocale.value = Object.entries(interfaceData.value.locales)[0][0]
+    selectedLocale.value = getDefaultLocale(interfaceData.value);
   }
 
   // Section does not exist, fallback to first one
@@ -246,6 +226,19 @@ watch(() => selectedInterface.value.hash, () => {
 if (autoload && !isDemo.value) {
   refresh();
 }
+
+// Detect changes..
+const dataHasChanged = computed((): boolean => objectsAreDifferent(userData.value, originalUserData.value));
+Changes.applySet('admin', userData, originalUserData);
+router.afterEach((to) => {
+  userData.value = structuredClone(toRaw(originalUserData.value));
+  if (to.params.section) {
+    selectedSectionKey.value = to.params.section.toString();
+  }
+  if (smAndDown.value) {
+    drawer.value = false;
+  }
+})
 </script>
 
 <template>
@@ -286,11 +279,10 @@ if (autoload && !isDemo.value) {
       <template v-if="!preview && globalStore.session.loggedIn">
         <template v-if="!smAndDown && interfaces.length > 1">
           <InterfaceSelector
-            v-model="selectedInterface"
+            v-model="computedSelectedInterface"
             :interfaces="interfaces"
             type="admin"
             style="max-width: 25rem; width: 15rem"
-            @change="goToSection('')"
           />
           <v-divider class="mx-3" inset vertical />
         </template>
@@ -326,10 +318,9 @@ if (autoload && !isDemo.value) {
     <template v-if="smAndDown && interfaces.length > 1" #prepend>
       <div class="pa-3">
         <InterfaceSelector
-          v-model="selectedInterface"
+          v-model="computedSelectedInterface"
           :interfaces="interfaces"
           type="admin"
-          @change="goToSection('')"
         />
       </div>
       <v-divider />
