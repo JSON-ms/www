@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { useGlobalStore } from '@/stores/global';
-import { computed, ref } from 'vue';
-import { useDisplay } from 'vuetify';
+import { ref } from 'vue';
 import { Services } from '@/services';
-import { useRoute } from 'vue-router';
 
 const globalStore = useGlobalStore();
 const sessionLoginOut = ref(false);
-const currentRoute = useRoute();
 const emit = defineEmits(['logout'])
 const logout = () => {
   globalStore.setPrompt({

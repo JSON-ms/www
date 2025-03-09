@@ -19,6 +19,8 @@ declare module 'vue' {
     Integration: typeof import('./src/components/Integration.vue')['default']
     InterfaceEditor: typeof import('./src/components/InterfaceEditor.vue')['default']
     InterfaceSelector: typeof import('./src/components/InterfaceSelector.vue')['default']
+    IntroductionDialog: typeof import('./src/components/IntroductionDialog.vue')['default']
+    IntroductionModal: typeof import('./src/components/IntroductionModal.vue')['default']
     ListBuilder: typeof import('./src/components/ListBuilder.vue')['default']
     LocaleSwitcher: typeof import('./src/components/LocaleSwitcher.vue')['default']
     Logo: typeof import('./src/components/Logo.vue')['default']
