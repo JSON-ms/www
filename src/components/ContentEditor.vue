@@ -129,9 +129,12 @@ const saving = ref(false);
 const saved = ref(false);
 const save = async (): Promise<any> => {
   saving.value = true;
+
+  const parsedInterface = getParsedInterface(selectedInterface.value);
   return Services.post(selectedInterface.value.server_url || '', {
     hash: selectedInterface.value.hash,
     data: userData.value,
+    interface: parsedInterface,
   }, {
     'Content-Type': 'application/json',
     'X-Jms-Api-Key': selectedInterface.value.server_secret,
