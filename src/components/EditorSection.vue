@@ -56,19 +56,20 @@ const globalStore = useGlobalStore();
 const currentRoute = useRoute();
 const hasParamInterfaceAndNotNew = currentRoute.params.interface && currentRoute.params.interface !== 'new';
 const selectedInterface: Ref<IInterface> = ref(getInterface(defaultInterface));
-const validInterfaces = globalStore.session.interfaces.filter(item => ['owner', 'interface'].includes(item.type));
+const validInterfaces = computed(() => globalStore.session.interfaces.filter(item => ['owner', 'interface'].includes(item.type)));
 
 const computedSelectedInterface = computed({
   get(): IInterface {
     return selectedInterface.value;
   },
   set(model: IInterface): void {
+    selectTemplate.value = false;
     router.push('/editor/' + model.hash);
   }
 })
 
-if (!currentRoute.params.interface && validInterfaces.length > 0) {
-  validInterfaces.sort((a, b) => {
+if (!currentRoute.params.interface && validInterfaces.value.length > 0) {
+  validInterfaces.value.sort((a, b) => {
     if (a.type === 'owner' && b.type !== 'owner') {
       return -1;
     }
@@ -77,11 +78,13 @@ if (!currentRoute.params.interface && validInterfaces.length > 0) {
     }
     return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
   });
-  selectedInterface.value = validInterfaces[0];
+  selectedInterface.value = validInterfaces.value[0];
+  router.replace('/editor/' + selectedInterface.value.hash);
 } else if (globalStore.session.loggedIn) {
-  const found = validInterfaces.find(item => item.hash === currentRoute.params.interface);
+  const found = validInterfaces.value.find(item => item.hash === currentRoute.params.interface);
   if (found) {
     selectedInterface.value = found;
+    router.replace('/editor/' + found.hash);
   } else if (hasParamInterfaceAndNotNew) {
     globalStore.catchError(new Error('Unfortunately, you don\'t have access to edit the interface of the selected admin panel.'));
   }
@@ -121,7 +124,8 @@ const create = () => {
       tab.value = smAndDown.value ? 'interface' : 'docs';
       selectTemplate.value = true;
       selectedInterface.value = getInterface(blankInterface);
-      selectedInterface.value.hash = 'new';
+      resetOriginalData();
+      router.replace('/editor/new');
       resolve();
     })
   })
@@ -151,11 +155,11 @@ const save = () => {
   })
     .then(response => {
       selectedInterface.value = response.interface;
-      originalSelectedInterface.value = structuredClone(response.interface);
       currentRawValue.value = selectedInterface.value.content;
-      selectedInterface.value.type = wasNew ? 'owner' : selectedInterface.value.type;
+      resetOriginalData();
       if (wasNew) {
-        globalStore.addInterface(selectedInterface.value);
+        globalStore.addInterface(response.interface);
+        router.replace('/editor/' + response.interface.hash);
       }
     })
     .catch(globalStore.catchError)
@@ -190,6 +194,9 @@ const remove = () => {
           selectedInterface.value.hash = 'new';
 
           globalStore.removeInterface(oldInterface);
+          resetOriginalData();
+
+          router.replace('/editor/' + selectedInterface.value.hash);
         })
         .then(resolve)
         .catch(globalStore.catchError)
@@ -202,6 +209,10 @@ const applyTemplate = (template: string) => {
   selectedInterface.value.content = template;
 }
 
+const resetOriginalData = () => {
+  originalSelectedInterface.value = structuredClone(toRaw(selectedInterface.value));
+}
+
 // Keep at the end..
 const originalSelectedInterface: Ref<IInterface> = ref(structuredClone(toRaw(selectedInterface.value)));
 currentRawValue.value = selectedInterface.value.content;
@@ -210,11 +221,14 @@ currentRawValue.value = selectedInterface.value.content;
 Changes.applySet('editor', originalSelectedInterface, selectedInterface);
 const dataHasChanged = computed((): boolean => objectsAreDifferent(originalSelectedInterface.value, selectedInterface.value));
 router.afterEach((to) => {
-  const toInterface = validInterfaces.find(item => item.hash === to.params.interface);
+  const toInterface = validInterfaces.value.find(item => item.hash === to.params.interface);
   if (toInterface) {
     Object.assign(selectedInterface.value, structuredClone(toRaw(originalSelectedInterface.value)));
     selectedInterface.value = toInterface;
     originalSelectedInterface.value = structuredClone(toRaw(selectedInterface.value));
+  } else {
+    selectedInterface.value = getInterface(blankInterface);
+    selectedInterface.value.hash = 'new';
   }
 })
 </script>
@@ -236,7 +250,6 @@ router.afterEach((to) => {
         <div v-else class="d-flex align-center" style="gap: 0.5rem">
           <InterfaceSelector
             v-model="computedSelectedInterface"
-            :disabled="selectTemplate"
             :interfaces="globalStore.session.interfaces"
             :saving="saving"
             :saved="saved"
@@ -353,7 +366,6 @@ router.afterEach((to) => {
           :saved="saved"
           :can-save="canSave"
           :deleting="deleting"
-          :disabled="selectTemplate"
           :interfaces="globalStore.session.interfaces"
           type="admin"
           class="mt-2"
@@ -441,7 +453,6 @@ router.afterEach((to) => {
                     :saved="saved"
                     :can-save="canSave"
                     :deleting="deleting"
-                    :disabled="selectTemplate"
                     :interfaces="globalStore.session.interfaces"
                     :menu-props="{
                       theme: 'light'

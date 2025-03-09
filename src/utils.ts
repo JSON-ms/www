@@ -28,6 +28,7 @@ export const getParsedInterface = (data: IInterface): IData => {
 export const getInterface = (content: string = getDefaultInterfaceContent()): IInterface => {
   return {
     label: 'Untitled',
+    hash: 'new',
     content,
     server_url: '',
     permission_interface: [],
