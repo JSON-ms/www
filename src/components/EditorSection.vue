@@ -475,7 +475,12 @@ router.afterEach((to) => {
               </div>
             </v-tabs-window-item>
             <v-tabs-window-item value="settings" class="fill-height">
-              <div class="pa-4 fill-height">
+              <div
+                class="pa-md-4 fill-height overflow-y-scroll"
+                :style="{
+                  maxHeight: smAndDown ? undefined : 'calc(100vh - 112px)',
+                }"
+              >
                 <Settings
                   v-model="selectedInterface"
                   :demo="!globalStore.session.loggedIn"
