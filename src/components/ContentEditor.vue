@@ -12,6 +12,7 @@ import router from '@/router';
 import { Services } from '@/services';
 import { useRoute } from 'vue-router';
 import Changes from '@/changes';
+import type { VForm } from 'vuetify/components';
 
 const selectedInterface = defineModel<IInterface>({ required: true });
 const computedSelectedInterface = computed({
@@ -134,6 +135,7 @@ const save = async (): Promise<any> => {
   })
     .then(() => {
       originalUserData.value = structuredClone(toRaw(userData.value));
+      form.value?.resetValidation();
     })
     .catch(globalStore.catchError)
     .finally(() => {
@@ -151,6 +153,7 @@ const refresh = () => {
       loading.value = true;
       Services.get((selectedInterface.value.server_url + '?hash=' + selectedInterface.value.hash) || '')
         .then(response => {
+          form.value?.resetValidation();
           serverSettings.value = response.settings;
           userData.value = parseInterfaceDataToAdminData(interfaceData.value, response.data);
           originalUserData.value = structuredClone(toRaw(userData.value));
@@ -165,8 +168,10 @@ const refresh = () => {
   })
 }
 
+const form = ref<VForm | null>(null);
 const cancel = () => {
   userData.value = structuredClone(toRaw(originalUserData.value));
+  form.value?.resetValidation();
 }
 
 const canSave = computed((): boolean => {
@@ -215,6 +220,7 @@ watch(() => selectedInterface.value.hash, () => {
   const newUserData = parseInterfaceDataToAdminData(interfaceData.value);
   userData.value = structuredClone(newUserData);
   originalUserData.value = structuredClone(newUserData);
+  form.value?.resetValidation();
   if (autoload && selectedInterface.value.hash && !isDemo.value) {
     setTimeout(() => {
       refresh().catch(() => {
@@ -337,6 +343,7 @@ router.afterEach((to) => {
 
   <!-- MAIN CONTENT -->
   <v-form
+    ref="form"
     v-if="showContent"
     v-model="formIsValid"
     v-scroll="onScroll"
