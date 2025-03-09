@@ -32,6 +32,7 @@ export interface IInterface {
   content: string
   server_url?: string
   server_secret?: string
+  cypher_key?: string
   type: 'owner' | 'interface' | 'admin',
   owner_name?: string,
   permission_interface: string[],

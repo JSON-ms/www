@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { IInterface } from '@/interfaces';
 import Rules from '@/rules';
+import { computed, ref } from 'vue';
+import { Services } from '@/services';
 
+const formIsValid = ref(false);
 const selectedInterface = defineModel<IInterface>({ required: true });
 const emit = defineEmits(['save'])
 const {
@@ -18,10 +21,49 @@ const {
   canSave?: boolean,
 }>();
 
+const loadingSecretKey = ref(false);
+const secretKeyLoaded = ref(false);
+const secretKey = ref('');
+const computedServerSecretKey = computed((): string => {
+  return secretKeyLoaded.value
+    ? secretKey.value
+    : selectedInterface.value.server_secret || '';
+})
+const getServerSecretKey = () => {
+  loadingSecretKey.value = true;
+  return Services.get(import.meta.env.VITE_SERVER_URL + '/server-secret-key?uuid=' + selectedInterface.value.uuid)
+    .then(response => secretKey.value = response)
+    .finally(() => {
+      loadingSecretKey.value = false;
+      secretKeyLoaded.value = true;
+    })
+}
+const loadingCypherKey = ref(false);
+const cypherKeyLoaded = ref(false);
+const cypherKey = ref('');
+const computedCypherKey = computed((): string => {
+  return cypherKeyLoaded.value
+    ? cypherKey.value
+    : selectedInterface.value.cypher_key || '';
+})
+const getCyperKey = () => {
+  loadingCypherKey.value = true;
+  return Services.get(import.meta.env.VITE_SERVER_URL + '/cypher-key?uuid=' + selectedInterface.value.uuid)
+    .then(response => cypherKey.value = response)
+    .finally(() => {
+      loadingCypherKey.value = false;
+      cypherKeyLoaded.value = true;
+    })
+}
 </script>
 
 <template>
-  <v-form class="d-flex flex-column" style="gap: 0.66rem" autocomplete="off">
+  <v-form
+    v-model="formIsValid"
+    class="d-flex flex-column"
+    style="gap: 0.66rem"
+    autocomplete="off"
+  >
     <v-alert
       v-if="demo || disabled"
       border="start"
@@ -38,7 +80,11 @@ const {
         <v-text-field
           v-model="selectedInterface.server_url"
           :disabled="demo || disabled"
-          :rules="[(value: string) => !value || Rules.isUrl(value) || 'This field must contain a valid URL']"
+          :rules="[
+            (value: string) => !value || Rules.isUrl(value) || 'This field must contain a valid URL',
+            (value: string) => value && Rules.isUrl(value) && !value.startsWith('https://') ? 'It is not safe to use an unsecured protocol (HTTP) to communicate your data. Please be aware that your information may be vulnerable to interception by unauthorized parties. For your safety, we enforce using a secure connection (HTTPS) to protect your sensitive data during transmission.' : true,
+            (value: string) => Rules.maxLength(value, 255) || 'This field must contain 255 characters or fewer.',
+          ]"
           prepend-inner-icon="mdi-webhook"
           hide-details="auto"
           hint="This feature allows you to specify a URL that will be triggered whenever data is read from or saved to the admin panel. By integrating a webhook, you can synchronize data with a remote server and perform various transformations."
@@ -54,18 +100,55 @@ const {
           </template>
         </v-text-field>
         <v-text-field
-          v-model="selectedInterface.server_secret"
-          :disabled="demo || disabled"
-          label="API Secret Key"
-          type="password"
+          v-model="computedServerSecretKey"
+          :loading="loadingSecretKey"
+          :type="secretKeyLoaded ? 'text' : 'password'"
           prepend-inner-icon="mdi-key-chain"
           hide-details="auto"
+          label="API Server Secret"
           hint="The secret field, used for authentication, will be passed as X-API-Key in your API call headers. This ensures secure access to the API's functionalities. Keep it confidential to protect your data."
+          readonly
+          required
           persistent-hint
           clearable
           name="server_secret"
           autocomplete="new-password"
-        />
+        >
+          <template v-if="!secretKeyLoaded" #append-inner>
+            <v-btn
+              variant="outlined"
+              size="small"
+              @click="getServerSecretKey()"
+            >
+              Get
+            </v-btn>
+          </template>
+        </v-text-field>
+        <v-text-field
+          v-model="computedCypherKey"
+          :loading="loadingCypherKey"
+          :type="cypherKeyLoaded ? 'text' : 'password'"
+          prepend-inner-icon="mdi-script-text-key-outline"
+          hide-details="auto"
+          label="API Cypher Key"
+          hint="A securely generated key used to decrypt the API secret key. This key must be kept confidential and protected to ensure the integrity and security of sensitive data."
+          readonly
+          required
+          persistent-hint
+          clearable
+          name="cypher_key"
+          autocomplete="new-password"
+        >
+          <template v-if="!cypherKeyLoaded" #append-inner>
+            <v-btn
+              variant="outlined"
+              size="small"
+              @click="getCyperKey()"
+            >
+              Get
+            </v-btn>
+          </template>
+        </v-text-field>
       </v-card-text>
 
       <v-card-title>Permissions</v-card-title>
@@ -106,9 +189,9 @@ const {
         <v-spacer />
         <v-btn
           :loading="saving"
-          :disabled="saving || !canSave"
+          :disabled="saving || !canSave || !formIsValid"
           :variant="saved ? 'tonal' : 'flat'"
-          :color="!canSave && !saved ? undefined : 'primary'"
+          :color="(!canSave || !formIsValid) && !saved ? undefined : 'primary'"
           class="px-3"
           @click="() => emit('save')"
         >

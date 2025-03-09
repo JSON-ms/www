@@ -132,6 +132,9 @@ const save = async (): Promise<any> => {
   return Services.post(selectedInterface.value.server_url || '', {
     hash: selectedInterface.value.hash,
     data: userData.value,
+  }, {
+    'Content-Type': 'application/json',
+    'X-API-Key': selectedInterface.value.server_secret,
   })
     .then(() => {
       originalUserData.value = structuredClone(toRaw(userData.value));
@@ -151,7 +154,10 @@ const refresh = () => {
   return new Promise((resolve, reject) => {
     if (selectedInterface.value.hash && selectedInterface.value.server_url) {
       loading.value = true;
-      Services.get((selectedInterface.value.server_url + '?hash=' + selectedInterface.value.hash) || '')
+      Services.get((selectedInterface.value.server_url + '?hash=' + selectedInterface.value.hash) || '', {
+        'Content-Type': 'application/json',
+        'X-API-Key': selectedInterface.value.server_secret,
+      })
         .then(response => {
           form.value?.resetValidation();
           serverSettings.value = response.settings;
