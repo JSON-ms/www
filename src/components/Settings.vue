@@ -21,7 +21,7 @@ const {
 </script>
 
 <template>
-  <div class="d-flex flex-column" style="gap: 0.66rem">
+  <v-form class="d-flex flex-column" style="gap: 0.66rem" autocomplete="off">
     <v-alert
       v-if="demo || disabled"
       border="start"
@@ -43,7 +43,6 @@ const {
           hide-details="auto"
           hint="This feature allows you to specify a URL that will be triggered whenever data is read from or saved to the admin panel. By integrating a webhook, you can synchronize data with a remote server and perform various transformations."
           persistent-hint
-          autocomplete="null"
           required
           clearable
         >
@@ -64,6 +63,8 @@ const {
           hint="The secret field, used for authentication, will be passed as X-API-Key in your API call headers. This ensures secure access to the API's functionalities. Keep it confidential to protect your data."
           persistent-hint
           clearable
+          name="server_secret"
+          autocomplete="new-password"
         />
       </v-card-text>
 
@@ -118,5 +119,5 @@ const {
         </v-btn>
       </v-card-actions>
     </v-card>
-  </div>
+  </v-form>
 </template>
