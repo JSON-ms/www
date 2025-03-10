@@ -12,6 +12,7 @@ declare module 'vue' {
     Docs: typeof import('./src/components/Docs.vue')['default']
     EditorSection: typeof import('./src/components/EditorSection.vue')['default']
     Error: typeof import('./src/components/Error.vue')['default']
+    ErrorPage: typeof import('./src/components/ErrorPage.vue')['default']
     FieldHeader: typeof import('./src/components/FieldHeader.vue')['default']
     FieldItem: typeof import('./src/components/FieldItem.vue')['default']
     GlobalComponents: typeof import('./src/components/GlobalComponents.vue')['default']

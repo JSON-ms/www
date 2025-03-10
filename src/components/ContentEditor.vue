@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, toRaw, watch } from 'vue';
+import {computed, onMounted, onUnmounted, ref, toRaw, watch} from 'vue';
 import { useDisplay } from 'vuetify'
 import type { IData, IInterface, IServerSettings } from '@/interfaces';
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
@@ -38,7 +38,6 @@ const { preview = false, interfaces = [], autoload = false } = defineProps<{
   interfaces?: IInterface[],
 }>();
 const { smAndDown } = useDisplay()
-const drawer = ref(!smAndDown.value);
 
 const showAppBar = computed((): boolean => {
   return true;
@@ -59,9 +58,18 @@ const showLocaleSwitcher = computed((): boolean => {
   return Object.keys(locales.value).length > 1;
 })
 
+const windowWidth = ref(window.innerWidth);
+const updateWindowWidth = () => {windowWidth.value = window.innerWidth};
+onMounted(() => window.addEventListener('resize', updateWindowWidth));
+onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
+const mobileMode = computed((): boolean => {
+  return smAndDown.value || (preview && windowWidth.value < 1400);
+})
+const drawer = ref(!mobileMode.value);
+
 const showNavigationDrawer = computed((): boolean => {
   return Object.keys(interfaceData.value.sections).length > 1
-    || (interfaces.length > 1 && smAndDown.value);
+    || (interfaces.length > 1 && mobileMode.value);
 })
 
 const showContent = computed((): boolean => {
@@ -260,7 +268,7 @@ router.afterEach((to) => {
   if (to.params.section) {
     selectedSectionKey.value = to.params.section.toString();
   }
-  if (smAndDown.value) {
+  if (mobileMode.value) {
     drawer.value = false;
   }
 })
@@ -274,7 +282,7 @@ router.afterEach((to) => {
 
   <!-- TOOLBAR -->
   <v-app-bar v-if="showAppBar" :flat="appBarFlat" border>
-    <template v-if="showNavigationDrawer && smAndDown" #prepend>
+    <template v-if="showNavigationDrawer && mobileMode" #prepend>
       <v-app-bar-nav-icon @click="toggleDrawer" />
     </template>
 
@@ -294,17 +302,17 @@ router.afterEach((to) => {
       <v-btn
         v-if="showFetchUserData"
         :loading="loading"
-        :icon="smAndDown"
+        :icon="mobileMode"
         :disabled="loading || !canInteractWithServer || fetched"
         @click="fetchData"
       >
-        <v-icon v-if="!fetched" :start="!smAndDown" icon="mdi-monitor-arrow-down" />
-        <v-icon v-else :start="!smAndDown" icon="mdi-check" />
-        <span v-if="!smAndDown && !fetched">Fetch user data</span>
-        <span v-else-if="!smAndDown">Fetched!</span>
+        <v-icon v-if="!fetched" :start="!mobileMode" icon="mdi-monitor-arrow-down" />
+        <v-icon v-else :start="!mobileMode" icon="mdi-check" />
+        <span v-if="!mobileMode && !fetched">Fetch user data</span>
+        <span v-else-if="!mobileMode">Fetched!</span>
       </v-btn>
       <template v-if="!preview && globalStore.session.loggedIn">
-        <template v-if="!smAndDown && interfaces.length > 1">
+        <template v-if="!mobileMode && interfaces.length > 1">
           <InterfaceSelector
             v-model="computedSelectedInterface"
             :interfaces="interfaces"
@@ -322,7 +330,8 @@ router.afterEach((to) => {
   <v-navigation-drawer
     v-if="showNavigationDrawer"
     v-model="drawer"
-    :permanent="!smAndDown"
+    :permanent="!mobileMode"
+    :mobile-breakpoint="preview ? 1400 : 960"
     width="250"
   >
     <v-list v-model="selectedSectionKey" nav>
@@ -342,7 +351,7 @@ router.afterEach((to) => {
         />
       </template>
     </v-list>
-    <template v-if="smAndDown && interfaces.length > 1" #prepend>
+    <template v-if="mobileMode && interfaces.length > 1" #prepend>
       <div class="pa-3">
         <InterfaceSelector
           v-model="computedSelectedInterface"
@@ -369,21 +378,21 @@ router.afterEach((to) => {
     v-scroll.self="onScroll"
     :class="{
       'w-100': true,
-      'pa-4': !smAndDown,
+      'pa-4': !mobileMode,
       'overflow-y-scroll': preview,
-      'bg-surface': smAndDown,
-      'fill-height': smAndDown && !preview,
+      'bg-surface': mobileMode,
+      'fill-height': mobileMode && !preview,
     }"
     :style="{
-      maxWidth: preview && !smAndDown && showNavigationDrawer ? 'calc(100% - 250px)' : undefined,
+      maxWidth: preview && !mobileMode && showNavigationDrawer ? 'calc(100% - 250px)' : undefined,
       marginTop: preview ? '64px' : undefined,
-      marginLeft: preview && !smAndDown && showNavigationDrawer ? '250px' : undefined,
-      marginBottom: showActionBar && !smAndDown && preview ? '64px' : undefined,
+      marginLeft: !mobileMode && showNavigationDrawer ? '250px' : undefined,
+      marginBottom: showActionBar && !mobileMode && preview ? '64px' : undefined,
     }"
   >
     <v-card
-      :flat="smAndDown"
-      :tile="smAndDown"
+      :flat="mobileMode"
+      :tile="mobileMode"
       :class="{
         'pa-4 w-100': true,
         'height': 'min-content',
@@ -400,7 +409,7 @@ router.afterEach((to) => {
               v-if="showLocaleSwitcher"
               v-model="selectedLocale"
               :locales="locales"
-              :dense="smAndDown"
+              :dense="mobileMode"
               :disabled="loading"
               style="max-width: 12rem"
             />

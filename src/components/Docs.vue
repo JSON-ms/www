@@ -3,7 +3,6 @@ import interfaceMd from '@/docs/interface.md'
 import settingsMd from '@/docs/settings.md'
 import { marked } from 'marked';
 import 'ace-builds/src-noconflict/mode-yaml';
-import 'ace-builds/src-noconflict/theme-github_dark';
 import 'ace-builds/src-noconflict/mode-php';
 import 'ace-builds/src-noconflict/mode-python';
 import 'ace-builds/src-noconflict/mode-javascript';
@@ -15,6 +14,8 @@ import PHPIntegration from '@/assets/integration-php.txt';
 import PythonIntegration from '@/assets/integration-python.txt';
 import NodeIntegration from '@/assets/integration-node.txt';
 import { VAceEditor } from 'vue3-ace-editor';
+
+ace.config.set("basePath", "/node_modules/ace-builds/src-min-noconflict");
 
 const { smAndDown } = useDisplay()
 
@@ -32,9 +33,9 @@ const parsedHtml = (str: string) => {
 
 const applyEditors = () => {
   const instances = document.getElementsByClassName('language-yaml');
-  for (let i = 0; i < instances.length; i++) {
-    ace.edit(instances[i] as HTMLElement, {
-      value: instances[i].innerHTML.trimEnd(),
+  for (const element of instances) {
+    ace.edit(element as HTMLElement, {
+      value: element.innerHTML.trimEnd(),
       mode: 'ace/mode/yaml',
       theme: 'ace/theme/github_dark',
       maxLines: Infinity,
@@ -96,27 +97,27 @@ onMounted(() => {
                   <v-tabs-window-item value="php">
                     <v-ace-editor
                       v-model:value="content.php"
+                      :max-lines="Infinity"
                       lang="php"
                       theme="github_dark"
-                      max-lines="Infinity"
                       readonly
                     />
                   </v-tabs-window-item>
                   <v-tabs-window-item value="python">
                     <v-ace-editor
                       v-model:value="content.python"
+                      :max-lines="Infinity"
                       lang="python"
                       theme="github_dark"
-                      max-lines="Infinity"
                       readonly
                     />
                   </v-tabs-window-item>
                   <v-tabs-window-item value="node">
                     <v-ace-editor
                       v-model:value="content.node"
+                      :max-lines="Infinity"
                       lang="javascript"
                       theme="github_dark"
-                      max-lines="Infinity"
                       readonly
                     />
                   </v-tabs-window-item>

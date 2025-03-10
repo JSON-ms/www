@@ -9,6 +9,7 @@ import { registerPlugins } from '@/plugins'
 
 // Components
 import App from './App.vue'
+import ErrorPage from './Error.vue';
 
 // Composable
 import { createApp } from 'vue'
@@ -30,26 +31,33 @@ registerPlugins(app)
 
 const globalStore = useGlobalStore();
 const loadSession = async (): Promise<any> => {
-  return Services.get(import.meta.env.VITE_SERVER_URL + '/session')
-    .then(globalStore.setSession)
+  return Services.get(import.meta.env.VITE_SERVER_URL + '/session');
 }
 
-loadSession().then(() => app.mount('#app'))
-  .catch(reason => {
-    app.mount('#app')
-    globalStore.catchError(reason);
+const handleError = () => {
+  const errorApp = createApp(ErrorPage, {
+    title: 'Server Unavailable',
+    text: 'We are currently experiencing issues connecting to the server. Please try again later or check your internet connection.',
+    showBtn: false,
   })
+  registerPlugins(errorApp)
+  errorApp.mount('#app');
+}
+
+loadSession()
+  .then(globalStore.setSession)
+  .then(() => app.mount('#app'))
+  .catch(handleError)
 
 document.addEventListener('visibilitychange', () => {
   const wasLoggedIn = globalStore.session.loggedIn;
   if (document.visibilityState === 'visible') {
-    Services.get(import.meta.env.VITE_SERVER_URL + '/session')
-      .then(response => {
-        if (wasLoggedIn !== response.loggedIn) {
-          window.location.reload();
-        } else {
-          globalStore.setSession(response);
-        }
-      })
+    loadSession().then(response => {
+      if (wasLoggedIn !== response.loggedIn) {
+        window.location.reload();
+      } else {
+        globalStore.setSession(response);
+      }
+    }).catch(globalStore.catchError)
   }
 });
