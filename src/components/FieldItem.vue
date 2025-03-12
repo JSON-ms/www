@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import ListBuilder from '@/components/ListBuilder.vue';
 import FieldHeader from '@/components/FieldHeader.vue';
-import type { IData, IField, IInterface, IServerSettings } from '@/interfaces';
+import type { IInterfaceData, IField, IServerSettings } from '@/interfaces';
 import Rules from '@/rules';
 import { parseFields, phpStringSizeToBytes } from '@/utils';
 import { computed, ref, toRaw } from 'vue';
 import { Services } from '@/services';
 import { useGlobalStore } from '@/stores/global';
 import { useDisplay } from 'vuetify';
+import type InterfaceModel from '@/models/interface.model';
 
 const { smAndDown } = useDisplay()
 const globalStore = useGlobalStore();
@@ -18,14 +19,14 @@ const {
   locales,
   structure,
   serverSettings,
-  interface: selectedInterface,
+  interface: model,
   disabled = false,
 } = defineProps<{
   field: IField,
   locale: string,
   locales: { [key: string]: string; },
-  structure: IData,
-  interface: IInterface,
+  structure: IInterfaceData,
+  interface: InterfaceModel,
   serverSettings: IServerSettings,
   disabled: boolean
 }>();
@@ -87,7 +88,7 @@ const getDefaultItem = () => {
 const uploading = ref(false);
 const uploadProgress = ref(0);
 const onFileChange = (file: File | File[] | null) => {
-  if (file && selectedInterface.server_url && Rules.isUrl(selectedInterface.server_url) && !Array.isArray(file)) {
+  if (file && model.data.server_url && Rules.isUrl(model.data.server_url) && !Array.isArray(file)) {
     if (file.size > phpStringSizeToBytes(serverSettings.uploadMaxSize)) {
       globalStore.catchError(new Error(
         'This file is exceeding the maximum size of ' + serverSettings.uploadMaxSize + ' defined by the server.'
@@ -95,11 +96,11 @@ const onFileChange = (file: File | File[] | null) => {
     } else {
       uploading.value = true;
       uploadProgress.value = 0;
-      Services.upload(selectedInterface.server_url, file, progress => uploadProgress.value = progress, {
-        'X-Jms-Interface-Hash': selectedInterface.hash,
-        'X-Jms-Api-Key': selectedInterface.server_secret,
+      Services.upload(model.data.server_url, file, progress => uploadProgress.value = progress, {
+        'X-Jms-Interface-Hash': model.data.hash,
+        'X-Jms-Api-Key': model.data.server_secret,
       })
-        .then(response => value.value = response.publicPath)
+        .then(response => value.value = response.internalPath)
         .catch(globalStore.catchError)
         .finally(() => uploading.value = false);
     }
@@ -114,8 +115,8 @@ const fileValue = computed({
     value.value = file;
   }
 })
-const fileName = computed((): string => {
-  return value.value.replace(serverSettings.publicUrl, '');
+const filePath = computed((): string => {
+  return serverSettings.publicUrl + value.value;
 })
 const fileType = computed((): string => {
   return field.type.replace('i18n:', '');
@@ -406,7 +407,7 @@ const fileIcons: {[key: string]: string} = {
         <div class="pa-3 pr-0">
           <v-icon v-if="!['image', 'i18n:image'].includes(field.type)" :icon="fileIcons[field.type]" :size="smAndDown ? 96 : 128" />
           <v-avatar v-else :size="smAndDown ? 96 : 128" rounded="0">
-            <v-img :src="value">
+            <v-img :src="filePath">
               <template #placeholder>
                 <v-overlay>
                   <v-progress-circular
@@ -427,7 +428,7 @@ const fileIcons: {[key: string]: string} = {
             }"
             style="text-wrap: auto !important"
           >
-            {{ fileName }}
+            {{ value }}
           </v-card-title>
           <v-card-subtitle class="py-0 text-capitalize">
             {{ fileType }}
@@ -497,7 +498,7 @@ const fileIcons: {[key: string]: string} = {
             :locale="locale"
             :locales="locales"
             :structure="structure"
-            :interface="selectedInterface"
+            :interface="model"
             :server-settings="serverSettings"
             :disabled="disabled"
           />
@@ -508,7 +509,7 @@ const fileIcons: {[key: string]: string} = {
             :locale="locale"
             :locales="locales"
             :structure="structure"
-            :interface="selectedInterface"
+            :interface="model"
             :server-settings="serverSettings"
             :disabled="disabled"
           />

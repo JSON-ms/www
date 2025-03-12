@@ -3,17 +3,18 @@ import { computed, type Ref, ref, watch } from 'vue';
 import { useGlobalStore } from '@/stores/global';
 import { getDefaultInterfaceContent, getInterface, getParsedInterface } from '@/utils';
 import { useRoute } from 'vue-router';
-import type { IData, IInterface } from '@/interfaces';
+import type { IInterfaceData, IInterface } from '@/interfaces';
 import GoogleSignInButton from '@/components/GoogleSignInButton.vue';
 import ContentEditor from '@/components/ContentEditor.vue';
+import InterfaceModel from '@/models/interface.model';
 
 const defaultInterfaceContent = getDefaultInterfaceContent();
 const defaultInterface = getInterface(defaultInterfaceContent);
 const parsedInterface = getParsedInterface(defaultInterface);
 
-const found: Ref<IInterface> = ref(defaultInterface);
+const interfaceModel = new InterfaceModel(defaultInterface);
 const interfaceList: Ref<IInterface[]> = ref([]);
-const parsedData: Ref<IData> = ref(parsedInterface);
+const parsedData: Ref<IInterfaceData> = ref(parsedInterface);
 const currentRoute = useRoute();
 const globalStore = useGlobalStore();
 
@@ -25,11 +26,11 @@ const sharedInterfaces = computed((): IInterface[] => {
 })
 
 const reload = () => {
-  parsedData.value.global.title = 'JSON.ms Admin Panel';
+  parsedData.value.global.title = 'JSON.ms Admin Panels';
   if (currentRoute.params.interface) {
-    found.value = globalStore.session.interfaces.find(child => ['owner', 'admin'].includes(child.type) && child.hash === currentRoute.params.interface) || defaultInterface;
-    if (found.value.uuid) {
-      parsedData.value = getParsedInterface(found.value);
+    interfaceModel.data = globalStore.session.interfaces.find(child => ['owner', 'admin'].includes(child.type) && child.hash === currentRoute.params.interface) || defaultInterface;
+    if (interfaceModel.data.uuid) {
+      parsedData.value = getParsedInterface(interfaceModel.data);
     }
   }
   interfaceList.value = globalStore.session.interfaces.filter(child => ['owner', 'admin'].includes(child.type)) || [];
@@ -37,7 +38,7 @@ const reload = () => {
 if (currentRoute.params.interface === 'demo') {
   defaultInterface.uuid = 'demo'
   defaultInterface.hash = 'demo'
-  found.value = defaultInterface;
+  interfaceModel.data = defaultInterface;
   interfaceList.value = [defaultInterface]
 } else {
   reload();
@@ -49,8 +50,8 @@ watch(() => currentRoute.path, reload);
 
 <template>
   <ContentEditor
-    v-if="found.uuid"
-    v-model="found"
+    v-if="interfaceModel.data.uuid"
+    v-model="interfaceModel"
     :interfaces="interfaceList"
     autoload
   />
@@ -144,6 +145,16 @@ watch(() => currentRoute.path, reload);
           {{ parsedData.global.copyright }}
         </v-card-actions>
       </v-card>
+
+      <v-btn
+        to="/"
+        class="mt-3"
+        variant="text"
+        prepend-icon="mdi-arrow-left"
+        block
+      >
+        Go back to Editor
+      </v-btn>
     </v-form>
   </v-sheet>
 </template>

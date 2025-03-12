@@ -93,35 +93,37 @@ onMounted(() => {
                     Node
                   </v-tab>
                 </v-tabs>
-                <v-tabs-window v-model="languageTab">
-                  <v-tabs-window-item value="php">
-                    <v-ace-editor
-                      v-model:value="content.php"
-                      :max-lines="Infinity"
-                      lang="php"
-                      theme="github_dark"
-                      readonly
-                    />
-                  </v-tabs-window-item>
-                  <v-tabs-window-item value="python">
-                    <v-ace-editor
-                      v-model:value="content.python"
-                      :max-lines="Infinity"
-                      lang="python"
-                      theme="github_dark"
-                      readonly
-                    />
-                  </v-tabs-window-item>
-                  <v-tabs-window-item value="node">
-                    <v-ace-editor
-                      v-model:value="content.node"
-                      :max-lines="Infinity"
-                      lang="javascript"
-                      theme="github_dark"
-                      readonly
-                    />
-                  </v-tabs-window-item>
-                </v-tabs-window>
+                <v-sheet theme="dark" class="pa-2">
+                  <v-tabs-window v-model="languageTab">
+                    <v-tabs-window-item value="php">
+                      <v-ace-editor
+                        v-model:value="content.php"
+                        style="height: 500px;"
+                        lang="php"
+                        theme="github_dark"
+                        readonly
+                      />
+                    </v-tabs-window-item>
+                    <v-tabs-window-item value="python">
+                      <v-ace-editor
+                        v-model:value="content.python"
+                        style="height: 500px;"
+                        lang="python"
+                        theme="github_dark"
+                        readonly
+                      />
+                    </v-tabs-window-item>
+                    <v-tabs-window-item value="node">
+                      <v-ace-editor
+                        v-model:value="content.node"
+                        style="height: 500px;"
+                        lang="javascript"
+                        theme="github_dark"
+                        readonly
+                      />
+                    </v-tabs-window-item>
+                  </v-tabs-window>
+                </v-sheet>
               </v-card>
             </div>
           </v-card-text>

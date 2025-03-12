@@ -1,7 +1,6 @@
 import { objectsAreDifferent } from '@/utils';
 import router from '@/router';
 import { useGlobalStore } from '@/stores/global';
-import type { Ref } from 'vue';
 
 const globalStore = useGlobalStore();
 const changesWillBeLostMsg = 'You have unsaved changes on this page. If you proceed, your changes will be lost.';
@@ -13,30 +12,23 @@ const beforeUnloadCallback = (event: any) => {
 };
 window.addEventListener('beforeunload', beforeUnloadCallback);
 router.beforeResolve((to, from, next) => {
-  if (!Changes.hasChanges()) {
+  Changes.doIfNoChanges(() => {
+    Changes.clear();
     next();
-  } else {
-    globalStore.setPrompt({
-      ...globalStore.prompt,
-      visible: true,
-      title: 'Changes detected',
-      body: changesWillBeLostMsg,
-      btnText: 'Proceed',
-      btnIcon: 'mdi-arrow-right-bold-box',
-      btnColor: 'warning',
-      callback: () => new Promise(resolve => {
-        next();
-        resolve();
-      })
-    });
-  }
+  });
 })
 
 export default class Changes {
 
-  private static list: { [key: string]: any[] } = {}
+  public static list: { [key: string]: any[] } = {}
 
-  static applySet(key: string, obj1: Ref<any>, obj2: Ref<any>) {
+  static clear() {
+    Object.keys(this.list).forEach(key => {
+      this.list[key] = [{}, {}];
+    })
+  }
+
+  static applySet(key: string, obj1: any, obj2: any) {
     this.list[key] = [obj1, obj2];
   }
 
@@ -44,7 +36,7 @@ export default class Changes {
     if (!this.list[key]) {
       return false;
     }
-    return objectsAreDifferent(this.list[key][0].value, this.list[key][1].value);
+    return objectsAreDifferent(this.list[key][0], this.list[key][1]);
   }
 
   static hasChanges(): boolean {
@@ -52,11 +44,31 @@ export default class Changes {
       return false;
     }
     const keys = Object.keys(this.list);
-    for (let i = 0; i < keys.length; i++) {
-      if (this.hasSetChanges(keys[i])) {
+    for (const element of keys) {
+      if (this.hasSetChanges(element)) {
         return true;
       }
     }
     return false;
+  }
+
+  static doIfNoChanges(callback: () => void) {
+    if (!Changes.hasChanges()) {
+      callback();
+    } else {
+      globalStore.setPrompt({
+        ...globalStore.prompt,
+        visible: true,
+        title: 'Changes detected',
+        body: changesWillBeLostMsg,
+        btnText: 'Proceed',
+        btnIcon: 'mdi-arrow-right-bold-box',
+        btnColor: 'warning',
+        callback: () => new Promise(resolve => {
+          callback();
+          resolve();
+        })
+      });
+    }
   }
 }

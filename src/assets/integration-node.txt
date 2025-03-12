@@ -1,65 +1,158 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+const multer = require('multer');
 const app = express();
 
-// Middleware to parse JSON bodies
 app.use(express.json());
 
-// CORS middleware
+// Configurations: You can change
+const secretKey = '';
+const cypherKey = '';
+const accessControlAllowOrigin = 'https://json.ms';
+const publicFilePath = 'https://[YOUR_SERVER_DOMAIN_NAME]/files/';
+
+// Encryption and decryption functions
+function generateHash(length = 10) {
+    return crypto.randomBytes(length).toString('hex').substring(0, length);
+}
+
+function decrypt(encryptedData, encryptionKey) {
+    const parts = Buffer.from(encryptedData, 'base64').toString().split('::');
+    if (parts.length !== 2) return false;
+    const [encrypted, iv] = parts;
+    const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(encryptionKey), Buffer.from(iv, 'hex'));
+    let decrypted = decipher.update(Buffer.from(encrypted, 'base64'), 'binary', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+}
+
+// Middleware to handle CORS and headers
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '[INTERFACE_EDITOR_URL]');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, DELETE');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.header('Access-Control-Allow-Credentials', 'true');
+    res.setHeader("Access-Control-Allow-Origin", accessControlAllowOrigin);
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Jms-Api-Key, X-Jms-Interface-Hash");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader('Content-Type', 'application/json');
     next();
 });
 
-// Handle preflight requests (OPTIONS method)
-app.options('/', (req, res) => {
-    res.sendStatus(200);
+// Handle OPTIONS request
+app.options('*', (req, res) => res.sendStatus(204));
+
+// Error handler function
+function throwError(code, body) {
+    return res.status(code).json({ body });
+}
+
+// File Upload Configuration using Multer
+const upload = multer({ dest: 'private/files/' });
+
+// Directory Paths
+const privatePath = path.join(__dirname, 'private');
+const dataPath = path.join(privatePath, 'data');
+const interfacePath = path.join(privatePath, 'interfaces');
+const uploadDir = path.join(privatePath, 'files');
+
+// Ensure directories exist
+if (!fs.existsSync(dataPath)) fs.mkdirSync(dataPath, { recursive: true });
+if (!fs.existsSync(interfacePath)) fs.mkdirSync(interfacePath, { recursive: true });
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+// Server settings
+const serverSettings = {
+    uploadMaxSize: '2MB',
+    postMaxSize: '8MB',
+    publicUrl: publicFilePath,
+};
+
+// Validate API Key from request headers
+app.use((req, res, next) => {
+    const apiKey = req.headers['x-jms-api-key'];
+    if (!apiKey) {
+        return throwError(401, 'API Secret Key not provided');
+    }
+    if (decrypt(apiKey, cypherKey) !== secretKey) {
+        return throwError(401, 'Invalid API Secret Key');
+    }
+    next();
 });
 
-// Handle GET requests
+// GET request to retrieve JSON content
 app.get('/', (req, res) => {
-    const hash = req.query.hash;
-    if (!hash) {
-        return res.status(400).json({ body: 'Hash parameter is required' });
+    const hashKey = req.query.hash;
+    const dataFilePath = path.join(dataPath, `${hashKey}.json`);
+    const interfaceFilePath = path.join(interfacePath, `${hashKey}.json`);
+
+    let data = {};
+    let interface = {};
+
+    if (fs.existsSync(dataFilePath)) {
+        data = JSON.parse(fs.readFileSync(dataFilePath, 'utf-8'));
     }
 
-    const filePath = path.join(__dirname, '/', `${hash}.json`);
+    if (fs.existsSync(interfaceFilePath)) {
+        interface = JSON.parse(fs.readFileSync(interfaceFilePath, 'utf-8'));
+    }
 
-    fs.readFile(filePath, 'utf8', (err, content) => {
-        if (err) {
-            if (err.code === 'ENOENT') {
-                return res.json({}); // Return an empty JSON object if no content is found
-            }
-            return res.status(500).json({ body: 'Error reading file' });
-        }
-        res.status(200).json(JSON.parse(content)); // Return the content of the JSON file
+    res.json({
+        data,
+        interface,
+        settings: serverSettings,
     });
 });
 
-// Handle POST requests
-app.post('/', (req, res) => {
+// POST request to upload a file
+app.post('/', upload.single('file'), (req, res) => {
+    const interfaceHash = req.headers['x-jms-interface-hash'];
+
+    if (!interfaceHash) {
+        return throwError(400, 'Interface hash not provided.');
+    }
+
+    if (req.file) {
+        const fileExt = path.extname(req.file.originalname);
+        const destFileName = `${interfaceHash}-${generateHash(16)}${fileExt}`;
+        const destPath = path.join(uploadDir, destFileName);
+
+        fs.renameSync(req.file.path, destPath);
+        const internalPath = path.relative(uploadDir, destPath);
+
+        res.json({
+            success: true,
+            publicPath: `${publicFilePath}${internalPath}`,
+            internalPath,
+        });
+    } else {
+        throwError(400, 'No file uploaded.');
+    }
+});
+
+// POST request to create/update JSON content
+app.post('/json', (req, res) => {
     const data = req.body;
 
-    if (!data.hash || !data.data) {
-        return res.status(400).json({ body: 'Hash and data properties are required' });
+    if (!data || !data.hash) {
+        return throwError(400, 'Invalid JSON');
     }
 
-    const filePath = path.join(__dirname, '/', `${data.hash}.json`);
+    const hashKey = data.hash;
+    const dataFilePath = path.join(dataPath, `${hashKey}.json`);
+    const interfaceFilePath = path.join(interfacePath, `${hashKey}.json`);
 
-    fs.writeFile(filePath, JSON.stringify(data.data), (err) => {
-        if (err) {
-            return res.status(500).json({ body: 'Error writing file' });
-        }
-        res.status(200).json(data); // Return the saved data as a JSON response
-    });
+    try {
+        fs.writeFileSync(dataFilePath, JSON.stringify(data.data, null, 2));
+        fs.writeFileSync(interfaceFilePath, JSON.stringify(data.interface, null, 2));
+
+        res.json(data);
+    } catch (error) {
+        return throwError(400, `Error writing JSON: ${error.message}`);
+    }
 });
 
-// Start the server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+// Start server
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
 });

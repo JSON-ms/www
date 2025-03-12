@@ -1,37 +1,53 @@
 <script setup lang="ts">
-import type { IInterface } from '@/interfaces';
-import Rules from '@/rules';
-import { computed, ref } from 'vue';
-import { Services } from '@/services';
+import {computed, ref} from 'vue';
 import { useDisplay } from 'vuetify';
 import { useGlobalStore } from '@/stores/global';
+import type InterfaceModel from '@/models/interface.model';
+import {objectsAreDifferent} from '@/utils';
 
+// Definitions
 const formIsValid = ref(false);
-const selectedInterface = defineModel<IInterface>({ required: true });
+const model = defineModel<InterfaceModel>({ required: true });
+const interfaceModel = model.value;
+const states = interfaceModel.states;
+const copied = ref(false);
+const globalStore = useGlobalStore();
+const { smAndDown } = useDisplay()
+const adminBaseUrl = ref(import.meta.env.VITE_ADMIN_DEMO_URL);
+const secretKey = ref('');
+const cypherKey = ref('');
+
+// Emits
 const emit = defineEmits(['save'])
 const {
   demo = false,
   disabled = false,
-  saving = false,
-  saved = false,
-  canSave = false,
 } = defineProps<{
   demo?: boolean,
   disabled?: boolean,
-  saving?: boolean,
-  saved?: boolean,
-  canSave?: boolean,
 }>();
 
-const copied = ref(false);
-const globalStore = useGlobalStore();
-const { smAndDown } = useDisplay()
+// Computed
 const canOpenAdminUrl = computed((): boolean => {
-  return !!(selectedInterface.value.uuid) || !globalStore.session.loggedIn;
+  return !!(interfaceModel.data.uuid) || !globalStore.session.loggedIn;
 })
-const adminBaseUrl = ref(import.meta.env.VITE_ADMIN_DEMO_URL);
 const adminUrl = computed((): string => {
-  return adminBaseUrl.value + '/' + (selectedInterface.value.hash || (globalStore.session.loggedIn ? 'new' : 'demo'));
+  return adminBaseUrl.value + '/' + (interfaceModel.data.hash || (globalStore.session.loggedIn ? 'new' : 'demo'));
+})
+const computedServerSecretKey = computed((): string => {
+  return states.value.secretKeyLoaded
+    ? secretKey.value
+    : interfaceModel.data.server_secret || '';
+})
+const computedCypherKey = computed((): string => {
+  return states.value.cypherKeyLoaded
+    ? cypherKey.value
+    : interfaceModel.data.cypher_key || '';
+})
+const isPristine = computed((): boolean => {
+  return !objectsAreDifferent(interfaceModel.data, interfaceModel.originalData, [
+    'server_url', 'permission_admin', 'permission_interface',
+  ])
 })
 
 const openAdminLink = () => {
@@ -55,39 +71,12 @@ const select = () => {
   }
 }
 
-const loadingSecretKey = ref(false);
-const secretKeyLoaded = ref(false);
-const secretKey = ref('');
-const computedServerSecretKey = computed((): string => {
-  return secretKeyLoaded.value
-    ? secretKey.value
-    : selectedInterface.value.server_secret || '';
-})
 const getServerSecretKey = () => {
-  loadingSecretKey.value = true;
-  return Services.get(import.meta.env.VITE_SERVER_URL + '/server-secret-key?uuid=' + selectedInterface.value.uuid)
-    .then(response => secretKey.value = response)
-    .finally(() => {
-      loadingSecretKey.value = false;
-      secretKeyLoaded.value = true;
-    })
+  interfaceModel.getSecretKey().then(response => secretKey.value = response);
 }
-const loadingCypherKey = ref(false);
-const cypherKeyLoaded = ref(false);
-const cypherKey = ref('');
-const computedCypherKey = computed((): string => {
-  return cypherKeyLoaded.value
-    ? cypherKey.value
-    : selectedInterface.value.cypher_key || '';
-})
+
 const getCyperKey = () => {
-  loadingCypherKey.value = true;
-  return Services.get(import.meta.env.VITE_SERVER_URL + '/cypher-key?uuid=' + selectedInterface.value.uuid)
-    .then(response => cypherKey.value = response)
-    .finally(() => {
-      loadingCypherKey.value = false;
-      cypherKeyLoaded.value = true;
-    })
+  interfaceModel.getCypherKey().then(response => cypherKey.value = response);
 }
 </script>
 
@@ -113,6 +102,8 @@ const getCyperKey = () => {
         Admin
       </v-card-title>
       <v-card-text class="d-flex flex-column" style="gap: 1rem">
+
+        <!-- ADMIN URL -->
         <v-text-field
           id="adminRef"
           v-model="adminUrl"
@@ -160,33 +151,33 @@ const getCyperKey = () => {
       </v-card-text>
       <v-card-title>Server</v-card-title>
       <v-card-text class="d-flex flex-column" style="gap: 1rem">
+
+        <!-- SERVER URL -->
         <v-text-field
-          v-model="selectedInterface.server_url"
+          v-model="interfaceModel.data.server_url"
           :disabled="demo || disabled"
-          :rules="[
-            (value: string) => !value || Rules.isUrl(value) || 'This field must contain a valid URL',
-            (value: string) => value && Rules.isUrl(value) && !value.startsWith('https://') ? 'It is not safe to use an unsecured protocol (HTTP) to communicate your data. Please be aware that your information may be vulnerable to interception by unauthorized parties. For your safety, we enforce using a secure connection (HTTPS) to protect your sensitive data during transmission.' : true,
-            (value: string) => Rules.maxLength(value, 255) || 'This field must contain 255 characters or fewer.',
-          ]"
+          :rules="interfaceModel.getRules('server_url')"
           prepend-inner-icon="mdi-webhook"
           hide-details="auto"
           hint="This feature allows you to specify a URL that will be triggered whenever data is read from or saved to the admin panel. By integrating a webhook, you can synchronize data with a remote server and perform various transformations."
           persistent-hint
           required
           clearable
+          autocomplete="webhook"
         >
           <template #label>
             <span class="mr-2 text-error">*</span>Webhook Endpoint
           </template>
-          <template v-if="!demo && (!selectedInterface.server_url || !Rules.isUrl(selectedInterface.server_url))" #append-inner>
+          <template v-if="!demo && interfaceModel.hasError('server_url')" #append-inner>
             <v-icon color="warning" icon="mdi-alert" />
           </template>
         </v-text-field>
+
+        <!-- SERVER SECRET -->
         <v-text-field
           v-model="computedServerSecretKey"
-          :loading="loadingSecretKey"
-          :type="secretKeyLoaded ? 'text' : 'password'"
-          :disabled="demo || disabled || !selectedInterface.uuid"
+          :type="states.secretKeyLoaded ? 'text' : 'password'"
+          :disabled="demo || disabled || !interfaceModel.data.uuid"
           prepend-inner-icon="mdi-key-chain"
           hide-details="auto"
           label="API Server Secret"
@@ -196,9 +187,10 @@ const getCyperKey = () => {
           name="server_secret"
           autocomplete="new-password"
         >
-          <template v-if="!secretKeyLoaded" #append-inner>
+          <template v-if="!states.secretKeyLoaded" #append-inner>
             <v-btn
-              :disabled="!selectedInterface.uuid"
+              :disabled="!interfaceModel.data.uuid"
+              :loading="states.loadingSecretKey"
               variant="outlined"
               size="small"
               @click="getServerSecretKey()"
@@ -207,11 +199,12 @@ const getCyperKey = () => {
             </v-btn>
           </template>
         </v-text-field>
+
+        <!-- CYPHER KEY -->
         <v-text-field
           v-model="computedCypherKey"
-          :loading="loadingCypherKey"
-          :type="cypherKeyLoaded ? 'text' : 'password'"
-          :disabled="demo || disabled || !selectedInterface.uuid"
+          :type="states.cypherKeyLoaded ? 'text' : 'password'"
+          :disabled="demo || disabled || !interfaceModel.data.uuid"
           prepend-inner-icon="mdi-script-text-key-outline"
           hide-details="auto"
           label="API Cypher Key"
@@ -221,9 +214,10 @@ const getCyperKey = () => {
           name="cypher_key"
           autocomplete="new-password"
         >
-          <template v-if="!cypherKeyLoaded" #append-inner>
+          <template v-if="!states.cypherKeyLoaded" #append-inner>
             <v-btn
-              :disabled="!selectedInterface.uuid"
+              :disabled="!interfaceModel.data.uuid"
+              :loading="states.loadingCypherKey"
               variant="outlined"
               size="small"
               @click="getCyperKey()"
@@ -240,9 +234,10 @@ const getCyperKey = () => {
           No emails will be sent to users. Please ensure that the Google account email addresses entered match the accounts that users are connected with when accessing the application.
         </v-alert>
         <v-combobox
-          v-model="selectedInterface.permission_interface"
+          v-model="interfaceModel.data.permission_interface"
           :disabled="demo || disabled"
           :items="[]"
+          :rules="interfaceModel.getRules('permission_interface')"
           prepend-inner-icon="mdi-account-multiple-check"
           label="Interface User(s)"
           hide-details="auto"
@@ -254,9 +249,10 @@ const getCyperKey = () => {
           multiple
         />
         <v-combobox
-          v-model="selectedInterface.permission_admin"
+          v-model="interfaceModel.data.permission_admin"
           :disabled="demo || disabled"
           :items="[]"
+          :rules="interfaceModel.getRules('permission_admin')"
           prepend-inner-icon="mdi-account-multiple-check"
           label="Admin User(s)"
           hide-details="auto"
@@ -268,19 +264,21 @@ const getCyperKey = () => {
           multiple
         />
       </v-card-text>
+
+      <!-- ACTIONS -->
       <v-card-actions>
         <v-spacer />
         <v-btn
-          :loading="saving"
-          :disabled="saving || !canSave || !formIsValid"
-          :variant="saved ? 'tonal' : 'flat'"
-          :color="(!canSave || !formIsValid) && !saved ? undefined : 'primary'"
+          :loading="states.saving"
+          :disabled="states.saving || !formIsValid || isPristine"
+          :variant="states.saved ? 'tonal' : 'flat'"
+          :color="(!formIsValid || isPristine) && !states.saved ? undefined : 'primary'"
           class="px-3"
           @click="() => emit('save')"
         >
-          <v-icon v-if="!saved" icon="mdi-content-save" start />
+          <v-icon v-if="!states.saved" icon="mdi-content-save" start />
           <v-icon v-else icon="mdi-check" start />
-          <span v-if="!saved">Save</span>
+          <span v-if="!states.saved">Save</span>
           <span v-else>Saved!</span>
         </v-btn>
       </v-card-actions>

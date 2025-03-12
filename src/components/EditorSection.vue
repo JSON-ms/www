@@ -1,288 +1,137 @@
 <script lang="ts" setup>
-import blankInterface from '@/assets/blank-interface.yaml'
 import InterfaceEditor from '@/components/InterfaceEditor.vue';
 import Logo from '@/components/Logo.vue';
 import ContentEditor from '@/components/ContentEditor.vue';
 import Docs from '@/components/Docs.vue';
 import Settings from '@/components/Settings.vue';
 import SessionPanel from '@/components/SessionPanel.vue';
-import { computed, type Ref, ref, toRaw } from 'vue';
+import {computed, ref} from 'vue';
 import { useDisplay } from 'vuetify';
 import GoogleSignInButton from '@/components/GoogleSignInButton.vue';
 import { useGlobalStore } from '@/stores/global';
-import type { IInterface } from '@/interfaces';
-import { getDefaultInterfaceContent, getParsedInterface, getInterface, objectsAreDifferent } from '@/utils';
-import { Services } from '@/services';
+import {getDefaultInterfaceContent, getInterface, } from '@/utils';
 import InterfaceSelector from '@/components/InterfaceSelector.vue';
 import NewInterfaceModal from '@/components/NewInterfaceModal.vue';
-import router from '@/router';
-import { useRoute } from 'vue-router';
-import Rules from '@/rules';
+import InterfaceModel from '@/models/interface.model';
 import Changes from '@/changes';
 
+// @ts-expect-error process.env is parsed from backend
+const version = JSON.parse(process.env.APP_VERSION);
 const { smAndDown } = useDisplay()
-const drawer = ref(false);
-const selectTemplate = ref(false);
+const copyright = ref('JSON.ms v' + version + '. Licensed under the BSD-3-Clause.');
 const tab = ref(smAndDown.value ? 'interface' : 'preview');
-const toggleDrawer = () => {
-  drawer.value = !drawer.value;
-}
+const drawer = ref(false);
+const speedDial = ref(false);
+const selectTemplate = ref(false);
+const defaultInterface = getInterface(getDefaultInterfaceContent())
+const globalStore = useGlobalStore();
+const interfaceModel = new InterfaceModel(defaultInterface);
+
+const showSettingsHasError = computed((): boolean => {
+  return globalStore.session.loggedIn && interfaceModel.hasSettingsError;
+})
+
 const gotoTab = (key: string) => {
   tab.value = key;
   drawer.value = false;
 }
 
-let interfaceChangedTimeout: any;
-const interfaceChanging = ref(false);
-const interfaceChanged = ref(false);
-const onInterfaceChanging = () => {
-  interfaceChanging.value = true;
-  interfaceChanged.value = false;
-}
-const onInterfaceChanged = () => {
-  interfaceChanging.value = false;
-  interfaceChanged.value = true;
-  clearTimeout(interfaceChangedTimeout);
-  interfaceChangedTimeout = setTimeout(() => interfaceChanged.value = false, 2000);
-}
-const currentRawValue = ref('');
-const onInterfaceRawChange = (value: string) => {
-  currentRawValue.value = value;
-}
-
-const defaultInterface = getDefaultInterfaceContent();
-const globalStore = useGlobalStore();
-const currentRoute = useRoute();
-const hasParamInterfaceAndNotNew = currentRoute.params.interface && currentRoute.params.interface !== 'new';
-const selectedInterface: Ref<IInterface> = ref(getInterface(defaultInterface));
-const validInterfaces = computed(() => globalStore.session.interfaces.filter(item => ['owner', 'interface'].includes(item.type)));
-
-const computedSelectedInterface = computed({
-  get(): IInterface {
-    return selectedInterface.value;
-  },
-  set(model: IInterface): void {
-    selectTemplate.value = false;
-    router.push('/editor/' + model.hash);
-  }
-})
-
-if (!currentRoute.params.interface && validInterfaces.value.length > 0) {
-  validInterfaces.value.sort((a, b) => {
-    if (a.type === 'owner' && b.type !== 'owner') {
-      return -1;
-    }
-    if (a.type !== 'owner' && b.type === 'owner') {
-      return 1;
-    }
-    return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
-  });
-  selectedInterface.value = validInterfaces.value[0];
-  router.replace('/editor/' + selectedInterface.value.hash);
-} else if (globalStore.session.loggedIn) {
-  const found = validInterfaces.value.find(item => item.hash === currentRoute.params.interface);
-  if (found) {
-    selectedInterface.value = found;
-    router.replace('/editor/' + found.hash);
-  } else if (hasParamInterfaceAndNotNew) {
-    globalStore.catchError(new Error('Unfortunately, you don\'t have access to edit the interface of the selected admin panel.'));
-  }
-} else if (hasParamInterfaceAndNotNew) {
-  router.replace('/');
-}
-
 const onLogout = () => {
-  selectedInterface.value = getInterface(defaultInterface);
+  interfaceModel.data = defaultInterface;
   if (smAndDown.value) {
     tab.value = 'interface';
   }
 }
 
-const settingsHasError = computed((): boolean => {
-  return !Rules.isUrl(selectedInterface.value.server_url || '');
-})
+const applyTemplate = (template: string, hash?: string, updateLabel = true) => {
 
-const showSettingsHasError = computed((): boolean => {
-  return globalStore.session.loggedIn && settingsHasError.value;
-})
-
-// @ts-expect-error process.env is parsed from backend
-const version = JSON.parse(process.env.APP_VERSION);
-const copyright = ref('JSON.ms v' + version + '. Licensed under the BSD-3-Clause.');
-
-const create = () => {
-  globalStore.setPrompt({
-    ...globalStore.prompt,
-    visible: true,
-    title: 'New Document',
-    body: 'If you create a new document, you may lose any unsaved work. Do you want to continue?',
-    btnText: 'Create',
-    btnIcon: 'mdi-plus',
-    btnColor: 'secondary',
-    callback: () => new Promise(resolve => {
-      tab.value = smAndDown.value ? 'interface' : 'docs';
-      selectTemplate.value = true;
-      selectedInterface.value = getInterface(blankInterface);
-      resetOriginalData();
-      router.replace('/editor/new');
-      resolve();
-    })
-  })
-}
-
-const saving = ref(false);
-const saved = ref(false);
-const canSave = computed((): boolean => {
-  if (originalSelectedInterface.value.content !== currentRawValue.value) {
-    return true
+  if (hash === 'new') {
+    interfaceModel.data = getInterface();
   }
-  return dataHasChanged.value;
-})
-const save = () => {
-  if (!canSave.value) {
-    return;
-  }
-  saving.value = true;
+  interfaceModel.data.content = template;
+  interfaceModel.data.hash = hash || interfaceModel.data.hash;
 
-  const wasNew = !(selectedInterface.value.uuid);
-  const clonedInterface = structuredClone(toRaw(selectedInterface.value));
-  clonedInterface.content = currentRawValue.value;
-  const parsedInterface = getParsedInterface(clonedInterface);
-  Services.post(import.meta.env.VITE_SERVER_URL + '/interface', {
-    interface: {
-      ...clonedInterface,
-      label: parsedInterface.global.title || 'Untitled',
-      logo: parsedInterface.global.logo,
-    },
-  })
-    .then(response => {
-      selectedInterface.value = response.interface;
-      currentRawValue.value = selectedInterface.value.content;
-      resetOriginalData();
-      if (wasNew) {
-        globalStore.addInterface(response.interface);
-        router.replace('/editor/' + response.interface.hash);
-      }
-    })
-    .catch(globalStore.catchError)
-    .finally(() => {
-      saving.value = false;
-      saved.value = true;
-      setTimeout(() => saved.value = false, 2000);
-    });
-}
-
-const deleting = ref(false);
-const remove = () => {
-  globalStore.setPrompt({
-    ...globalStore.prompt,
-    visible: true,
-    title: 'Delete interface',
-    body: 'By proceeding, you will delete your interface and your users won\'t be able to access this admin panel anymore. Are you sure you want to continue?',
-    btnText: 'Delete',
-    btnIcon: 'mdi-delete-outline',
-    btnColor: 'error',
-    callback: () => new Promise(resolve => {
-      deleting.value = true;
-      Services.delete(import.meta.env.VITE_SERVER_URL + '/interface', {
-        interface: selectedInterface.value,
-      })
-        .then(() => {
-          const oldInterface = selectedInterface.value;
-
-          tab.value = smAndDown.value ? 'interface' : 'docs';
-          selectTemplate.value = true;
-          selectedInterface.value = getInterface(blankInterface);
-          selectedInterface.value.hash = 'new';
-
-          globalStore.removeInterface(oldInterface);
-          resetOriginalData();
-
-          router.replace('/editor/' + selectedInterface.value.hash);
-        })
-        .then(resolve)
-        .catch(globalStore.catchError)
-        .finally(() => deleting.value = false);
-    })
-  })
-}
-
-const applyTemplate = (template: string) => {
-  selectedInterface.value.content = template;
-}
-
-const resetOriginalData = () => {
-  originalSelectedInterface.value = structuredClone(toRaw(selectedInterface.value));
-}
-
-// Keep at the end..
-const originalSelectedInterface: Ref<IInterface> = ref(structuredClone(toRaw(selectedInterface.value)));
-currentRawValue.value = selectedInterface.value.content;
-
-// Detect changes..
-Changes.applySet('editor', originalSelectedInterface, selectedInterface);
-const dataHasChanged = computed((): boolean => objectsAreDifferent(originalSelectedInterface.value, selectedInterface.value));
-router.afterEach((to) => {
-  const toInterface = validInterfaces.value.find(item => item.hash === to.params.interface);
-  if (toInterface) {
-    Object.assign(selectedInterface.value, structuredClone(toRaw(originalSelectedInterface.value)));
-    selectedInterface.value = toInterface;
-    originalSelectedInterface.value = structuredClone(toRaw(selectedInterface.value));
+  if (hash === 'new') { // Needs to be after... do not merge with hash === new condition upstairs
+    if (updateLabel) {
+      interfaceModel.data.content = interfaceModel.data.content.replace('title: Dynamic Admin Panel Example', 'title: Untitled');
+    }
+    interfaceModel.copyDataToOriginalData();
+    interfaceModel.data.label = 'Untitled';
+    interfaceModel.data.logo = undefined;
   } else {
-    selectedInterface.value = getInterface(blankInterface);
-    selectedInterface.value.hash = 'new';
+    const parsedContent = interfaceModel.getParsedData();
+    interfaceModel.data.label = parsedContent.global.title || '';
+    interfaceModel.data.logo = parsedContent.global.logo || '';
+    interfaceModel.copyDataToOriginalData();
   }
-})
+
+  Changes.applySet('interface', interfaceModel.data, interfaceModel.originalData);
+}
+
+if (globalStore.session.loggedIn) {
+  applyTemplate(interfaceModel.data.content, 'new', true);
+}
+
+const onCreateInterface = () => {
+  Changes.doIfNoChanges(() => {
+    selectTemplate.value = true;
+  });
+}
+
+const onSaveInterface = () => {
+  interfaceModel.save().then(model => {
+    globalStore.removeInterface(interfaceModel);
+    globalStore.addInterface(model);
+  })
+}
+
+const onDeleteInterface = () => {
+  interfaceModel.delete().then(() => {
+    globalStore.removeInterface(interfaceModel);
+    applyTemplate(interfaceModel.data.content, 'new');
+  })
+}
+
+const onInterfaceContentChange = (template: string) => {
+  interfaceModel.data.content = template;
+  const parsedContent = interfaceModel.getParsedData();
+  interfaceModel.data.label = parsedContent.global.title || '';
+  interfaceModel.data.logo = parsedContent.global.logo || '';
+}
+
+const onSelectInterface = () => {
+  interfaceModel.copyDataToOriginalData();
+}
 </script>
 
 <template>
+  <!-- TOOLBAR -->
   <v-app-bar :elevation="2">
-    <v-app-bar-nav-icon v-if="smAndDown" @click="toggleDrawer" />
+    <v-app-bar-nav-icon v-if="smAndDown" @click="drawer = !drawer;" />
 
-    <v-app-bar-title style="flex: 1; min-width: 110px">
+    <v-app-bar-title v-if="!smAndDown || !globalStore.session.loggedIn" style="flex: 1; min-width: 110px">
       <Logo />
     </v-app-bar-title>
 
-    <template v-if="!smAndDown">
-      <v-divider class="mx-4" inset vertical />
+    <template v-if="true">
+      <v-divider v-if="!smAndDown" class="mx-4" inset vertical />
       <div style="flex: 12" class="mr-3">
-        <template v-if="!globalStore.session.loggedIn">
+        <template v-if="!smAndDown && !globalStore.session.loggedIn">
           <span class="text-left">Generate an admin panel from a YAML interface that communicates with a remote server using JSON.</span>
         </template>
-        <div v-else class="d-flex align-center" style="gap: 0.5rem">
+        <div v-else-if="globalStore.session.loggedIn" class="d-flex align-center" style="gap: 0.5rem">
           <InterfaceSelector
-            v-model="computedSelectedInterface"
+            v-model="interfaceModel"
             :interfaces="globalStore.session.interfaces"
-            :saving="saving"
-            :saved="saved"
-            :can-save="canSave"
-            :deleting="deleting"
+            :actions="!smAndDown && globalStore.session.loggedIn"
+            :large-text="!smAndDown"
             type="interface"
-            style="max-width: 25rem"
-            actions
-            @create="create"
-            @save="save"
-            @delete="remove"
+            style="max-width: 35rem; width: 10rem; min-width: min-content"
+            @change="onSelectInterface"
+            @create="onCreateInterface"
+            @save="onSaveInterface"
+            @delete="onDeleteInterface"
           />
-
-          <div v-if="interfaceChanging || interfaceChanged" class="ml-4">
-            <v-progress-circular
-              v-if="interfaceChanging"
-              indeterminate
-              color="primary"
-              class="mr-2"
-              size="24"
-              width="2"
-            />
-            <v-icon
-              v-if="interfaceChanged"
-              icon="mdi-check"
-              start
-              color="success"
-            />
-            <span v-if="interfaceChanging">Parsing...</span>
-            <span v-if="interfaceChanged">Parsed!</span>
-          </div>
         </div>
       </div>
     </template>
@@ -319,12 +168,13 @@ router.afterEach((to) => {
       />
       <SessionPanel
         v-else
-        dense
+        :dense="smAndDown"
         @logout="onLogout"
       />
     </div>
   </v-app-bar>
 
+  <!-- SIDEBAR -->
   <v-navigation-drawer
     v-if="smAndDown"
     v-model="drawer"
@@ -372,21 +222,6 @@ router.afterEach((to) => {
         target="_blank"
       />
     </v-list>
-    <template v-if="smAndDown && globalStore.session.loggedIn" #prepend>
-      <div class="pa-3">
-        <InterfaceSelector
-          v-model="computedSelectedInterface"
-          :saving="saving"
-          :saved="saved"
-          :can-save="canSave"
-          :deleting="deleting"
-          :interfaces="globalStore.session.interfaces"
-          type="admin"
-          class="mt-2"
-        />
-      </div>
-      <v-divider />
-    </template>
     <template #append>
       <v-divider />
       <div v-if="smAndDown" class="pa-3">
@@ -406,6 +241,7 @@ router.afterEach((to) => {
     </template>
   </v-navigation-drawer>
 
+  <!-- CONTENT -->
   <v-container class="pa-0 fill-height" fluid>
     <v-row no-gutters class="fill-height">
       <v-col
@@ -417,19 +253,17 @@ router.afterEach((to) => {
       >
         <NewInterfaceModal
           v-model="selectTemplate"
-          @apply="applyTemplate"
+          @apply="content => applyTemplate(content, 'new')"
         />
         <InterfaceEditor
-          v-model="selectedInterface"
+          v-model="interfaceModel"
           style="flex: 1"
-          @create="create"
-          @save="save"
-          @changing="onInterfaceChanging"
-          @changed="onInterfaceChanged"
-          @raw-change="onInterfaceRawChange"
+          @change="onInterfaceContentChange"
+          @save="onSaveInterface"
+          @create="onCreateInterface"
         />
       </v-col>
-      <v-col cols="12" md="7" class="d-flex flex-column justify-center">
+      <v-col cols="12" md="7" class="d-flex flex-column justify-start">
         <v-tabs v-if="!smAndDown" v-model="tab" bg-color="surface">
           <v-tab value="preview">
             <v-icon start icon="mdi-monitor-eye" />
@@ -454,37 +288,56 @@ router.afterEach((to) => {
                 <NewInterfaceModal
                   v-if="globalStore.session.loggedIn"
                   v-model="selectTemplate"
-                  @apply="applyTemplate"
+                  @apply="content => applyTemplate(content, 'new')"
                 />
                 <v-main>
                   <InterfaceEditor
-                    v-model="selectedInterface"
+                    v-model="interfaceModel"
                     class="fill-height w-100"
+                    @change="onInterfaceContentChange"
+                    @save="onSaveInterface"
+                    @create="onCreateInterface"
                   />
+                  <v-fab
+                    v-if="globalStore.session.loggedIn && smAndDown"
+                    location="right bottom"
+                    color="primary"
+                    icon="mdi-dots-vertical"
+                    app
+                    style="z-index: 1;"
+                  >
+                    <v-icon>{{ speedDial ? 'mdi-close' : 'mdi-dots-vertical' }}</v-icon>
+                    <v-speed-dial
+                      v-model="speedDial"
+                      transition="slide-y-transition"
+                      activator="parent"
+                    >
+                      <v-btn
+                        key="1"
+                        :loading="interfaceModel.states.deleting"
+                        :disabled="!interfaceModel.canDelete"
+                        :color="!interfaceModel.canDelete ? undefined : 'error'"
+                        icon="mdi-delete-outline"
+                        @click="onDeleteInterface"
+                      />
+                      <v-btn
+                        key="2"
+                        :loading="interfaceModel.states.saving"
+                        :disabled="!interfaceModel.canSave()"
+                        :color="!interfaceModel.canSave() ? undefined : 'primary'"
+                        icon="mdi-content-save"
+                        @click="onSaveInterface"
+                      />
+                      <v-btn
+                        key="3"
+                        :disabled="!interfaceModel.canCreate"
+                        color="secondary"
+                        icon="mdi-file-plus"
+                        @click="onCreateInterface"
+                      />
+                    </v-speed-dial>
+                  </v-fab>
                 </v-main>
-                <v-app-bar
-                  v-if="globalStore.session.loggedIn"
-                  theme="dark"
-                  location="bottom"
-                  class="px-3"
-                >
-                  <InterfaceSelector
-                    v-model="computedSelectedInterface"
-                    :saving="saving"
-                    :saved="saved"
-                    :can-save="canSave"
-                    :deleting="deleting"
-                    :interfaces="globalStore.session.interfaces"
-                    :menu-props="{
-                      theme: 'light'
-                    }"
-                    type="interface"
-                    actions
-                    @create="create"
-                    @save="save"
-                    @delete="remove"
-                  />
-                </v-app-bar>
               </v-layout>
             </v-tabs-window-item>
             <v-tabs-window-item value="preview" class="fill-height">
@@ -499,7 +352,8 @@ router.afterEach((to) => {
               >
                 <v-layout class="elevation-2 fill-height">
                   <ContentEditor
-                    v-model="selectedInterface"
+                    v-model="interfaceModel"
+                    :interfaces="globalStore.session.interfaces"
                     preview
                     autoload
                   />
@@ -514,13 +368,10 @@ router.afterEach((to) => {
                 }"
               >
                 <Settings
-                  v-model="selectedInterface"
+                  v-model="interfaceModel"
                   :demo="!globalStore.session.loggedIn"
-                  :disabled="selectedInterface.type !== 'owner'"
-                  :saving="saving"
-                  :saved="saved"
-                  :can-save="canSave"
-                  @save="save"
+                  :disabled="interfaceModel.data.type !== 'owner'"
+                  @save="onSaveInterface"
                 />
               </div>
             </v-tabs-window-item>

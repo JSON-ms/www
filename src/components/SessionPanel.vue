@@ -6,6 +6,13 @@ import { Services } from '@/services';
 const globalStore = useGlobalStore();
 const sessionLoginOut = ref(false);
 const emit = defineEmits(['logout'])
+const {
+  dense = false,
+  showUsername = false,
+} = defineProps<{
+  dense?: boolean,
+  showUsername?: boolean,
+}>();
 const logout = () => {
   globalStore.setPrompt({
     ...globalStore.prompt,
@@ -17,7 +24,7 @@ const logout = () => {
     btnColor: 'warning',
     callback: () => new Promise(resolve => {
       sessionLoginOut.value = true;
-      Services.post(import.meta.env.VITE_SERVER_URL + '/logout')
+      Services.get(import.meta.env.VITE_SERVER_URL + '/session/logout')
         .then(response => {
           emit('logout');
           return response;
@@ -34,7 +41,7 @@ const logout = () => {
 <template>
   <v-menu>
     <template #activator="{ props }">
-      <v-btn v-bind="props">
+      <v-btn v-bind="props" :icon="dense">
         <v-avatar size="32" color="primary">
           <v-img
             v-if="globalStore.session.user.avatar"
@@ -53,8 +60,8 @@ const logout = () => {
           </v-img>
           <strong v-else>{{ globalStore.session.user.name.substring(0, 1) }}</strong>
         </v-avatar>
-<!--        <strong v-if="!smAndDown" class="ml-3">{{ globalStore.session.user.name }}</strong>-->
-        <v-icon end icon="mdi-chevron-down" />
+        <strong v-if="showUsername" class="ml-3">{{ globalStore.session.user.name }}</strong>
+        <v-icon v-if="!dense" end icon="mdi-chevron-down" />
       </v-btn>
     </template>
     <v-list>
