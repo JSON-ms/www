@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { IField } from '@/interfaces';
+import {computed} from 'vue';
 
 const {
   field,
@@ -10,6 +11,12 @@ const {
   locale: string,
   locales:  { [key: string]: string; },
 }>();
+
+const fieldLabel = computed((): string => {
+  return field.type.includes('i18n')
+    ? (field.label + ' (' + locales[locale] + ')')
+    : field.label
+})
 </script>
 
 <template>
@@ -17,11 +24,8 @@ const {
     <div class="d-flex align-center justify-space-between">
       <span>
         <span v-if="field.required" class="mr-2 text-error">*</span>
-        <span>{{ field.label }}</span>
+        <span>{{ fieldLabel }}</span>
       </span>
-      <v-chip v-if="field.type.includes('i18n')" label size="x-small">
-        {{ locales[locale] }}
-      </v-chip>
     </div>
   </v-list-subheader>
 </template>

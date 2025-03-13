@@ -1,33 +1,38 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { IInterface } from '@/interfaces';
+import {computed, toRaw} from 'vue';
 import { useGlobalStore } from '@/stores/global';
+import InterfaceModel from '@/models/interface.model';
+import type {IInterface} from '@/interfaces';
 
+// Props
+const interfaceModel = defineModel<InterfaceModel>({ required: true });
+const states = interfaceModel.value.states;
 const {
   interfaces = [],
   type = null,
   actions = false,
-  saving = false,
-  saved = false,
-  canSave = false,
-  deleting = false,
+  largeText = false,
 } = defineProps<{
-  interfaces?: IInterface[],
-  type?: 'admin' | 'interface' | null,
+  interfaces: IInterface[],
+  type: 'admin' | 'interface' | null,
   actions?: boolean,
-  saving?: boolean,
-  saved?: boolean,
-  canSave?: boolean,
-  deleting?: boolean
+  largeText?: boolean,
 }>();
 
+// Declarations
 const globalStore = useGlobalStore();
 
-const selectedInterface = defineModel<IInterface>({ required: true });
+// Emits
+const emit = defineEmits(['change', 'create', 'save', 'delete'])
+const create = (item: InterfaceModel) => emit('create', item);
+const save = (item: InterfaceModel) => emit('save', item);
+const remove = (item: InterfaceModel) =>  emit('delete', item);
+
+// Computed
 const computedInterfaces = computed((): (IInterface | { header: string })[] => {
+  const results: (IInterface | { header: string })[] = [];
   const ownerInterfaces = interfaces.filter(item => item.created_by === globalStore.session.user.id);
   const sharedInterfaces = interfaces.filter(item => item.created_by !== globalStore.session.user.id && item.type === type);
-  const results: (IInterface | { header: string })[] = [];
   const hasBoth = ownerInterfaces.length > 0 && sharedInterfaces.length > 0;
   if (hasBoth && ownerInterfaces.length > 0) {
     if (ownerInterfaces.length > 0) {
@@ -37,7 +42,7 @@ const computedInterfaces = computed((): (IInterface | { header: string })[] => {
     }
   }
   if (ownerInterfaces.length > 0) {
-    results.push(...ownerInterfaces)
+    results.push(...ownerInterfaces.map(item => toRaw(item)))
   }
   if (hasBoth && sharedInterfaces.length > 0) {
     if (sharedInterfaces.length > 0) {
@@ -47,43 +52,53 @@ const computedInterfaces = computed((): (IInterface | { header: string })[] => {
     }
   }
   if (sharedInterfaces.length > 0) {
-    results.push(...sharedInterfaces)
+    results.push(...sharedInterfaces.map(item => toRaw(item)))
   }
   return results;
 })
 
-const emit = defineEmits(['change', 'create', 'save', 'delete'])
-const onChange = (item: IInterface) => {
-  emit('change', item);
-}
-const create = (item: IInterface) => {
-  emit('create', item);
-}
-const save = (item: IInterface) => {
-  emit('save', item);
-}
-const remove = (item: IInterface) => {
-  emit('delete', item);
-}
 </script>
 
 <template>
   <v-select
-    v-model="selectedInterface"
+    v-model="interfaceModel.data"
     :items="computedInterfaces"
-    :prepend-inner-icon="selectedInterface.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'"
     item-title="label"
     item-value="hash"
     label="Interface"
     variant="outlined"
     color="primary"
     hide-details
-    return-object
     density="compact"
     no-data-text="No interface available yet"
-    @update:model-value="onChange"
+    return-object
+    @update:model-value="emit('change', interfaceModel)"
   >
+    <!-- ICON/LOGO -->
+    <template #prepend-inner>
+      <v-icon v-if="!interfaceModel.originalData.logo" :icon="interfaceModel.originalData.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'" />
+      <v-img
+        v-else
+        :src="interfaceModel.originalData.logo"
+        width="24"
+        height="24"
+        class="mr-1"
+      />
+    </template>
+
+    <!-- TITLE -->
+    <template #selection>
+      <template v-if="largeText">
+        <div class="text-h6 text-truncate">
+          {{ interfaceModel.originalData.label }}
+        </div>
+      </template>
+      <span v-else class="text-truncate">{{ interfaceModel.originalData.label }}</span>
+    </template>
+
+    <!-- ACTIONS -->
     <template v-if="actions" #append-inner>
+
       <!-- CREATE -->
       <v-tooltip
         text="New interface"
@@ -95,7 +110,7 @@ const remove = (item: IInterface) => {
             color="secondary"
             size="small"
             icon
-            @mousedown.stop="create"
+            @mousedown.stop="create(interfaceModel)"
           >
             <v-icon icon="mdi-file-plus" />
           </v-btn>
@@ -110,15 +125,15 @@ const remove = (item: IInterface) => {
         <template #activator="{ props }">
           <v-btn
             v-bind="props"
-            :loading="saving"
-            :disabled="saving || saved || !canSave"
+            :loading="states.saving"
+            :disabled="states.saving || states.saved || interfaceModel.isPristine()"
             variant="text"
             color="primary"
             size="small"
             icon
-            @mousedown.stop.prevent="save"
+            @mousedown.stop.prevent="save(interfaceModel)"
           >
-            <v-icon v-if="!saved" icon="mdi-content-save" />
+            <v-icon v-if="!states.saved" icon="mdi-content-save" />
             <v-icon v-else icon="mdi-check" />
           </v-btn>
         </template>
@@ -131,14 +146,14 @@ const remove = (item: IInterface) => {
       >
         <template #activator="{ props }">
           <v-btn
-            v-if="selectedInterface.type === 'owner'"
+            v-if="interfaceModel.originalData.type === 'owner'"
             v-bind="props"
-            :disabled="!selectedInterface.uuid || deleting"
-            :loading="deleting"
+            :disabled="!interfaceModel.originalData.uuid || states.deleting"
+            :loading="states.deleting"
             color="error"
             size="small"
             icon
-            @mousedown.stop.prevent="remove"
+            @mousedown.stop.prevent="remove(interfaceModel)"
           >
             <v-icon>mdi-delete-outline</v-icon>
           </v-btn>
@@ -156,10 +171,21 @@ const remove = (item: IInterface) => {
       <v-list-item
         v-else
         v-bind="props"
-        :subtitle="item.raw.updated_at"
-        :title="item.raw.label"
-        :prepend-icon="item.raw.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'"
-      />
+        :active="item.value === interfaceModel.originalData.hash"
+      >
+        <template #prepend>
+          <v-icon v-if="!item.raw.logo" :icon="item.raw.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'" />
+          <v-img
+            v-else
+            :src="item.raw.logo"
+            width="24"
+            height="24"
+            class="mr-8"
+          />
+        </template>
+
+        <v-list-item-subtitle>{{ item.raw.updated_at }}</v-list-item-subtitle>
+      </v-list-item>
     </template>
   </v-select>
 </template>

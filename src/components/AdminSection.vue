@@ -3,17 +3,18 @@ import { computed, type Ref, ref, watch } from 'vue';
 import { useGlobalStore } from '@/stores/global';
 import { getDefaultInterfaceContent, getInterface, getParsedInterface } from '@/utils';
 import { useRoute } from 'vue-router';
-import type { IData, IInterface } from '@/interfaces';
+import type { IInterfaceData, IInterface } from '@/interfaces';
 import GoogleSignInButton from '@/components/GoogleSignInButton.vue';
 import ContentEditor from '@/components/ContentEditor.vue';
+import InterfaceModel from '@/models/interface.model';
 
 const defaultInterfaceContent = getDefaultInterfaceContent();
 const defaultInterface = getInterface(defaultInterfaceContent);
 const parsedInterface = getParsedInterface(defaultInterface);
 
-const found: Ref<IInterface> = ref(defaultInterface);
+const interfaceModel = new InterfaceModel(defaultInterface);
 const interfaceList: Ref<IInterface[]> = ref([]);
-const parsedData: Ref<IData> = ref(parsedInterface);
+const parsedData: Ref<IInterfaceData> = ref(parsedInterface);
 const currentRoute = useRoute();
 const globalStore = useGlobalStore();
 
@@ -25,20 +26,24 @@ const sharedInterfaces = computed((): IInterface[] => {
 })
 
 const reload = () => {
-  parsedData.value.global.title = 'JSON.ms Admin Panel';
+  parsedData.value.global.title = 'JSON.ms Admin Panels';
   if (currentRoute.params.interface) {
-    found.value = globalStore.session.interfaces.find(child => ['owner', 'admin'].includes(child.type) && child.hash === currentRoute.params.interface) || defaultInterface;
-    if (found.value.uuid) {
-      parsedData.value = getParsedInterface(found.value);
+    interfaceModel.data = globalStore.session.interfaces.find(child => ['owner', 'admin'].includes(child.type) && child.hash === currentRoute.params.interface) || defaultInterface;
+    if (interfaceModel.data.uuid) {
+      parsedData.value = getParsedInterface(interfaceModel.data);
+      interfaceModel.data.label = parsedData.value.global.title || 'Untitled';
+      interfaceModel.data.logo = parsedData.value.global.logo;
     }
   }
   interfaceList.value = globalStore.session.interfaces.filter(child => ['owner', 'admin'].includes(child.type)) || [];
+  interfaceModel.copyDataToOriginalData();
 }
 if (currentRoute.params.interface === 'demo') {
   defaultInterface.uuid = 'demo'
   defaultInterface.hash = 'demo'
-  found.value = defaultInterface;
-  interfaceList.value = [defaultInterface]
+  interfaceModel.data = defaultInterface;
+  interfaceList.value = [defaultInterface];
+  interfaceModel.copyDataToOriginalData();
 } else {
   reload();
 }
@@ -49,8 +54,8 @@ watch(() => currentRoute.path, reload);
 
 <template>
   <ContentEditor
-    v-if="found.uuid"
-    v-model="found"
+    v-if="interfaceModel.data.uuid"
+    v-model="interfaceModel"
     :interfaces="interfaceList"
     autoload
   />
@@ -92,9 +97,19 @@ watch(() => currentRoute.path, reload);
                   :key="adminPanel.hash"
                   :subtitle="'Owner: ' + adminPanel.owner_name"
                   :title="adminPanel.label"
-                  :prepend-icon="adminPanel.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'"
                   :to="'/admin/' + adminPanel.hash"
-                />
+                >
+                  <template #prepend>
+                    <v-icon v-if="!adminPanel.logo" :icon="adminPanel.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'" />
+                    <v-img
+                      v-else
+                      :src="adminPanel.logo"
+                      width="24"
+                      height="24"
+                      class="mr-6"
+                    />
+                  </template>
+                </v-list-item>
               </template>
               <v-spacer v-if="ownerInterfaces.length > 0 && sharedInterfaces.length > 0" class="my-4" />
               <template v-if="sharedInterfaces.length > 0">
@@ -106,9 +121,19 @@ watch(() => currentRoute.path, reload);
                   :key="adminPanel.hash"
                   :subtitle="'Owner: ' + adminPanel.owner_name"
                   :title="adminPanel.label"
-                  :prepend-icon="adminPanel.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'"
                   :to="'/admin/' + adminPanel.hash"
-                />
+                >
+                  <template #prepend>
+                    <v-icon v-if="!adminPanel.logo" :icon="adminPanel.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'" />
+                    <v-img
+                      v-else
+                      :src="adminPanel.logo"
+                      width="24"
+                      height="24"
+                      class="mr-6"
+                    />
+                  </template>
+                </v-list-item>
               </template>
             </v-list>
           </template>
@@ -124,6 +149,16 @@ watch(() => currentRoute.path, reload);
           {{ parsedData.global.copyright }}
         </v-card-actions>
       </v-card>
+
+      <v-btn
+        to="/"
+        class="mt-3"
+        variant="text"
+        prepend-icon="mdi-arrow-left"
+        block
+      >
+        Go back to Editor
+      </v-btn>
     </v-form>
   </v-sheet>
 </template>

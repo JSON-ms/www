@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
-import type { ISession, IPrompt, IError, IInterface } from '@/interfaces';
+import type {ISession, IPrompt, IError} from '@/interfaces';
+import InterfaceModel from '@/models/interface.model';
 
 export const useGlobalStore = defineStore('example', {
   state: (): {
@@ -30,7 +31,7 @@ export const useGlobalStore = defineStore('example', {
       },
       googleOAuthSignInUrl: '',
       interfaces: [],
-    }
+    },
   }),
   actions: {
     catchError(error: Error) {
@@ -61,13 +62,16 @@ export const useGlobalStore = defineStore('example', {
       this.error = error;
     },
     setSession(session: ISession) {
-      Object.assign(this.session, session);
+      this.session = session;
+      if (!this.session.interfaces) {
+        this.session.interfaces = session.interfaces;
+      }
     },
-    addInterface(item: IInterface) {
-      this.session.interfaces.push(item)
+    addInterface(item: InterfaceModel) {
+      this.session.interfaces.push(item.data);
     },
-    removeInterface(item: IInterface) {
-      const filteredItems = this.session.interfaces.filter(child => child.uuid !== item.uuid);;
+    removeInterface(item: InterfaceModel) {
+      const filteredItems = this.session.interfaces.filter(child => child.uuid !== item.data.uuid);
       this.session.interfaces.length = 0;
       Array.prototype.push.apply(this.session.interfaces, filteredItems);
     },

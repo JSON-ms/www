@@ -1,3 +1,7 @@
+export interface IModel {
+  uuid?: string,
+}
+
 type PHPMegabyte = `${number}M`;
 export interface IServerSettings {
   postMaxSize: PHPMegabyte,
@@ -29,9 +33,11 @@ export interface IInterface {
   uuid?: string
   hash?: string
   label: string
+  logo?: string
   content: string
   server_url?: string
   server_secret?: string
+  cypher_key?: string
   type: 'owner' | 'interface' | 'admin',
   owner_name?: string,
   permission_interface: string[],
@@ -78,7 +84,7 @@ export interface ISection {
   fields: {[key: string]: IField}
 }
 
-export interface IData {
+export interface IInterfaceData {
   global: {
     title?: string
     copyright?: string

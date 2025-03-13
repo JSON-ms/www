@@ -3,30 +3,18 @@ import { computed, onMounted, type Ref, ref } from 'vue';
 import { VAceEditor } from 'vue3-ace-editor';
 import 'ace-builds/src-noconflict/mode-yaml';
 import 'ace-builds/src-noconflict/theme-github_dark';
-import type { IInterface } from '@/interfaces';
 import type { VAceEditorInstance } from 'vue3-ace-editor/types';
+import type InterfaceModel from '@/models/interface.model';
 
-const emit = defineEmits(['save', 'create', 'changing', 'changed', 'rawChange'])
-const selectedInterface = defineModel<IInterface>({ required: true });
-const {
-  updateTimeout = 1000,
-} = defineProps<{
-  updateTimeout?: number,
-}>();
-let changeTimeout: any = 0;
+const emit = defineEmits(['save', 'create', 'change'])
+const interfaceModel = defineModel<InterfaceModel>({ required: true });
 const editor: Ref<VAceEditorInstance | null> = ref(null);
 const value = computed({
   get() {
-    return selectedInterface.value.content;
+    return interfaceModel.value.data.content;
   },
   set(value: string) {
-    emit('rawChange', value);
-    emit('changing', value);
-    clearTimeout(changeTimeout);
-    changeTimeout = setTimeout(() => {
-      selectedInterface.value.content = value;
-      emit('changed', value);
-    }, updateTimeout)
+    emit('change', value);
   }
 });
 

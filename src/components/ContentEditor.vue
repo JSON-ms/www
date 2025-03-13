@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, toRaw, watch } from 'vue';
+import {computed, nextTick, onMounted, onUnmounted, ref, toRaw, watch} from 'vue';
 import { useDisplay } from 'vuetify'
-import type { IData, IInterface, IServerSettings } from '@/interfaces';
+import type {IInterfaceData, IInterface, IServerSettings} from '@/interfaces';
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
 import SessionPanel from '@/components/SessionPanel.vue';
 import InterfaceSelector from '@/components/InterfaceSelector.vue';
@@ -11,129 +11,133 @@ import { getDefaultInterfaceContent, getInterface, getParsedInterface, objectsAr
 import router from '@/router';
 import { Services } from '@/services';
 import { useRoute } from 'vue-router';
+import type { VForm } from 'vuetify/components';
+import type InterfaceModel from '@/models/interface.model';
 import Changes from '@/changes';
 
-const selectedInterface = defineModel<IInterface>({ required: true });
-const computedSelectedInterface = computed({
-  get(): IInterface {
-    return selectedInterface.value;
-  },
-  set(model: IInterface): void {
-    if (preview) {
-      goToSection('');
-    } else {
-      router.push('/admin/' + model.hash);
-    }
-  }
-})
+const model = defineModel<InterfaceModel>({ required: true });
+const { preview = false, interfaces = [], autoload = false } = defineProps<{
+  preview?: boolean,
+  autoload: boolean,
+  interfaces: IInterface[],
+}>();
+
+const interfaceModel = model.value;
+const { smAndDown } = useDisplay()
+const windowWidth = ref(window.innerWidth);
+const updateWindowWidth = () => {windowWidth.value = window.innerWidth};
+const currentRoute = useRoute();
+const globalStore = useGlobalStore();
+const formIsValid = ref(false);
+const saving = ref(false);
+const saved = ref(false);
+const fetched = ref(false);
+const isDemo = ref(interfaceModel.data.hash === 'demo');
+const downloading = ref(false);
+const loading = ref(false);
+const form = ref<VForm | null>(null);
+const appBarFlat = ref(true);
 const serverSettings = ref<IServerSettings>({
   postMaxSize: '8M',
   publicUrl: '',
   uploadMaxSize: '2M',
 })
-const { preview = false, interfaces = [], autoload = false } = defineProps<{
-  preview?: boolean,
-  autoload?: boolean,
-  interfaces?: IInterface[],
-}>();
-const { smAndDown } = useDisplay()
-const drawer = ref(!smAndDown.value);
 
 const showAppBar = computed((): boolean => {
   return true;
 })
-
 const showActionBar = computed((): boolean => {
   return globalStore.session.loggedIn
     && canInteractWithServer.value;
 })
-
 const showFetchUserData = computed((): boolean => {
   return preview
     && globalStore.session.loggedIn
     && canInteractWithServer.value;
 })
-
 const showLocaleSwitcher = computed((): boolean => {
   return Object.keys(locales.value).length > 1;
 })
-
+const mobileMode = computed((): boolean => {
+  return smAndDown.value || (preview && windowWidth.value < 1400);
+})
 const showNavigationDrawer = computed((): boolean => {
   return Object.keys(interfaceData.value.sections).length > 1
-    || (interfaces.length > 1 && smAndDown.value);
+    || (interfaces.length > 1 && mobileMode.value);
 })
-
 const showContent = computed((): boolean => {
   return !!(selectedSection.value);
 })
-
-const toggleDrawer = () => {
-  drawer.value = !drawer.value;
-}
-
-const interfaceData = computed((): IData => {
-  return getParsedInterface(selectedInterface.value);
+const interfaceData = computed((): IInterfaceData => {
+  return interfaceModel.getParsedData();
 })
-
 const canInteractWithServer = computed((): boolean => {
-  return !!(selectedInterface.value.server_url)
-   && !!(selectedInterface.value.hash);
+  return !!(interfaceModel.data.server_url)
+    && !!(interfaceModel.data.hash);
 })
-
-const currentRoute = useRoute();
-const adminData = parseInterfaceDataToAdminData(interfaceData.value);
-const userData = ref(adminData);
-const originalUserData = ref(adminData);
-
 const selectedSection = computed(() => {
   return interfaceData.value.sections[selectedSectionKey.value];
 })
-
 const locales = computed(() => {
   return Object.entries(interfaceData.value.locales).map(item => ({ value: item[0], title: item[1] }));
 })
 
-const getDefaultLocale = (data: IData) => {
+const getDefaultLocale = (data: IInterfaceData) => {
   const entries = Object.entries(data.locales);
   if (entries[0] && entries[0][0]) {
     return entries[0][0];
   }
   return 'en-US';
 }
+
+const adminData = parseInterfaceDataToAdminData(interfaceData.value);
+const userData = ref(structuredClone(adminData));
+const originalUserData = ref(structuredClone(adminData));
+const drawer = ref(!mobileMode.value);
 const selectedLocale = ref(getDefaultLocale(interfaceData.value));
 const selectedSectionKey = ref(Object.keys(interfaceData.value.sections)[0]);
 const routeSection = interfaceData.value.sections[currentRoute.params.section?.toString()];
+
 if (currentRoute.params.section && routeSection) {
   selectedSectionKey.value = currentRoute.params.section.toString();
 }
 
-const globalStore = useGlobalStore();
-
 const onLogout = () => {
   goToSection();
-  selectedInterface.value = getInterface(getDefaultInterfaceContent());
+  interfaceModel.data = getInterface(getDefaultInterfaceContent());
 }
 
 // Check for changes and ask user before redirecting
 const goToSection = (section: string = '') => {
   if (preview) {
     selectedSectionKey.value = section;
+    if (showNavigationDrawer.value && mobileMode.value) {
+      drawer.value = false;
+    }
   } else {
-    router.push('/admin/' + selectedInterface.value.hash + '/' + section)
+    router.push('/admin/' + interfaceModel.data.hash + '/' + section)
   }
 }
 
-const formIsValid = ref(false);
-const saving = ref(false);
-const saved = ref(false);
+const toggleDrawer = () => {
+  drawer.value = !drawer.value;
+}
+
 const save = async (): Promise<any> => {
   saving.value = true;
-  return Services.post(selectedInterface.value.server_url || '', {
-    hash: selectedInterface.value.hash,
+
+  const parsedInterface = getParsedInterface(interfaceModel.data);
+  return Services.post(interfaceModel.data.server_url || '', {
+    hash: interfaceModel.data.hash,
     data: userData.value,
+    interface: parsedInterface,
+  }, {
+    'Content-Type': 'application/json',
+    'X-Jms-Api-Key': interfaceModel.data.server_secret,
   })
     .then(() => {
       originalUserData.value = structuredClone(toRaw(userData.value));
+      form.value?.resetValidation();
     })
     .catch(globalStore.catchError)
     .finally(() => {
@@ -143,17 +147,46 @@ const save = async (): Promise<any> => {
     });
 }
 
-const isDemo = ref(selectedInterface.value.hash === 'demo');
-const loading = ref(false);
+const fetchData = () => {
+  refresh().then(() => {
+    fetched.value = true;
+    setTimeout(() => fetched.value = false, 2000);
+  })
+}
+
+const download = () => {
+  downloading.value = true;
+  return Services.get((interfaceModel.data.server_url + '?hash=' + interfaceModel.data.hash) || '', {
+    'Content-Type': 'application/json',
+    'X-Jms-Api-Key': interfaceModel.data.server_secret,
+  })
+    .then(response => {
+      const json = JSON.stringify(response, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = interfaceModel.data.label + '.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+    })
+    .catch(globalStore.catchError)
+    .finally(() => downloading.value = false);
+}
+
 const refresh = () => {
   return new Promise((resolve, reject) => {
-    if (selectedInterface.value.hash && selectedInterface.value.server_url) {
+    if (interfaceModel.data.hash && interfaceModel.data.server_url) {
       loading.value = true;
-      Services.get((selectedInterface.value.server_url + '?hash=' + selectedInterface.value.hash) || '')
+      Services.get((interfaceModel.data.server_url + '?hash=' + interfaceModel.data.hash) || '', {
+        'Content-Type': 'application/json',
+        'X-Jms-Api-Key': interfaceModel.data.server_secret,
+      })
         .then(response => {
+          form.value?.resetValidation();
           serverSettings.value = response.settings;
-          userData.value = parseInterfaceDataToAdminData(interfaceData.value, response.data);
-          originalUserData.value = structuredClone(toRaw(userData.value));
+          applyUserData(parseInterfaceDataToAdminData(interfaceData.value, response.data));
           resolve(userData.value);
         })
         .catch(reason => {
@@ -167,6 +200,7 @@ const refresh = () => {
 
 const cancel = () => {
   userData.value = structuredClone(toRaw(originalUserData.value));
+  form.value?.resetValidation();
 }
 
 const canSave = computed((): boolean => {
@@ -181,18 +215,54 @@ const theme = computed((): { primary: string } => {
   return interfaceData.value.global.theme[globalStore.theme];
 })
 
-const appBarFlat = ref(true);
 const onScroll = (event: Event) => {
-  appBarFlat.value = (event.target as HTMLElement).scrollTop === 0;
+  appBarFlat.value = event.target === document
+    ? window.scrollY === 0
+    : (event.target as HTMLElement).scrollTop === 0;
 }
 
-if (!preview) {
-  watch(selectedSectionKey, () => {
-    goToSection(selectedSectionKey.value);
-  });
+const applyUserData = (data: any) => {
+  userData.value = structuredClone(toRaw(data));
+  originalUserData.value = structuredClone(toRaw(data));
+  Changes.applySet('admin', userData, originalUserData);
 }
 
-watch(() => selectedInterface.value.content, () => {
+// Detect changes..
+const dataHasChanged = computed((): boolean => objectsAreDifferent(userData, originalUserData));
+
+router.afterEach((to) => {
+  applyUserData(originalUserData.value);
+  if (to.params.section) {
+    selectedSectionKey.value = to.params.section.toString();
+  }
+  if (mobileMode.value) {
+    drawer.value = false;
+  }
+  form.value?.resetValidation();
+  nextTick(() => form.value?.resetValidation());
+})
+
+watch(() => interfaceModel.data.hash, () => {
+  const newUserData = parseInterfaceDataToAdminData(interfaceData.value);
+  applyUserData(newUserData);
+  form.value?.resetValidation();
+  if (autoload && interfaceModel.data.hash && !isDemo.value) {
+    setTimeout(() => {
+      refresh().catch(() => {
+        applyUserData(newUserData);
+      });
+    })
+  }
+  interfaceModel.copyDataToOriginalData();
+  nextTick(() => form.value?.resetValidation());
+}, { immediate: true });
+
+watch(() => selectedSectionKey.value, () => {
+  form.value?.resetValidation();
+  nextTick(() => form.value?.resetValidation());
+}, { immediate: true })
+
+watch(() => interfaceModel.data.content, () => {
 
   // Locale does not exist, fallback to first one
   if (!interfaceData.value.locales[selectedLocale.value]) {
@@ -207,38 +277,10 @@ watch(() => selectedInterface.value.content, () => {
 
   // Make sure current data structure matches the userData
   userData.value = parseInterfaceDataToAdminData(interfaceData.value, userData.value);
-});
+}, { immediate: true });
 
-watch(() => selectedInterface.value.hash, () => {
-  const newUserData = parseInterfaceDataToAdminData(interfaceData.value);
-  userData.value = structuredClone(newUserData);
-  originalUserData.value = structuredClone(newUserData);
-  if (autoload && selectedInterface.value.hash && !isDemo.value) {
-    setTimeout(() => {
-      refresh().catch(() => {
-        userData.value = newUserData;
-        originalUserData.value = structuredClone(toRaw(userData.value));
-      });
-    })
-  }
-});
-
-if (autoload && !isDemo.value) {
-  refresh();
-}
-
-// Detect changes..
-const dataHasChanged = computed((): boolean => objectsAreDifferent(userData.value, originalUserData.value));
-Changes.applySet('admin', userData, originalUserData);
-router.afterEach((to) => {
-  userData.value = structuredClone(toRaw(originalUserData.value));
-  if (to.params.section) {
-    selectedSectionKey.value = to.params.section.toString();
-  }
-  if (smAndDown.value) {
-    drawer.value = false;
-  }
-})
+onMounted(() => window.addEventListener('resize', updateWindowWidth));
+onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
 </script>
 
 <template>
@@ -249,19 +291,36 @@ router.afterEach((to) => {
 
   <!-- TOOLBAR -->
   <v-app-bar v-if="showAppBar" :flat="appBarFlat" border>
-    <template v-if="showNavigationDrawer && smAndDown" #prepend>
+    <template v-if="showNavigationDrawer && mobileMode" #prepend>
       <v-app-bar-nav-icon @click="toggleDrawer" />
     </template>
 
-    <v-app-bar-title>
+    <v-app-bar-title class="ml-2">
       <div class="d-flex align-center" style="gap: 1rem">
-        <img
-          v-if="interfaceData.global.logo"
-          :src="interfaceData.global.logo"
-          height="32"
-          alt="Logo"
-        >
-        <span class="text-truncate overflow-hidden">{{ interfaceData.global.title }}</span>
+        <template v-if="interfaces.length > 1 && !preview">
+          <InterfaceSelector
+            v-model="interfaceModel"
+            :interfaces="interfaces"
+            :label="null"
+            type="admin"
+            density="comfortable"
+            variant="solo"
+            flat
+            large-text
+            :style="{
+              maxWidth: smAndDown ? 'auto' : '25rem'
+            }"
+          />
+        </template>
+        <div v-else class="d-flex align-center ml-2 text-truncate" style="gap: 1rem">
+          <img
+            v-if="interfaceData.global.logo"
+            :src="interfaceData.global.logo"
+            height="32"
+            alt="Logo"
+          >
+          <span class="text-truncate overflow-hidden">{{ interfaceData.global.title }}</span>
+        </div>
       </div>
     </v-app-bar-title>
 
@@ -269,24 +328,28 @@ router.afterEach((to) => {
       <v-btn
         v-if="showFetchUserData"
         :loading="loading"
-        :icon="smAndDown"
-        :disabled="loading || !canInteractWithServer"
-        @click="refresh"
+        :icon="mobileMode"
+        :disabled="loading || !canInteractWithServer || fetched"
+        @click="fetchData"
       >
-        <v-icon :start="!smAndDown" icon="mdi-monitor-arrow-down" />
-        <span v-if="!smAndDown">Fetch user data</span>
+        <v-icon v-if="!fetched" :start="!mobileMode" icon="mdi-monitor-arrow-down" />
+        <v-icon v-else :start="!mobileMode" icon="mdi-check" />
+        <span v-if="!mobileMode && !fetched">Fetch user data</span>
+        <span v-else-if="!mobileMode">Fetched!</span>
       </v-btn>
       <template v-if="!preview && globalStore.session.loggedIn">
-        <template v-if="!smAndDown && interfaces.length > 1">
-          <InterfaceSelector
-            v-model="computedSelectedInterface"
-            :interfaces="interfaces"
-            type="admin"
-            style="max-width: 25rem; width: 15rem"
+        <SessionPanel
+          :show-username="!smAndDown"
+          @logout="onLogout"
+        >
+          <v-list-item
+            v-if="canInteractWithServer"
+            :disabled="downloading"
+            title="Download data"
+            prepend-icon="mdi-tray-arrow-down"
+            @click="download"
           />
-          <v-divider class="mx-3" inset vertical />
-        </template>
-        <SessionPanel @logout="onLogout" />
+        </SessionPanel>
       </template>
     </div>
   </v-app-bar>
@@ -295,7 +358,8 @@ router.afterEach((to) => {
   <v-navigation-drawer
     v-if="showNavigationDrawer"
     v-model="drawer"
-    :permanent="!smAndDown"
+    :permanent="!mobileMode"
+    :mobile-breakpoint="preview ? 1400 : 960"
     width="250"
   >
     <v-list v-model="selectedSectionKey" nav>
@@ -315,18 +379,19 @@ router.afterEach((to) => {
         />
       </template>
     </v-list>
-    <template v-if="smAndDown && interfaces.length > 1" #prepend>
-      <div class="pa-3">
-        <InterfaceSelector
-          v-model="computedSelectedInterface"
-          :interfaces="interfaces"
-          type="admin"
-        />
-      </div>
-      <v-divider />
-    </template>
     <template #append>
       <v-divider />
+      <div v-if="!preview" class="pa-3">
+        <v-btn
+          to="/admin"
+          color="secondary"
+          prepend-icon="mdi-shield-account"
+          variant="flat"
+          block
+        >
+          Admin Directory
+        </v-btn>
+      </div>
       <v-footer color="#f9f9f9">
         <small style="font-size: 0.6rem">{{ interfaceData.global.copyright }}</small>
       </v-footer>
@@ -336,25 +401,27 @@ router.afterEach((to) => {
   <!-- MAIN CONTENT -->
   <v-form
     v-if="showContent"
+    ref="form"
     v-model="formIsValid"
+    v-scroll="onScroll"
     v-scroll.self="onScroll"
     :class="{
       'w-100': true,
-      'pa-4': !smAndDown,
+      'pa-4': !mobileMode,
       'overflow-y-scroll': preview,
-      'bg-surface': smAndDown,
-      'fill-height': smAndDown && !preview,
+      'bg-surface': mobileMode,
+      'fill-height': mobileMode && !preview,
     }"
     :style="{
-      maxWidth: preview && !smAndDown && showNavigationDrawer ? 'calc(100% - 250px)' : undefined,
+      maxWidth: preview && !mobileMode && showNavigationDrawer ? 'calc(100% - 250px)' : undefined,
       marginTop: preview ? '64px' : undefined,
-      marginLeft: preview && !smAndDown && showNavigationDrawer ? '250px' : undefined,
-      marginBottom: showActionBar && !smAndDown && preview ? '64px' : undefined,
+      marginLeft: !mobileMode && showNavigationDrawer && preview ? '250px' : undefined,
+      marginBottom: showActionBar && !mobileMode && preview ? '64px' : undefined,
     }"
   >
     <v-card
-      :flat="smAndDown"
-      :tile="smAndDown"
+      :flat="mobileMode"
+      :tile="mobileMode"
       :class="{
         'pa-4 w-100': true,
         'height': 'min-content',
@@ -371,7 +438,8 @@ router.afterEach((to) => {
               v-if="showLocaleSwitcher"
               v-model="selectedLocale"
               :locales="locales"
-              :dense="smAndDown"
+              :dense="mobileMode"
+              :disabled="loading"
               style="max-width: 12rem"
             />
           </div>
@@ -391,8 +459,9 @@ router.afterEach((to) => {
             :locale="selectedLocale"
             :locales="interfaceData.locales"
             :structure="interfaceData"
-            :handler="selectedInterface.server_url"
+            :interface="interfaceModel"
             :server-settings="serverSettings"
+            :disabled="loading"
           />
           <FieldItem
             v-else
@@ -401,8 +470,9 @@ router.afterEach((to) => {
             :locale="selectedLocale"
             :locales="interfaceData.locales"
             :structure="interfaceData"
-            :handler="selectedInterface.server_url"
+            :interface="interfaceModel"
             :server-settings="serverSettings"
+            :disabled="loading"
           />
         </template>
 

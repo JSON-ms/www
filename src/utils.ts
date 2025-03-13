@@ -1,23 +1,25 @@
 import demoInterface from '@/assets/demo-interface.yaml'
-import type { IData, IInterface } from '@/interfaces';
+import type { IInterfaceData, IInterface } from '@/interfaces';
 import YAML from 'yamljs';
 import defaultInterfaceStructure from '@/assets/default-interface-structure.json';
 import merge from 'ts-deepmerge';
+import type {Ref} from 'vue';
+import {isRef} from 'vue';
 
-export const getParsedInterface = (data: IInterface): IData => {
+export const getParsedInterface = (data: IInterface = getInterface()): IInterfaceData => {
   let parseData: any = {};
   try {
-    const json: IData | string = YAML.parse(data.content) || {};
+    const json: IInterfaceData | string = YAML.parse(data.content) || {};
     if (typeof json === 'string') {
-      return defaultInterfaceStructure as IData;
+      return defaultInterfaceStructure as IInterfaceData;
     }
-    const mergedInterface = merge(defaultInterfaceStructure as IData, json);
+    const mergedInterface = merge(defaultInterfaceStructure as IInterfaceData, json);
     if (Object.keys(mergedInterface.locales).length === 0) {
       mergedInterface.locales = { 'en-US': 'English (US)' };
     }
-    parseData = mergedInterface as IData;
+    parseData = mergedInterface as IInterfaceData;
   } catch {
-    parseData = defaultInterfaceStructure as IData;
+    parseData = defaultInterfaceStructure as IInterfaceData;
   }
   // @ts-expect-error process.env is parsed from backend
   const version = JSON.parse(process.env.APP_VERSION);
@@ -28,6 +30,7 @@ export const getParsedInterface = (data: IInterface): IData => {
 export const getInterface = (content: string = getDefaultInterfaceContent()): IInterface => {
   return {
     label: 'Untitled',
+    hash: 'new',
     content,
     server_url: '',
     permission_interface: [],
@@ -98,7 +101,7 @@ export const getValueByPath = (obj: any, path = '') => {
   }, obj);
 }
 
-export const parseInterfaceDataToAdminData = (data: IData, override: any = {}): any => {
+export const parseInterfaceDataToAdminData = (data: IInterfaceData, override: any = {}): any => {
   const result: any = {};
   Object.entries(data.sections).forEach(([key, section]) => {
     if (section) {
@@ -127,7 +130,11 @@ export const parseInterfaceDataToAdminData = (data: IData, override: any = {}): 
   return result;
 }
 
-export const objectsAreDifferent = (obj1: any, obj2: any) => {
+export const objectsAreDifferent = (obj1: any | Ref<any>, obj2: any | Ref<any>, keys: string[] | null = null): boolean => {
+
+  if (isRef(obj1) && isRef(obj2)) {
+    return objectsAreDifferent(obj1.value, obj2.value);
+  }
 
   if (obj1 === obj2) return false;
 
@@ -135,8 +142,8 @@ export const objectsAreDifferent = (obj1: any, obj2: any) => {
     return true;
   }
 
-  const keys1 = Object.keys(obj1);
-  const keys2 = Object.keys(obj2);
+  const keys1 = Object.keys(obj1).filter(key => obj1[key] !== undefined && (!keys || keys.includes(key)));
+  const keys2 = Object.keys(obj2).filter(key => obj2[key] !== undefined && (!keys || keys.includes(key)));
 
   if (keys1.length !== keys2.length) {
     return true;
@@ -175,4 +182,22 @@ export const generateHash = (length = 10) => {
     hash += characters[randomIndex];
   }
   return hash;
+}
+
+export const phpStringSizeToBytes = (sizeString: string) => {
+  const size = parseFloat(sizeString);
+  const unit = sizeString[sizeString.length - 1].toUpperCase();
+
+  switch (unit) {
+    case 'K':
+      return size * 1024;
+    case 'M':
+      return size * 1024 * 1024
+    case 'G':
+      return size * 1024 * 1024 * 1024;
+    case 'T':
+      return size * 1024 * 1024 * 1024 * 1024;
+    default:
+      return size;
+  }
 }

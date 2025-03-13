@@ -9,8 +9,12 @@ const { smAndDown } = useDisplay()
 const list = defineModel<any[]>({ required: true });
 const {
   defaultItem,
+  disabled = false,
+  label,
 } = defineProps<{
-  defaultItem: any
+  defaultItem: any,
+  label: string,
+  disabled: boolean,
 }>()
 const addItem = () => {
   const newItem = structuredClone(defaultItem);
@@ -33,10 +37,10 @@ const removeItem = (index: number) => {
   })
 }
 const canMoveUp = (index: number): boolean => {
-  return index > 0;
+  return !disabled && index > 0;
 }
 const canMoveDown = (index: number): boolean => {
-  return index < list.value.length - 1;
+  return !disabled && index < list.value.length - 1;
 }
 const moveUp = (index: number) => {
   if (canMoveUp(index)) {
@@ -74,13 +78,14 @@ const moveDown = (index: number) => {
               <div class="d-flex align-center justify-space-between" style="gap: 0.5rem">
                 <h3>
                   <v-icon icon="mdi-circle-edit-outline" start />
-                  Item #{{ index + 1 }}
+                  {{ label }} #{{ index + 1 }}
                 </h3>
                 <div>
                   <v-tooltip location="bottom" text="Remove item">
                     <template #activator="{ props }">
                       <v-btn
                         v-bind="props"
+                        :disabled="disabled"
                         color="error"
                         size="small"
                         variant="text"
@@ -140,6 +145,7 @@ const moveDown = (index: number) => {
           </v-col>
           <v-col v-if="!smAndDown" style="flex: 0" class="pt-2 ml-3">
             <v-btn
+              :disabled="disabled"
               color="error"
               size="small"
               variant="text"
@@ -154,6 +160,7 @@ const moveDown = (index: number) => {
     </template>
     <template #footer>
       <v-btn
+        :disabled="disabled"
         :class="{
           'mt-4': list.length > 0
         }"

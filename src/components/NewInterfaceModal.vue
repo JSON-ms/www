@@ -24,7 +24,6 @@ const items: any[] = [
     width="450"
     contained
     scrollable
-    persistent
   >
     <v-card>
       <v-card-title>Select template</v-card-title>

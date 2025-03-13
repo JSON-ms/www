@@ -2,28 +2,28 @@ let requestCount = 0;
 
 export class Services {
 
-  static get(url: string): Promise<any> {
-    return this.handle(url, 'GET', undefined, {
-      'Content-Type': 'application/json',
-    });
+  static get(url: string, headers: {[key: string]: any} = {
+    'Content-Type': 'application/json'
+  }): Promise<any> {
+    return this.handle(url, 'GET', undefined, headers);
   }
 
-  static post(url: string, body?: any): Promise<any> {
-    return this.handle(url, 'POST', JSON.stringify(body), {
-      'Content-Type': 'application/json',
-    });
+  static post(url: string, body?: any, headers: {[key: string]: any} = {
+    'Content-Type': 'application/json'
+  }): Promise<any> {
+    return this.handle(url, 'POST', JSON.stringify(body), headers);
   }
 
   static delete(url: string, body?: any): Promise<any> {
-    return this.handle(url, 'DELETE', body, {
+    return this.handle(url, 'DELETE', JSON.stringify(body), {
       'Content-Type': 'application/json',
     });
   }
 
-  static upload(url: string, file: File, callback: (percentage: number, completed: boolean) => void = () => {}): Promise<any> {
+  static upload(url: string, file: File, callback: (percentage: number, completed: boolean) => void = () => {}, headers: {[key: string]: any} = {}): Promise<any> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.handle(url, 'POST', formData, undefined, {
+    return this.handle(url, 'POST', formData, headers, {
       onUploadProgress: (event: ProgressEvent) => {
         if (event.lengthComputable) {
           const percentComplete = (event.loaded / event.total) * 100;

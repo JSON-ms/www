@@ -63,7 +63,7 @@ sections:
         label: Call-to-action
         required: true
       image:
-        type: file
+        type: image
         label: Image
   services:
     label: Services
@@ -114,7 +114,7 @@ sections:
             type: select
             label: Countri(es)
             multiple: true
-            items: enum:countries
+            items: enums.countries
           body:
             type: i18n:markdown
             label: Body
