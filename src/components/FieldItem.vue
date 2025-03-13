@@ -100,7 +100,10 @@ const onFileChange = (file: File | File[] | null) => {
         'X-Jms-Interface-Hash': model.data.hash,
         'X-Jms-Api-Key': model.data.server_secret,
       })
-        .then(response => value.value = response.internalPath)
+        .then(response => value.value = {
+          'path': response.internalPath,
+          'meta': response.meta,
+        })
         .catch(globalStore.catchError)
         .finally(() => uploading.value = false);
     }
@@ -119,7 +122,7 @@ const localeLabel = computed((): string => {
   return (locales[locale] || '');
 })
 const filePath = computed((): string => {
-  return serverSettings.publicUrl + value.value;
+  return serverSettings.publicUrl + value.value.path;
 })
 const fileType = computed((): string => {
   return field.type.replace('i18n:', '');
@@ -403,13 +406,14 @@ const fileIcons: {[key: string]: string} = {
   </v-menu>
 
   <!-- FILE -->
-  <div v-else-if="['file', 'i18n:file', 'image', 'i18n:image'].includes(field.type)">
+  <div v-else-if="['file', 'i18n:file', 'image', 'i18n:image', 'video', 'i18n:video'].includes(field.type)">
+
     <FieldHeader :field="field" :locales="locales" :locale="locale" />
-    <v-card v-if="typeof value === 'string'" variant="tonal" class="w-100">
+    <v-card v-if="typeof value === 'object' && value.path" variant="tonal" class="w-100">
       <div class="d-flex align-center">
         <div class="pa-3 pr-0">
-          <v-icon v-if="!['image', 'i18n:image'].includes(field.type)" :icon="fileIcons[field.type]" :size="smAndDown ? 96 : 128" />
-          <v-avatar v-else :size="smAndDown ? 96 : 128" rounded="0">
+          <v-icon v-if="['file', 'i18n:file'].includes(field.type)" :icon="fileIcons[field.type]" :size="smAndDown ? 96 : 128" />
+          <v-avatar v-else-if="['image', 'i18n:image'].includes(field.type)" :size="smAndDown ? 96 : 128" rounded="0">
             <v-img :src="filePath">
               <template #placeholder>
                 <v-overlay>
@@ -422,6 +426,7 @@ const fileIcons: {[key: string]: string} = {
               </template>
             </v-img>
           </v-avatar>
+          <video v-else-if="['video', 'i18n:video'].includes(field.type)" :src="filePath" :style="{ height: smAndDown ? '96px' : '128px', float: 'left' }" controls />
         </div>
         <div class="pa-3 pl-0">
           <v-card-title
@@ -431,10 +436,11 @@ const fileIcons: {[key: string]: string} = {
             }"
             style="max-width: calc(200px)"
           >
-            {{ value }}
+            {{ value.path }}
           </v-card-title>
-          <v-card-subtitle class="py-0 text-capitalize">
-            {{ fileType }}
+          <v-card-subtitle class="py-0">
+            Size: {{ $formatBytes(value.meta.size) }}
+            <br>Type: <span class="text-uppercase">{{ value.meta.type }}</span>
           </v-card-subtitle>
           <v-card-actions class="pb-0">
             <v-btn
@@ -442,7 +448,7 @@ const fileIcons: {[key: string]: string} = {
               color="error"
               variant="text"
               prepend-icon="mdi-trash-can-outline"
-              @click="value = null"
+              @click="value = { path: null, meta: { type: null, size: 0 }}"
             >
               Remove
             </v-btn>
@@ -471,6 +477,31 @@ const fileIcons: {[key: string]: string} = {
     >
       <template #item />
     </v-file-upload>
+    <div v-else class="position-relative">
+      <v-overlay :model-value="uploading" contained absolute class="align-center justify-center" persistent>
+        <v-progress-circular color="primary" indeterminate />
+      </v-overlay>
+      <v-file-upload
+        v-model="fileValue"
+        :label="field.label"
+        :prepend-inner-icon="field.icon"
+        :hint="field.hint"
+        :persistent-hint="!!field.hint"
+        :required="field.required"
+        :rules="getRules(field)"
+        :icon="uploading ? 'mdi-' :smAndDown ? 'mdi-gesture-tap-button' : undefined"
+        :title="uploading ? '' : smAndDown ? 'Touch to upload' : undefined"
+        :disabled="disabled"
+        hide-details="auto"
+        density="compact"
+        variant="compact"
+        scrim="primary"
+        clearable
+        @update:model-value="onFileChange"
+      >
+        <template #item />
+      </v-file-upload>
+    </div>
   </div>
 
   <!-- ARRAY -->

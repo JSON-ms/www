@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, nextTick, onMounted, onUnmounted, ref, toRaw, watch} from 'vue';
+import {computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue';
 import { useDisplay } from 'vuetify'
 import type {IInterfaceData, IInterface, IServerSettings} from '@/interfaces';
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
@@ -7,7 +7,14 @@ import SessionPanel from '@/components/SessionPanel.vue';
 import InterfaceSelector from '@/components/InterfaceSelector.vue';
 import FieldItem from '@/components/FieldItem.vue';
 import { useGlobalStore } from '@/stores/global';
-import { getDefaultInterfaceContent, getInterface, getParsedInterface, objectsAreDifferent, parseInterfaceDataToAdminData } from '@/utils';
+import {
+  deepToRaw,
+  getDefaultInterfaceContent,
+  getInterface,
+  getParsedInterface,
+  objectsAreDifferent,
+  parseInterfaceDataToAdminData
+} from '@/utils';
 import router from '@/router';
 import { Services } from '@/services';
 import { useRoute } from 'vue-router';
@@ -136,7 +143,7 @@ const save = async (): Promise<any> => {
     'X-Jms-Api-Key': interfaceModel.data.server_secret,
   })
     .then(() => {
-      originalUserData.value = structuredClone(toRaw(userData.value));
+      originalUserData.value = structuredClone(deepToRaw(userData.value));
       form.value?.resetValidation();
     })
     .catch(globalStore.catchError)
@@ -199,7 +206,7 @@ const refresh = () => {
 }
 
 const cancel = () => {
-  userData.value = structuredClone(toRaw(originalUserData.value));
+  userData.value = structuredClone(deepToRaw(originalUserData.value));
   form.value?.resetValidation();
 }
 
@@ -222,8 +229,8 @@ const onScroll = (event: Event) => {
 }
 
 const applyUserData = (data: any) => {
-  userData.value = structuredClone(toRaw(data));
-  originalUserData.value = structuredClone(toRaw(data));
+  userData.value = structuredClone(deepToRaw(data));
+  originalUserData.value = structuredClone(deepToRaw(data));
   Changes.applySet('admin', userData, originalUserData);
 }
 
@@ -416,7 +423,7 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
       maxWidth: preview && !mobileMode && showNavigationDrawer ? 'calc(100% - 250px)' : undefined,
       marginTop: preview ? '64px' : undefined,
       marginLeft: !mobileMode && showNavigationDrawer && preview ? '250px' : undefined,
-      marginBottom: showActionBar && !mobileMode && preview ? '64px' : undefined,
+      marginBottom: showActionBar && preview ? '64px' : undefined,
     }"
   >
     <v-card
@@ -465,7 +472,7 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
           />
           <FieldItem
             v-else
-            v-model="userData[selectedSectionKey][key].general"
+            v-model="userData[selectedSectionKey][key]"
             :field="field"
             :locale="selectedLocale"
             :locales="interfaceData.locales"
