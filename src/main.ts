@@ -6,6 +6,7 @@
 
 // Plugins
 import { registerPlugins } from '@/plugins'
+import { registerFilters } from './filters';
 
 // Components
 import App from './App.vue'
@@ -27,6 +28,7 @@ app.use(pinia);
 app.use(VueEasymde);
 app.component('QuillEditor', QuillEditor)
 
+registerFilters(app);
 registerPlugins(app)
 
 const globalStore = useGlobalStore();

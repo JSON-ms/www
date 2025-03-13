@@ -49,12 +49,21 @@ export const parseFields = (fields: any = {}, locales = {}) => {
 
   const emptyStringTypes = ['i18n', 'wysiwyg', 'i18n:wysiwyg', 'markdown', 'i18n:markdown', 'date', 'i18n:date'];
   const multipleTypes = ['array', 'i18n:array'];
+  const fileTypes = ['file', 'i18n:file', 'image', 'i18n:image', 'video', 'i18n:video'];
   const mayBeMultipleTypes = ['select', 'i18n:select', 'checkbox', 'i18n:checkbox', 'radio', 'i18n:radio'];
   const applyValues = (key: string) => {
     const type = fields[key].type || '';
     let value;
     if (multipleTypes.includes(type) || (mayBeMultipleTypes.includes(type) && !!(fields[key].multiple))) {
       value = [];
+    } else if (fileTypes.includes(type)) {
+      value = {
+        path: null,
+        meta: {
+          size: 0,
+          type: null,
+        }
+      };
     } else {
       value = emptyStringTypes.includes(type) ? '' : null;
     }
@@ -72,10 +81,7 @@ export const parseFields = (fields: any = {}, locales = {}) => {
         }
       })
     } else {
-      result[key].general = applyValues(key);
-      if (result[key].general === undefined) {
-        delete result[key].general;
-      }
+      result[key] = applyValues(key);
     }
   });
   return result;
@@ -113,18 +119,20 @@ export const parseInterfaceDataToAdminData = (data: IInterfaceData, override: an
   });
   processObject(result, (parent, key, path) => {
     const overrideValue = getValueByPath(override, path);
-    if (Array.isArray(parent[key]) && Array.isArray(overrideValue)) {
+
+    // Array
+    if (Array.isArray(parent[key])) {
+      if (Array.isArray(overrideValue)) {
+        return parent[key] = overrideValue;
+      }
+      return parent[key];
+    }
+
+    // Number/String
+    if ((typeof parent[key] !== 'object' || typeof parent[key] !== null) && ['number', 'string'].includes(typeof overrideValue)) {
       return parent[key] = overrideValue;
     }
-    if (
-      typeof parent[key] === 'object' && parent[key] !== null &&
-      typeof overrideValue === 'object' && overrideValue !== null
-    ) {
-      return parent[key] = overrideValue;
-    }
-    if (overrideValue !== undefined) {
-      return parent[key] = overrideValue;
-    }
+
     return parent[key];
   });
   return result;
