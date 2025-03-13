@@ -3,8 +3,8 @@ import ListBuilder from '@/components/ListBuilder.vue';
 import FieldHeader from '@/components/FieldHeader.vue';
 import type { IInterfaceData, IField, IServerSettings } from '@/interfaces';
 import Rules from '@/rules';
-import { parseFields, phpStringSizeToBytes } from '@/utils';
-import { computed, ref, toRaw } from 'vue';
+import {deepToRaw, parseFields, phpStringSizeToBytes} from '@/utils';
+import { computed, ref } from 'vue';
 import { Services } from '@/services';
 import { useGlobalStore } from '@/stores/global';
 import { useDisplay } from 'vuetify';
@@ -82,7 +82,7 @@ const computedReadOnlyDate = computed((): string => {
 });
 
 const getDefaultItem = () => {
-  return parseFields(structuredClone(toRaw(arrayFields.value) || {}), locales);
+  return parseFields(structuredClone(deepToRaw(arrayFields.value) || {}), locales);
 }
 
 const uploading = ref(false);
