@@ -71,8 +71,8 @@ export interface IField {
   inline?: boolean
   prepend?: string
   append?: string
-  'append-inner'?: boolean
-  'prepend-inner'?: boolean
+  'append-inner'?: string
+  'prepend-inner'?: string
   fields?: {[key: string]: IField}
   items?: {[key: string]: string} | string[]
 }

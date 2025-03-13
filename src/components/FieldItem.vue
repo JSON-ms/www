@@ -124,13 +124,13 @@ const localeLabel = computed((): string => {
   return (locales[locale] || '');
 })
 const filePath = computed((): string => {
-  return serverSettings.publicUrl + value.value.path;
+  return serverSettings.publicUrl + value.value?.path;
 })
-const showPrependInner = computed((): string => {
-  return field['prepend-inner'];
+const showPrependInner = computed((): boolean => {
+  return !!(field['prepend-inner']);
 })
-const showAppendInner = computed((): string => {
-  return field.type.includes('i18n') || field['append-inner'];
+const showAppendInner = computed((): boolean => {
+  return field.type.includes('i18n') || !!(field['append-inner']);
 })
 const fileIcons: {[key: string]: string} = {
   'i18n:file': 'mdi-file-outline',
@@ -444,9 +444,8 @@ const fileIcons: {[key: string]: string} = {
 
   <!-- FILE -->
   <div v-else-if="['file', 'i18n:file', 'image', 'i18n:image', 'video', 'i18n:video'].includes(field.type)">
-
     <FieldHeader :field="field" :locales="locales" :locale="locale" />
-    <v-card v-if="typeof value === 'object' && value.path" variant="tonal" class="w-100">
+    <v-card v-if="typeof value === 'object' && value !== null && value.path" variant="tonal" class="w-100">
       <div class="d-flex align-center">
         <div class="pa-3 pr-0">
           <v-icon v-if="['file', 'i18n:file'].includes(field.type)" :icon="fileIcons[field.type]" :size="smAndDown ? 96 : 128" />
@@ -485,7 +484,7 @@ const fileIcons: {[key: string]: string} = {
               color="error"
               variant="text"
               prepend-icon="mdi-trash-can-outline"
-              @click="value = { path: null, meta: { type: null, size: 0 }}"
+              @click="value = null"
             >
               Remove
             </v-btn>

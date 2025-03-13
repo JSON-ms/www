@@ -57,13 +57,7 @@ export const parseFields = (fields: any = {}, locales = {}) => {
     if (multipleTypes.includes(type) || (mayBeMultipleTypes.includes(type) && !!(fields[key].multiple))) {
       value = [];
     } else if (fileTypes.includes(type)) {
-      value = {
-        path: null,
-        meta: {
-          size: 0,
-          type: null,
-        }
-      };
+      value = null;
     } else {
       value = emptyStringTypes.includes(type) ? '' : null;
     }
@@ -100,11 +94,43 @@ export const processObject = (obj: any, callback: (parent: any, key: string, pat
   }
 }
 
-export const getValueByPath = (obj: any, path = '') => {
+export const getDataByPath = (obj: any, path = '') => {
   const keys = path.split('.');
   return keys.reduce((accumulator: any, key: string) => {
     return (accumulator !== null && accumulator !== undefined) ? accumulator[key] : undefined;
   }, obj);
+}
+
+export const getFieldByPath = (obj: any, path: string): any => {
+  const keys = path.split('.');
+  let current = obj;
+  let lastFound = undefined;
+
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+
+    // If it's the first key, just access it directly
+    if (i === 0) {
+      current = current[key];
+    } else {
+      // For subsequent keys, first check 'fields', then the key itself
+      if (current && current.fields && current.fields[key] !== undefined) {
+        lastFound = current; // Update last found object
+        current = current.fields[key];
+      } else {
+        lastFound = current; // Update last found object
+        current = current[key];
+      }
+    }
+
+    // If current becomes undefined, we continue but keep track of last found
+    if (current === undefined) {
+      break;
+    }
+  }
+
+  // If the last key was not found, return the last found object
+  return current !== undefined ? current : lastFound;
 }
 
 export const parseInterfaceDataToAdminData = (data: IInterfaceData, override: any = {}): any => {
@@ -118,11 +144,20 @@ export const parseInterfaceDataToAdminData = (data: IInterfaceData, override: an
     }
   });
   processObject(result, (parent, key, path) => {
-    const overrideValue = getValueByPath(override, path);
+    const overrideValue = getDataByPath(override, path);
+    const field = getFieldByPath(data.sections, path);
 
     // Array
-    if (Array.isArray(parent[key])) {
+    if (['array', 'i18n:array'].includes(field.type)) {
       if (Array.isArray(overrideValue)) {
+        return parent[key] = overrideValue;
+      }
+      return parent[key];
+    }
+
+    // Files
+    if (['file', 'i18n:file', 'image', 'i18n:image', 'video', 'i18n:video'].includes(field.type)) {
+      if (typeof overrideValue === 'object' && overrideValue !== null && typeof overrideValue.path === 'string' && typeof overrideValue.meta === 'object') {
         return parent[key] = overrideValue;
       }
       return parent[key];
