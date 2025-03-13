@@ -1,6 +1,6 @@
 import type {IInterfaceData, IInterface} from '@/interfaces';
-import {getDefaultInterfaceContent, getInterface, getParsedInterface} from '@/utils';
-import {ref, toRaw} from 'vue';
+import {deepToRaw, getDefaultInterfaceContent, getInterface, getParsedInterface} from '@/utils';
+import {ref} from 'vue';
 import {Services} from '@/services';
 import {useGlobalStore} from '@/stores/global';
 import blankInterface from '@/assets/blank-interface.yaml';
@@ -126,7 +126,7 @@ export default class InterfaceModel extends BaseModel<IInterface, InterfaceModel
 
       this.states.value.saving = true;
       const globalStore = useGlobalStore();
-      const parsedInterface = getParsedInterface(toRaw(this.data));
+      const parsedInterface = getParsedInterface(deepToRaw(this.data));
       Services.post(import.meta.env.VITE_SERVER_URL + '/interface' + (this.data.uuid ? '/' + this.data.uuid : ''), {
         ...this.data,
         label: parsedInterface.global.title ?? 'Untitled',

@@ -517,7 +517,7 @@ const fileIcons: {[key: string]: string} = {
           />
           <FieldItem
             v-else-if="arrayFields[key]"
-            v-model="item[key].general"
+            v-model="item[key]"
             :field="arrayFields[key]"
             :locale="locale"
             :locales="locales"

@@ -4,7 +4,7 @@ import YAML from 'yamljs';
 import defaultInterfaceStructure from '@/assets/default-interface-structure.json';
 import merge from 'ts-deepmerge';
 import type {Ref} from 'vue';
-import {isRef} from 'vue';
+import {isReactive, isReadonly, isRef, toRaw} from 'vue';
 
 export const getParsedInterface = (data: IInterface = getInterface()): IInterfaceData => {
   let parseData: any = {};
@@ -208,4 +208,11 @@ export const phpStringSizeToBytes = (sizeString: string) => {
     default:
       return size;
   }
+}
+
+export const deepToRaw = (obj: any): any => {
+  if (isReactive(obj) || isReadonly(obj)) {
+    return toRaw(obj);
+  }
+  return obj; // If it's not reactive or readonly, return the object itself.
 }

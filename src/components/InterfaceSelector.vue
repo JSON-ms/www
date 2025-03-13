@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import {computed, toRaw} from 'vue';
+import {computed} from 'vue';
 import { useGlobalStore } from '@/stores/global';
 import InterfaceModel from '@/models/interface.model';
 import type {IInterface} from '@/interfaces';
+import {deepToRaw} from '@/utils';
 
 // Props
 const interfaceModel = defineModel<InterfaceModel>({ required: true });
@@ -42,7 +43,7 @@ const computedInterfaces = computed((): (IInterface | { header: string })[] => {
     }
   }
   if (ownerInterfaces.length > 0) {
-    results.push(...ownerInterfaces.map(item => toRaw(item)))
+    results.push(...ownerInterfaces.map(item => deepToRaw(item)))
   }
   if (hasBoth && sharedInterfaces.length > 0) {
     if (sharedInterfaces.length > 0) {
@@ -52,7 +53,7 @@ const computedInterfaces = computed((): (IInterface | { header: string })[] => {
     }
   }
   if (sharedInterfaces.length > 0) {
-    results.push(...sharedInterfaces.map(item => toRaw(item)))
+    results.push(...sharedInterfaces.map(item => deepToRaw(item)))
   }
   return results;
 })

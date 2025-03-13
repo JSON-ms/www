@@ -1,5 +1,5 @@
-import {type Ref, ref, toRaw} from 'vue';
-import {generateHash, objectsAreDifferent} from '@/utils';
+import {type Ref, ref} from 'vue';
+import {generateHash, objectsAreDifferent, deepToRaw} from '@/utils';
 import type {IModel} from '@/interfaces';
 
 export interface IState {
@@ -59,7 +59,7 @@ export default class BaseModel<T extends IModel, M> {
         delete this.data[key];
       }
     }
-    Object.assign(this.data, structuredClone(toRaw(value)));
+    Object.assign(this.data, structuredClone(deepToRaw(value)));
   }
 
   public setOriginalData(value: T): void {
@@ -68,7 +68,7 @@ export default class BaseModel<T extends IModel, M> {
         delete this.originalData[key];
       }
     }
-    Object.assign(this.originalData, structuredClone(toRaw(value)));
+    Object.assign(this.originalData, structuredClone(deepToRaw(value)));
   }
 
   public copyDataToOriginalData(): void {
@@ -81,8 +81,8 @@ export default class BaseModel<T extends IModel, M> {
 
   public isPristine(): boolean {
     return !objectsAreDifferent(
-      toRaw(this.data),
-      toRaw(this.originalData)
+      deepToRaw(this.data),
+      deepToRaw(this.originalData)
     );
   }
 
