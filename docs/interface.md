@@ -129,6 +129,8 @@ For instance:
 - `multiple`: A boolean value that indicates whether the field can accept multiple values (e.g., for `select` or `checkbox` types).
 - `prepend`: An optional string that will be displayed before the input field.
 - `append`: An optional string that will be displayed after the input field.
+- `prepend-inner`: An optional string that will be displayed inside and before the input field. Can be used with `string`, `number`, `select`, `textarea` and `date` fields.'
+- `append-inner`: An optional string that will be displayed inside and after the input field. Can be used with `string`, `number`, `select`, `textarea` and `date` fields.'
 - `hint`: An optional string that provides additional information or guidance to the user about the field, displayed below the field.
 - `icon`: (Optional) An icon that will be displayed next to the menu item.
   - Make sure to prefix all icons with "mdi-". For instance: mdi-check will show the "check" icon.
