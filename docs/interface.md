@@ -54,7 +54,7 @@ enums:
 
 You can later use these enums seperated by commas (ex: enums.countries) as `items` value for supported types: `select`, `checkbox` and `radio`.
 
-Here's an example of a field using a enum:
+Here's an example of a field using an enum:
 
 ```yaml
       country: 
@@ -113,12 +113,12 @@ For instance:
 - `markdown`: A fully-featured Markdown editor that allows for easy formatting of text using simple syntax.
 - `wysiwyg`: A fully-featured WYSIWYG (What You See Is What You Get) editor for rich text formatting.
 - `number`: A numeric input field for entering numbers.
-- `select`: A dropdown menu that allows users to choose one option from a predefined list.
-- `checkbox`: A binary input that allows users to select one or more options from a set of choices.
+- `select`: A dropdown menu that allows users to choose one or multiple items from a predefined list.
+- `checkbox`: A binary input that allows users to select one or more items from a set of choices.
 - `radio`: A set of options where only one can be selected at a time, typically displayed as buttons.
 - `date`: A date picker input for selecting a specific date.
 - `switch`: A toggle switch that allows users to turn a setting on or off.
-- `array`: A collection of fields that can hold multiple values or items.
+- `array`: A collection of items that can hold multiple fields.
 - `file`: An option to upload a file.
 - `i18n`
 - `i18n:[TYPE]`: You can use any of the above types to make them translatable. For example, you can specify `i18n:string`, `i18n:wysiwyg`, or even `i18n:file` to indicate that these fields should support multiple languages.

@@ -140,11 +140,6 @@ onMounted(() => {
   margin: 1rem 0;
 }
 .docs {
-  hr {
-    margin: 0.5rem 0 1rem 0;
-    color: rgba(0, 0, 0, 0.1) !important;
-    border-color: rgba(0, 0, 0, 0.1) !important;
-  }
   * + h2,
   * + h3,
   * + h4 {

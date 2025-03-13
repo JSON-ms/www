@@ -21,6 +21,7 @@ const {
   serverSettings,
   interface: model,
   disabled = false,
+  loading = false,
 } = defineProps<{
   field: IField,
   locale: string,
@@ -28,7 +29,8 @@ const {
   structure: IInterfaceData,
   interface: InterfaceModel,
   serverSettings: IServerSettings,
-  disabled: boolean
+  disabled?: boolean,
+  loading?: boolean,
 }>();
 const showDatePicker = ref(false);
 const getRules = (field: IField): any[] => {
@@ -124,8 +126,11 @@ const localeLabel = computed((): string => {
 const filePath = computed((): string => {
   return serverSettings.publicUrl + value.value.path;
 })
-const fileType = computed((): string => {
-  return field.type.replace('i18n:', '');
+const showPrependInner = computed((): string => {
+  return field['prepend-inner'];
+})
+const showAppendInner = computed((): string => {
+  return field.type.includes('i18n') || field['append-inner'];
 })
 const fileIcons: {[key: string]: string} = {
   'i18n:file': 'mdi-file-outline',
@@ -153,14 +158,19 @@ const fileIcons: {[key: string]: string} = {
     :required="field.required"
     :rules="getRules(field)"
     :disabled="disabled"
+    :loading="loading"
     hide-details="auto"
     clearable
   >
     <template v-if="field.required" #label>
       <span class="mr-2 text-error">*</span>{{ field.label }}
     </template>
-    <template v-if="field.type.includes('i18n')" #append-inner>
-      <v-chip label size="x-small">
+    <template v-if="showPrependInner" #prepend-inner>
+      <span class="text-no-wrap">{{ field['prepend-inner'] }}</span>
+    </template>
+    <template v-if="showAppendInner" #append-inner>
+      <span v-if="field['append-inner']" class="text-no-wrap">{{ field['append-inner'] }}</span>
+      <v-chip v-if="field.type.includes('i18n')" label size="x-small" class="ml-3">
         {{ localeLabel }}
       </v-chip>
     </template>
@@ -177,14 +187,19 @@ const fileIcons: {[key: string]: string} = {
     :required="field.required"
     :rules="getRules(field)"
     :disabled="disabled"
+    :loading="loading"
     hide-details="auto"
     clearable
   >
     <template v-if="field.required" #label>
       <span class="mr-2 text-error">*</span>{{ field.label }}
     </template>
-    <template v-if="field.type.includes('i18n')" #append-inner>
-      <v-chip label size="x-small">
+    <template v-if="showPrependInner" #prepend-inner>
+      <span class="text-no-wrap ml-3 mr-2">{{ field['prepend-inner'] }}</span>
+    </template>
+    <template v-if="showAppendInner" #append-inner>
+      <span v-if="field['append-inner']" class="text-no-wrap mr-6">{{ field['append-inner'] }}</span>
+      <v-chip v-if="field.type.includes('i18n')" label size="x-small" class="ml-3">
         {{ localeLabel }}
       </v-chip>
     </template>
@@ -203,6 +218,7 @@ const fileIcons: {[key: string]: string} = {
       :required="field.required"
       :rules="getRules(field)"
       :disabled="disabled"
+      :loading="loading"
       hide-details="auto"
       clearable
     >
@@ -228,6 +244,7 @@ const fileIcons: {[key: string]: string} = {
       :required="field.required"
       :rules="getRules(field)"
       :disabled="disabled"
+      :loading="loading"
       hide-details="auto"
       clearable
     >
@@ -260,14 +277,19 @@ const fileIcons: {[key: string]: string} = {
     :required="field.required"
     :rules="getRules(field)"
     :disabled="disabled"
+    :loading="loading"
     hide-details="auto"
     clearable
   >
     <template v-if="field.required" #label>
       <span class="mr-2 text-error">*</span>{{ field.label }}
     </template>
-    <template v-if="field.type.includes('i18n')" #append-inner>
-      <v-chip label size="x-small">
+    <template v-if="showPrependInner" #prepend-inner>
+      <span class="text-no-wrap">{{ field['prepend-inner'] }}</span>
+    </template>
+    <template v-if="showAppendInner" #append-inner>
+      <span v-if="field['append-inner']" class="text-no-wrap">{{ field['append-inner'] }}</span>
+      <v-chip v-if="field.type.includes('i18n')" label size="x-small" class="ml-3">
         {{ localeLabel }}
       </v-chip>
     </template>
@@ -283,14 +305,19 @@ const fileIcons: {[key: string]: string} = {
     :items="optionItems"
     :multiple="!!(field.multiple)"
     :disabled="disabled"
+    :loading="loading"
     hide-details="auto"
     clearable
   >
     <template v-if="field.required" #label>
       <span class="mr-2 text-error">*</span>{{ field.label }}
     </template>
-    <template v-if="field.type.includes('i18n')" #append-inner>
-      <v-chip label size="x-small">
+    <template v-if="showPrependInner" #prepend-inner>
+      <span class="text-no-wrap">{{ field['prepend-inner'] }}</span>
+    </template>
+    <template v-if="showAppendInner" #append-inner>
+      <span v-if="field['append-inner']" class="text-no-wrap">{{ field['append-inner'] }}</span>
+      <v-chip v-if="field.type.includes('i18n')" label size="x-small" class="ml-3">
         {{ localeLabel }}
       </v-chip>
     </template>
@@ -306,6 +333,7 @@ const fileIcons: {[key: string]: string} = {
     :hint="field.hint"
     :persistent-hint="!!field.hint"
     :disabled="disabled"
+    :loading="loading"
     color="primary"
     hide-details="auto"
     inset
@@ -334,6 +362,7 @@ const fileIcons: {[key: string]: string} = {
       :value="item.value"
       :required="field.required"
       :disabled="disabled"
+      :loading="loading"
       color="primary"
       hide-details="auto"
     />
@@ -348,6 +377,7 @@ const fileIcons: {[key: string]: string} = {
       :rules="getRules(field)"
       :inline="field.inline"
       :disabled="disabled"
+      :loading="loading"
       color="primary"
       hide-details="auto"
       clearable
@@ -358,6 +388,7 @@ const fileIcons: {[key: string]: string} = {
         :label="item.title"
         :value="item.value"
         :disabled="disabled"
+        :loading="loading"
       />
     </v-radio-group>
   </div>
@@ -368,6 +399,7 @@ const fileIcons: {[key: string]: string} = {
     v-model="showDatePicker"
     :close-on-content-click="false"
     :disabled="disabled"
+    :loading="loading"
     location="bottom"
   >
     <template #activator="{ props }">
@@ -380,6 +412,7 @@ const fileIcons: {[key: string]: string} = {
         :hint="field.hint"
         :persistent-hint="!!field.hint"
         :disabled="disabled"
+        :loading="loading"
         readonly
         hide-details="auto"
         clearable
@@ -389,8 +422,12 @@ const fileIcons: {[key: string]: string} = {
         <template v-if="field.required" #label>
           <span class="mr-2 text-error">*</span>{{ field.label }}
         </template>
-        <template v-if="field.type.includes('i18n')" #append-inner>
-          <v-chip label size="x-small">
+        <template v-if="showPrependInner" #prepend-inner>
+          <span class="text-no-wrap">{{ field['prepend-inner'] }}</span>
+        </template>
+        <template v-if="showAppendInner" #append-inner>
+          <span v-if="field['append-inner']" class="text-no-wrap">{{ field['append-inner'] }}</span>
+          <v-chip v-if="field.type.includes('i18n')" label size="x-small" class="ml-3">
             {{ localeLabel }}
           </v-chip>
         </template>
@@ -471,6 +508,7 @@ const fileIcons: {[key: string]: string} = {
         :icon="uploading ? 'mdi-' :smAndDown ? 'mdi-gesture-tap-button' : undefined"
         :title="uploading ? '' : smAndDown ? 'Touch to upload' : undefined"
         :disabled="disabled"
+        :loading="loading"
         hide-details="auto"
         density="compact"
         variant="compact"
@@ -493,6 +531,7 @@ const fileIcons: {[key: string]: string} = {
       :rules="getRules(field)"
       :default-item="getDefaultItem()"
       :disabled="disabled"
+      :loading="loading"
       class="d-flex flex-column"
       style="gap: 0.5rem"
       hide-details="auto"
@@ -514,6 +553,7 @@ const fileIcons: {[key: string]: string} = {
             :interface="model"
             :server-settings="serverSettings"
             :disabled="disabled"
+            :loading="loading"
           />
           <FieldItem
             v-else-if="arrayFields[key]"
@@ -525,6 +565,7 @@ const fileIcons: {[key: string]: string} = {
             :interface="model"
             :server-settings="serverSettings"
             :disabled="disabled"
+            :loading="loading"
           />
         </div>
       </template>

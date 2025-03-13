@@ -100,6 +100,10 @@ const getCyperKey = () => {
     </v-alert>
 
     <v-card>
+      <v-card-text class="pb-0">
+        <h1>Settings</h1>
+        <hr>
+      </v-card-text>
       <v-card-title>
         Admin
       </v-card-title>

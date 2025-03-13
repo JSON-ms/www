@@ -315,7 +315,7 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
             flat
             large-text
             :style="{
-              maxWidth: smAndDown ? 'auto' : '25rem'
+              maxWidth: smAndDown ? 'auto' : 'max-content'
             }"
           />
         </template>
@@ -468,7 +468,7 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
             :structure="interfaceData"
             :interface="interfaceModel"
             :server-settings="serverSettings"
-            :disabled="loading"
+            :loading="loading"
           />
           <FieldItem
             v-else
@@ -479,7 +479,7 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
             :structure="interfaceData"
             :interface="interfaceModel"
             :server-settings="serverSettings"
-            :disabled="loading"
+            :loading="loading"
           />
         </template>
 
