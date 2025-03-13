@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia';
-import type {ISession, IPrompt, IError} from '@/interfaces';
+import type { ISession, IPrompt, IError, ISnack } from '@/interfaces';
 import InterfaceModel from '@/models/interface.model';
 
 export const useGlobalStore = defineStore('example', {
   state: (): {
     theme: 'dark' | 'light',
+    snack: ISnack,
     error: IError,
     prompt: IPrompt,
     session: ISession,
@@ -16,6 +17,11 @@ export const useGlobalStore = defineStore('example', {
       callback: () => new Promise(resolve => resolve()),
     },
     error: {
+      body: '',
+      visible: false,
+    },
+    snack: {
+      title: '',
       body: '',
       visible: false,
     },
@@ -46,12 +52,12 @@ export const useGlobalStore = defineStore('example', {
         const serverError = [
           'Failed to fetch',
         ].includes(error.message);
-        const body = serverError
-          ? 'Your server script is not configured correctly. Please review and adjust your script to ensure it processes requests properly. For debugging, check the Network tab in your browser\'s console to see the request and response details. If you need further assistance, refer to the documentation.'
-          : error.message;
-        this.error = {
+        this.snack = {
           visible: true,
-          body,
+          icon: 'mdi-server-network-off',
+          color: 'error',
+          title: serverError ? 'Error Fetching Data' : 'Server Error',
+          body: serverError ? 'Please check your webhook URL or check your server settings.' : error.message,
         };
       }
     },
@@ -60,6 +66,9 @@ export const useGlobalStore = defineStore('example', {
     },
     setError(error: IError) {
       this.error = error;
+    },
+    setSnack(snack: ISnack) {
+      this.snack = snack;
     },
     setSession(session: ISession) {
       this.session = session;

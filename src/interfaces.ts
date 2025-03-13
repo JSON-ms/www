@@ -22,6 +22,15 @@ export interface IPrompt {
   callback: () => Promise<void>,
 }
 
+export interface ISnack {
+  visible: boolean,
+  icon?: string | undefined,
+  color?: string | undefined,
+  title?: string | undefined,
+  icon?: string | undefined,
+  body: string,
+}
+
 export interface IError {
   visible: boolean,
   title?: string | undefined,

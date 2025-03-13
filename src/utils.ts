@@ -148,7 +148,7 @@ export const parseInterfaceDataToAdminData = (data: IInterfaceData, override: an
     const field = getFieldByPath(data.sections, path);
 
     // Array
-    if (['array', 'i18n:array'].includes(field.type)) {
+    if (['array', 'i18n:array'].includes(field.type) || field.multiple) {
       if (Array.isArray(overrideValue)) {
         return parent[key] = overrideValue;
       }
@@ -164,7 +164,7 @@ export const parseInterfaceDataToAdminData = (data: IInterfaceData, override: an
     }
 
     // Number/String
-    if ((typeof parent[key] !== 'object' || typeof parent[key] !== null) && ['number', 'string'].includes(typeof overrideValue)) {
+    if ((typeof parent[key] !== 'object' || typeof parent[key] !== null) && ['number', 'string', 'boolean'].includes(typeof overrideValue)) {
       return parent[key] = overrideValue;
     }
 
@@ -246,8 +246,17 @@ export const phpStringSizeToBytes = (sizeString: string) => {
 }
 
 export const deepToRaw = (obj: any): any => {
-  if (isReactive(obj) || isReadonly(obj)) {
-    return toRaw(obj);
+  const raw = toRaw(obj);
+  if (Array.isArray(raw)) {
+    return raw.map(item => deepToRaw(item));
+  } else if (typeof raw === 'object' && raw !== null) {
+    const result: any = {};
+    for (const key in raw) {
+      if (raw.hasOwnProperty(key)) {
+        result[key] = deepToRaw(raw[key]);
+      }
+    }
+    return result;
   }
-  return obj; // If it's not reactive or readonly, return the object itself.
+  return raw;
 }
