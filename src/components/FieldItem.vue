@@ -456,27 +456,6 @@ const fileIcons: {[key: string]: string} = {
         </div>
       </div>
     </v-card>
-    <v-file-upload
-      v-else
-      v-model="fileValue"
-      :label="field.label"
-      :prepend-inner-icon="field.icon"
-      :hint="field.hint"
-      :persistent-hint="!!field.hint"
-      :required="field.required"
-      :rules="getRules(field)"
-      :icon="smAndDown ? 'mdi-gesture-tap-button' : undefined"
-      :title="smAndDown ? 'Touch to upload' : undefined"
-      :disabled="disabled"
-      hide-details="auto"
-      density="compact"
-      variant="compact"
-      scrim="primary"
-      clearable
-      @update:model-value="onFileChange"
-    >
-      <template #item />
-    </v-file-upload>
     <div v-else class="position-relative">
       <v-overlay :model-value="uploading" contained absolute class="align-center justify-center" persistent>
         <v-progress-circular color="primary" indeterminate />
