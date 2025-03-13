@@ -115,6 +115,9 @@ const fileValue = computed({
     value.value = file;
   }
 })
+const localeLabel = computed((): string => {
+  return (locales[locale] || '');
+})
 const filePath = computed((): string => {
   return serverSettings.publicUrl + value.value;
 })
@@ -155,7 +158,7 @@ const fileIcons: {[key: string]: string} = {
     </template>
     <template v-if="field.type.includes('i18n')" #append-inner>
       <v-chip label size="x-small">
-        {{ locales[locale] }}
+        {{ localeLabel }}
       </v-chip>
     </template>
   </v-text-field>
@@ -179,7 +182,7 @@ const fileIcons: {[key: string]: string} = {
     </template>
     <template v-if="field.type.includes('i18n')" #append-inner>
       <v-chip label size="x-small">
-        {{ locales[locale] }}
+        {{ localeLabel }}
       </v-chip>
     </template>
   </v-number-input>
@@ -262,7 +265,7 @@ const fileIcons: {[key: string]: string} = {
     </template>
     <template v-if="field.type.includes('i18n')" #append-inner>
       <v-chip label size="x-small">
-        {{ locales[locale] }}
+        {{ localeLabel }}
       </v-chip>
     </template>
   </v-textarea>
@@ -285,7 +288,7 @@ const fileIcons: {[key: string]: string} = {
     </template>
     <template v-if="field.type.includes('i18n')" #append-inner>
       <v-chip label size="x-small">
-        {{ locales[locale] }}
+        {{ localeLabel }}
       </v-chip>
     </template>
   </v-autocomplete>
@@ -312,7 +315,7 @@ const fileIcons: {[key: string]: string} = {
         size="x-small"
         class="ml-4"
       >
-        {{ locales[locale] }}
+        {{ localeLabel }}
       </v-chip>
     </template>
   </v-switch>
@@ -385,7 +388,7 @@ const fileIcons: {[key: string]: string} = {
         </template>
         <template v-if="field.type.includes('i18n')" #append-inner>
           <v-chip label size="x-small">
-            {{ locales[locale] }}
+            {{ localeLabel }}
           </v-chip>
         </template>
       </v-text-field>
@@ -426,7 +429,7 @@ const fileIcons: {[key: string]: string} = {
               'py-0 text-break text-truncate': true,
               'text-body-1': smAndDown,
             }"
-            style="text-wrap: auto !important"
+            style="max-width: calc(200px)"
           >
             {{ value }}
           </v-card-title>

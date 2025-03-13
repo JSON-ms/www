@@ -93,7 +93,7 @@ const computedInterfaces = computed((): (IInterface | { header: string })[] => {
           {{ interfaceModel.originalData.label }}
         </div>
       </template>
-      <span v-else>{{ interfaceModel.originalData.label }}</span>
+      <span v-else class="text-truncate">{{ interfaceModel.originalData.label }}</span>
     </template>
 
     <!-- ACTIONS -->

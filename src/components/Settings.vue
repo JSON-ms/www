@@ -84,11 +84,13 @@ const getCyperKey = () => {
   <v-form
     v-model="formIsValid"
     class="d-flex flex-column"
-    style="gap: 0.66rem"
+    :style="{ gap: smAndDown ? '0' : '0.66rem' }"
     autocomplete="off"
   >
     <v-alert
       v-if="demo || disabled"
+      :tile="smAndDown"
+      :elevation="smAndDown ? 0 : undefined"
       border="start"
       type="warning"
       variant="elevated"

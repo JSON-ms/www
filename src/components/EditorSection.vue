@@ -9,7 +9,7 @@ import {computed, ref} from 'vue';
 import { useDisplay } from 'vuetify';
 import GoogleSignInButton from '@/components/GoogleSignInButton.vue';
 import { useGlobalStore } from '@/stores/global';
-import {getDefaultInterfaceContent, getInterface, } from '@/utils';
+import {getDefaultInterfaceContent, getInterface, objectsAreDifferent,} from '@/utils';
 import InterfaceSelector from '@/components/InterfaceSelector.vue';
 import NewInterfaceModal from '@/components/NewInterfaceModal.vue';
 import InterfaceModel from '@/models/interface.model';
@@ -29,6 +29,12 @@ const interfaceModel = new InterfaceModel(defaultInterface);
 
 const showSettingsHasError = computed((): boolean => {
   return globalStore.session.loggedIn && interfaceModel.hasSettingsError;
+})
+
+const isPristine = computed((): boolean => {
+  return !objectsAreDifferent(interfaceModel.data, interfaceModel.originalData, [
+    'label', 'logo', 'content',
+  ])
 })
 
 const gotoTab = (key: string) => {
@@ -55,7 +61,6 @@ const applyTemplate = (template: string, hash?: string, updateLabel = true) => {
     if (updateLabel) {
       interfaceModel.data.content = interfaceModel.data.content.replace('title: Dynamic Admin Panel Example', 'title: Untitled');
     }
-    interfaceModel.copyDataToOriginalData();
     interfaceModel.data.label = 'Untitled';
     interfaceModel.data.logo = undefined;
   } else {
@@ -314,17 +319,17 @@ const onSelectInterface = () => {
                     >
                       <v-btn
                         key="1"
-                        :loading="interfaceModel.states.deleting"
-                        :disabled="!interfaceModel.canDelete"
-                        :color="!interfaceModel.canDelete ? undefined : 'error'"
+                        :loading="interfaceModel.states.value.deleting"
+                        :disabled="!interfaceModel.data.uuid"
+                        :color="!interfaceModel.data.uuid ? undefined : 'error'"
                         icon="mdi-delete-outline"
                         @click="onDeleteInterface"
                       />
                       <v-btn
                         key="2"
-                        :loading="interfaceModel.states.saving"
-                        :disabled="!interfaceModel.canSave()"
-                        :color="!interfaceModel.canSave() ? undefined : 'primary'"
+                        :loading="interfaceModel.states.value.saving"
+                        :disabled="isPristine"
+                        :color="isPristine ? undefined : 'primary'"
                         icon="mdi-content-save"
                         @click="onSaveInterface"
                       />

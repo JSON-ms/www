@@ -31,15 +31,19 @@ const reload = () => {
     interfaceModel.data = globalStore.session.interfaces.find(child => ['owner', 'admin'].includes(child.type) && child.hash === currentRoute.params.interface) || defaultInterface;
     if (interfaceModel.data.uuid) {
       parsedData.value = getParsedInterface(interfaceModel.data);
+      interfaceModel.data.label = parsedData.value.global.title || 'Untitled';
+      interfaceModel.data.logo = parsedData.value.global.logo;
     }
   }
   interfaceList.value = globalStore.session.interfaces.filter(child => ['owner', 'admin'].includes(child.type)) || [];
+  interfaceModel.copyDataToOriginalData();
 }
 if (currentRoute.params.interface === 'demo') {
   defaultInterface.uuid = 'demo'
   defaultInterface.hash = 'demo'
   interfaceModel.data = defaultInterface;
-  interfaceList.value = [defaultInterface]
+  interfaceList.value = [defaultInterface];
+  interfaceModel.copyDataToOriginalData();
 } else {
   reload();
 }

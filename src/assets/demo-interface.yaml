@@ -63,7 +63,7 @@ sections:
         label: Call-to-action
         required: true
       image:
-        type: file
+        type: image
         label: Image
   services:
     label: Services

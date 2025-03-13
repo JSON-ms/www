@@ -65,6 +65,8 @@ const logout = () => {
       </v-btn>
     </template>
     <v-list>
+      <slot></slot>
+      <v-divider v-if="$slots.default" class="my-1" />
       <v-list-item
         :disabled="sessionLoginOut"
         title="Logout"

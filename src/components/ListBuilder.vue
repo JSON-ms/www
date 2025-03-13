@@ -9,9 +9,11 @@ const { smAndDown } = useDisplay()
 const list = defineModel<any[]>({ required: true });
 const {
   defaultItem,
-  disabled = false
+  disabled = false,
+  label,
 } = defineProps<{
   defaultItem: any,
+  label: string,
   disabled: boolean,
 }>()
 const addItem = () => {
@@ -76,7 +78,7 @@ const moveDown = (index: number) => {
               <div class="d-flex align-center justify-space-between" style="gap: 0.5rem">
                 <h3>
                   <v-icon icon="mdi-circle-edit-outline" start />
-                  Item #{{ index + 1 }}
+                  {{ label }} #{{ index + 1 }}
                 </h3>
                 <div>
                   <v-tooltip location="bottom" text="Remove item">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, nextTick, onMounted, onUnmounted, type Ref, ref, toRaw, watch} from 'vue';
+import {computed, nextTick, onMounted, onUnmounted, ref, toRaw, watch} from 'vue';
 import { useDisplay } from 'vuetify'
 import type {IInterfaceData, IInterface, IServerSettings} from '@/interfaces';
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
@@ -33,6 +33,7 @@ const saving = ref(false);
 const saved = ref(false);
 const fetched = ref(false);
 const isDemo = ref(interfaceModel.data.hash === 'demo');
+const downloading = ref(false);
 const loading = ref(false);
 const form = ref<VForm | null>(null);
 const appBarFlat = ref(true);
@@ -153,6 +154,27 @@ const fetchData = () => {
   })
 }
 
+const download = () => {
+  downloading.value = true;
+  return Services.get((interfaceModel.data.server_url + '?hash=' + interfaceModel.data.hash) || '', {
+    'Content-Type': 'application/json',
+    'X-Jms-Api-Key': interfaceModel.data.server_secret,
+  })
+    .then(response => {
+      const json = JSON.stringify(response, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = interfaceModel.data.label + '.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+    })
+    .catch(globalStore.catchError)
+    .finally(() => downloading.value = false);
+}
+
 const refresh = () => {
   return new Promise((resolve, reject) => {
     if (interfaceModel.data.hash && interfaceModel.data.server_url) {
@@ -216,6 +238,8 @@ router.afterEach((to) => {
   if (mobileMode.value) {
     drawer.value = false;
   }
+  form.value?.resetValidation();
+  nextTick(() => form.value?.resetValidation());
 })
 
 watch(() => interfaceModel.data.hash, () => {
@@ -229,6 +253,8 @@ watch(() => interfaceModel.data.hash, () => {
       });
     })
   }
+  interfaceModel.copyDataToOriginalData();
+  nextTick(() => form.value?.resetValidation());
 }, { immediate: true });
 
 watch(() => selectedSectionKey.value, () => {
@@ -281,10 +307,12 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
             variant="solo"
             flat
             large-text
-            style="width: max-content; max-width: 25rem; min-width: 15rem"
+            :style="{
+              maxWidth: smAndDown ? 'auto' : '25rem'
+            }"
           />
         </template>
-        <div v-else class="d-flex align-center ml-2" style="gap: 1rem">
+        <div v-else class="d-flex align-center ml-2 text-truncate" style="gap: 1rem">
           <img
             v-if="interfaceData.global.logo"
             :src="interfaceData.global.logo"
@@ -310,7 +338,18 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
         <span v-else-if="!mobileMode">Fetched!</span>
       </v-btn>
       <template v-if="!preview && globalStore.session.loggedIn">
-        <SessionPanel :show-username="!smAndDown" @logout="onLogout" />
+        <SessionPanel
+          :show-username="!smAndDown"
+          @logout="onLogout"
+        >
+          <v-list-item
+            v-if="canInteractWithServer"
+            :disabled="downloading"
+            title="Download data"
+            prepend-icon="mdi-tray-arrow-down"
+            @click="download"
+          />
+        </SessionPanel>
       </template>
     </div>
   </v-app-bar>
