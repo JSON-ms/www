@@ -25,7 +25,7 @@ import Changes from '@/changes';
 const model = defineModel<InterfaceModel>({ required: true });
 const { preview = false, interfaces = [], autoload = false } = defineProps<{
   preview?: boolean,
-  autoload: boolean,
+  autoload?: boolean,
   interfaces: IInterface[],
 }>();
 

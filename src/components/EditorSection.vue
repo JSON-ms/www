@@ -360,7 +360,6 @@ const onSelectInterface = () => {
                     v-model="interfaceModel"
                     :interfaces="globalStore.session.interfaces"
                     preview
-                    autoload
                   />
                 </v-layout>
               </div>
