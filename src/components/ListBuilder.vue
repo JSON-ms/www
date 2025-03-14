@@ -132,8 +132,8 @@ const moveDown = (index: number) => {
             </v-col>
           </v-row>
         </template>
-        <v-row no-gutters>
-          <v-col v-if="!smAndDown" style="flex: 0" class="pt-4 mr-3">
+        <v-row class="flex-nowrap" no-gutters>
+          <v-col v-if="!smAndDown" style="flex: 0" class="mr-3">
             <v-icon class="handle" icon="mdi-drag-vertical" />
           </v-col>
           <v-col style="flex: 1">
@@ -143,7 +143,7 @@ const moveDown = (index: number) => {
               :index="index"
             />
           </v-col>
-          <v-col v-if="!smAndDown" style="flex: 0" class="pt-2 ml-3">
+          <v-col v-if="!smAndDown" style="flex: 0" class="ml-3">
             <v-btn
               :disabled="disabled"
               color="error"

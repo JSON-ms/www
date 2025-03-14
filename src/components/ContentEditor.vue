@@ -35,6 +35,7 @@ const windowWidth = ref(window.innerWidth);
 const updateWindowWidth = () => {windowWidth.value = window.innerWidth};
 const currentRoute = useRoute();
 const globalStore = useGlobalStore();
+const sitePreviewMode = ref<'off' | 'mobile' | 'desktop'>('off');
 const formIsValid = ref(false);
 const saving = ref(false);
 const saved = ref(false);
@@ -53,6 +54,15 @@ const serverSettings = ref<IServerSettings>({
 const showAppBar = computed((): boolean => {
   return true;
 })
+const showSitePreview = computed((): string | false => {
+  return !preview && sitePreviewMode.value !== 'off' && sitePreviewUrl.value || false;
+})
+const sitePreviewUrl = computed((): string | null => {
+  return getParsedInterface(interfaceModel.data).global.preview || null;
+})
+if (sitePreviewUrl.value) {
+  sitePreviewMode.value = 'mobile';
+}
 const showActionBar = computed((): boolean => {
   return globalStore.session.loggedIn
     && canInteractWithServer.value;
@@ -122,7 +132,7 @@ const goToSection = (section: string = '') => {
       drawer.value = false;
     }
   } else {
-    router.push('/admin/' + interfaceModel.data.hash + '/' + section)
+    router.push('/admin/' + interfaceModel.data.hash + '/' + section);
   }
 }
 
@@ -154,6 +164,10 @@ const save = async (): Promise<any> => {
     });
 }
 
+const onLocaleChange = (locale: string) => {
+  sendMessageToIframe('locale', locale)
+}
+
 const fetchData = () => {
   refresh().then(() => {
     fetched.value = true;
@@ -166,7 +180,7 @@ const download = () => {
   return Services.get((interfaceModel.data.server_url + '?hash=' + interfaceModel.data.hash) || '', {
     'Content-Type': 'application/json',
     'X-Jms-Api-Key': interfaceModel.data.server_secret,
-  })
+  }, true)
     .then(response => {
       const json = JSON.stringify(response, null, 2);
       const blob = new Blob([json], { type: 'application/json' });
@@ -247,6 +261,7 @@ router.afterEach((to) => {
   }
   form.value?.resetValidation();
   nextTick(() => form.value?.resetValidation());
+  sendMessageToIframe('section', to.params.section.toString());
 })
 
 watch(() => interfaceModel.data.hash, () => {
@@ -286,8 +301,55 @@ watch(() => interfaceModel.data.content, () => {
   userData.value = parseInterfaceDataToAdminData(interfaceData.value, userData.value);
 }, { immediate: true });
 
-onMounted(() => window.addEventListener('resize', updateWindowWidth));
-onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
+const iframe = ref<HTMLIFrameElement>();
+const sendMessageToIframe = (type: string, data: string) => {
+  if (iframe.value) {
+    iframe.value.contentWindow?.postMessage({
+      name: 'jsonms',
+      type,
+      data,
+    }, '*');
+  }
+}
+const sendUserDataToIframe = () => {
+  sendMessageToIframe('data', JSON.stringify({
+    data: deepToRaw(userData.value),
+    settings: deepToRaw(serverSettings.value),
+    locale: selectedLocale.value,
+  }));
+  sendMessageToIframe('section', (currentRoute.params.section || '').toString());
+}
+const listenMessage = (event: MessageEvent) => {
+  if (event.data.name === 'jsonms') {
+    switch (event.data.type) {
+      case 'init':
+        sendUserDataToIframe();
+        break;
+      case 'route':
+        if (interfaceData.value.sections[event.data.data]) {
+          router.push('/admin/' + interfaceModel.data.hash + '/' + event.data.data);
+        }
+        break;
+      case 'locale':
+        selectedLocale.value = event.data.data;
+        break;
+    }
+  }
+}
+watch(() => userData.value, () => {
+  if (sitePreviewMode.value !== 'off') {
+    sendUserDataToIframe();
+  }
+}, { deep: true })
+
+onMounted(() => {
+  window.addEventListener('resize', updateWindowWidth)
+  window.addEventListener('message', listenMessage)
+});
+onUnmounted(() => {
+  window.removeEventListener('resize', updateWindowWidth)
+  window.removeEventListener('message', listenMessage)
+});
 </script>
 
 <template>
@@ -345,6 +407,48 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
         <span v-else-if="!mobileMode">Fetched!</span>
       </v-btn>
       <template v-if="!preview && globalStore.session.loggedIn">
+        <v-btn-toggle
+          v-model="sitePreviewMode"
+          :color="theme.primary"
+          :disabled="!sitePreviewUrl"
+          mandatory
+          group
+          variant="text"
+        >
+          <v-tooltip
+            text="Data"
+            location="bottom"
+          >
+            <template #activator="{ props }">
+              <v-btn v-bind="props" value="off">
+                <v-icon icon="mdi-form-textarea" />
+              </v-btn>
+            </template>
+          </v-tooltip>
+
+          <v-tooltip
+            text="Mobile"
+            location="bottom"
+          >
+            <template #activator="{ props }">
+              <v-btn v-bind="props" value="mobile">
+                <v-icon icon="mdi-cellphone" />
+              </v-btn>
+            </template>
+          </v-tooltip>
+
+          <v-tooltip
+            text="Desktop"
+            location="bottom"
+          >
+            <template #activator="{ props }">
+              <v-btn v-bind="props" value="desktop">
+                <v-icon icon="mdi-monitor" />
+              </v-btn>
+            </template>
+          </v-tooltip>
+        </v-btn-toggle>
+
         <SessionPanel
           :show-username="!smAndDown"
           @logout="onLogout"
@@ -414,19 +518,67 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
     v-scroll.self="onScroll"
     :class="{
       'w-100': true,
+      'd-flex align-start fill-height': !preview,
       'pa-4': !mobileMode,
       'overflow-y-scroll': preview,
       'bg-surface': mobileMode,
       'fill-height': mobileMode && !preview,
     }"
     :style="{
+      gap: '1rem',
       maxWidth: preview && !mobileMode && showNavigationDrawer ? 'calc(100% - 250px)' : undefined,
       marginTop: preview ? '64px' : undefined,
       marginLeft: !mobileMode && showNavigationDrawer && preview ? '250px' : undefined,
       marginBottom: showActionBar && preview ? '64px' : undefined,
     }"
   >
+    <!-- PREVIEW -->
+    <div
+      v-if="showSitePreview && sitePreviewUrl"
+      :style="{
+        width: sitePreviewMode === 'mobile' ? '23rem' : undefined,
+        height: 'calc(100vh - 128px - 2rem)',
+      }"
+      :class="{
+        'align-self-start': true,
+        'w-100 fill-height': sitePreviewMode === 'desktop',
+      }"
+    >
+      <v-responsive
+        v-if="sitePreviewMode === 'mobile'"
+        :aspect-ratio="9/16"
+        class="position-fixed"
+        style="z-index: 1; width: 23rem; height: calc(100vh - 128px - 2rem)"
+      >
+        <v-card class="fill-height w-100 pa-1">
+          <iframe
+            ref="iframe"
+            :src="sitePreviewUrl"
+            frameborder="0"
+            style="float: left"
+            class="w-100 fill-height"
+          />
+        </v-card>
+      </v-responsive>
+      <v-responsive v-if="sitePreviewMode === 'mobile'" :aspect-ratio="9/16" />
+      <div v-else class="w-100 fill-height d-flex align-center justify-center">
+        <v-card class="desktop-preview-container">
+          <div class="w-100 fill-height">
+            <iframe
+              ref="iframe"
+              :src="sitePreviewUrl"
+              frameborder="0"
+              style="float: left"
+              class="w-100 fill-height"
+            />
+          </div>
+        </v-card>
+      </div>
+    </div>
+
+    <!-- DATA -->
     <v-card
+      v-if="sitePreviewMode !== 'desktop'"
       :flat="mobileMode"
       :tile="mobileMode"
       :class="{
@@ -435,6 +587,7 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
       }"
       :style="{
         gap: '1rem',
+        flex: 1,
       }"
     >
       <div class="d-flex flex-column" style="gap: 1rem">
@@ -448,6 +601,7 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
               :dense="mobileMode"
               :disabled="loading"
               style="max-width: 12rem"
+              @update:model-value="onLocaleChange"
             />
           </div>
 
@@ -521,3 +675,12 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
     </v-app-bar>
   </v-form>
 </template>
+
+<style lang="scss" scoped>
+.desktop-preview-container {
+  max-width: 150%;
+  width: calc((150vh - 192px - 3rem) * 1.7777777777777777);
+  height: calc(150vh - 192px - 3rem);
+  zoom: 0.666;
+}
+</style>

@@ -24,7 +24,6 @@ export interface IPrompt {
 
 export interface ISnack {
   visible: boolean,
-  icon?: string | undefined,
   color?: string | undefined,
   title?: string | undefined,
   icon?: string | undefined,
@@ -100,6 +99,7 @@ export interface IInterfaceData {
     title?: string
     copyright?: string
     logo?: string
+    preview?: string
     theme?: {
       default?: 'dark' | 'light',
       dark?: {

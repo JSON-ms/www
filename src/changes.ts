@@ -44,8 +44,8 @@ export default class Changes {
       return false;
     }
     const keys = Object.keys(this.list);
-    for (const element of keys) {
-      if (this.hasSetChanges(element)) {
+    for (const key of keys) {
+      if (this.hasSetChanges(key)) {
         return true;
       }
     }
