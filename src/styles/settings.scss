@@ -9,6 +9,9 @@
 //   $color-pack: false
 // );
 
+html.v-overlay-scroll-blocked {
+  position: static !important;
+}
 html, body {
   overflow-y: auto;
 }
