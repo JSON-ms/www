@@ -366,6 +366,24 @@ const fileIcons: {[key: string]: string} = {
     </template>
   </v-switch>
 
+  <!-- RATING -->
+  <div v-else-if="['rating', 'i18n:rating'].includes(field.type)">
+    <FieldHeader :field="field" :locales="locales" :locale="locale" />
+    <v-rating
+      v-model="value"
+      :label="field.label"
+      :required="field.required"
+      :rules="getRules(field)"
+      :hint="field.hint"
+      :persistent-hint="!!field.hint"
+      :disabled="disabled"
+      :loading="loading"
+      color="primary"
+      hide-details="auto"
+      inset
+    />
+  </div>
+
   <!-- CHECKBOX -->
   <div v-else-if="['checkbox', 'i18n:checkbox'].includes(field.type)">
     <FieldHeader :field="field" :locales="locales" :locale="locale" />
