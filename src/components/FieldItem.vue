@@ -543,6 +543,9 @@ const fileIcons: {[key: string]: string} = {
     <ListBuilder
       v-model="value"
       :label="field.label"
+      :field="field"
+      :locale="locale"
+      :server-settings="serverSettings"
       :required="field.required"
       :rules="getRules(field)"
       :default-item="getDefaultItem()"
