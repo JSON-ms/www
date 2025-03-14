@@ -21,16 +21,17 @@ const {
   disabled: boolean,
 }>()
 
-const panel = ref(null);
+const panel = ref<null | number>(null);
 
 const formattedList = computed({
   get(): any[] {
     return list.value.map((item: any, itemIdx: number) => {
       let title;
-      let thumbnail = false;
-      for (const key in field.fields) {
-        const fieldItem = field.fields[key];
-        if (['string', 'i18n:string', 'i18n'].includes(fieldItem.type)) {
+      let thumbnail: string | false = false;
+      const fields = field.fields || {};
+      for (const key in fields) {
+        const fieldItem = fields[key];
+        if (!title && ['string', 'i18n:string', 'i18n', 'date', 'i18n:date'].includes(fieldItem.type)) {
           if (fieldItem.type.includes('i18n')) {
             title = item[key][locale];
           } else {
@@ -44,6 +45,17 @@ const formattedList = computed({
           break;
         }
       }
+
+      if (thumbnail && !title) {
+        title = thumbnail.substring(thumbnail.lastIndexOf('/') + 1);
+      }
+
+      if (!title) {
+        const keys = Object.keys(fields);
+        if (keys.length === 1 && fields[keys[0]].label) {
+          title = fields[keys[0]].label + ' #' + (itemIdx + 1);
+        }
+      }
       return {
       ...item,
         __listBuilderTitle: title || 'Item #' + (itemIdx + 1),
@@ -52,7 +64,8 @@ const formattedList = computed({
     })
   },
   set(items: any[]) {
-    list.value = items;
+    list.value.length = 0
+    list.value.push(...items);
   }
 })
 
@@ -95,11 +108,14 @@ const removeItem = (index: number) => {
                 <v-img
                   v-if="element.__listBuilderThumbnail"
                   :src="element.__listBuilderThumbnail"
+                  width="32"
                   height="32"
                   max-width="32"
                   class="my-n3"
                 />
-                {{ element.__listBuilderTitle }}
+                <div class="d-flex" style="flex: 1; width: 0">
+                  <span class="text-truncate">{{ element.__listBuilderTitle }}</span>
+                </div>
               </div>
 
               <v-btn
@@ -116,9 +132,10 @@ const removeItem = (index: number) => {
             </div>
           </template>
           <template #text>
+            <!-- DO NOT RETURN ELEMENT, it is NOT the correct reference! -->
             <slot
               name="default"
-              :item="element"
+              :item="list[index]"
               :index="index"
             />
           </template>

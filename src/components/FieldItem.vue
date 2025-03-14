@@ -497,23 +497,25 @@ const fileIcons: {[key: string]: string} = {
           </v-avatar>
           <video v-else-if="['video', 'i18n:video'].includes(field.type)" :src="filePath" :style="{ height: smAndDown ? '96px' : '128px', float: 'left' }" controls />
         </div>
-        <div class="pa-3 pl-0">
+        <div class="pa-3 pl-0 w-100">
           <v-card-title
             :class="{
-              'py-0 text-break text-truncate': true,
+              'py-0 d-flex': true,
               'text-body-1': smAndDown,
             }"
-            style="max-width: calc(200px)"
           >
-            {{ value.path }}
+            <div class="d-flex" style="flex: 1; width: 0">
+              <span class="text-truncate">{{ value.path }}</span>
+            </div>
           </v-card-title>
-          <v-card-subtitle class="py-0">
+          <v-card-subtitle class="py-0" style="font-size: 0.66rem">
             Size: {{ $formatBytes(value.meta.size) }}
             <br>Type: <span class="text-uppercase">{{ value.meta.type }}</span>
           </v-card-subtitle>
-          <v-card-actions class="pb-0">
+          <v-card-actions class="pb-0" style="min-height: 0">
             <v-btn
               :disabled="disabled"
+              :size="smAndDown ? 'small' : 'default'"
               color="error"
               variant="text"
               prepend-icon="mdi-trash-can-outline"
