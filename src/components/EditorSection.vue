@@ -130,6 +130,7 @@ const onSelectInterface = () => {
             :interfaces="globalStore.session.interfaces"
             :actions="!smAndDown && globalStore.session.loggedIn"
             :large-text="!smAndDown"
+            :can-save="!isPristine"
             type="interface"
             style="max-width: 35rem; width: 10rem; min-width: min-content"
             @change="onSelectInterface"

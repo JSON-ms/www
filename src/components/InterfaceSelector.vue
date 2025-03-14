@@ -12,11 +12,13 @@ const {
   interfaces = [],
   type = null,
   actions = false,
+  canSave = false,
   largeText = false,
 } = defineProps<{
   interfaces: IInterface[],
   type: 'admin' | 'interface' | null,
   actions?: boolean,
+  canSave?: boolean,
   largeText?: boolean,
 }>();
 
@@ -127,7 +129,7 @@ const computedInterfaces = computed((): (IInterface | { header: string })[] => {
           <v-btn
             v-bind="props"
             :loading="states.saving"
-            :disabled="states.saving || states.saved || interfaceModel.isPristine()"
+            :disabled="states.saving || states.saved || !canSave"
             variant="text"
             color="primary"
             size="small"
