@@ -79,6 +79,7 @@ export interface IField {
   inline?: boolean
   prepend?: string
   append?: string
+  accept?: string | string[]
   'append-inner'?: string
   'prepend-inner'?: string
   fields?: {[key: string]: IField}

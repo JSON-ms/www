@@ -2,6 +2,38 @@ import { defineStore } from 'pinia';
 import type { ISession, IPrompt, IError, ISnack } from '@/interfaces';
 import InterfaceModel from '@/models/interface.model';
 
+export const mimeTypes = {
+  images: [
+    "image/apng",
+    "image/avif",
+    "image/bmp",
+    "image/gif",
+    "image/heic",
+    "image/heif",
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/svg+xml",
+    "image/tiff",
+    "image/webp",
+    "image/x-icon"
+  ],
+  videos: [
+    "video/3gpp",
+    "video/3gpp2",
+    "video/avi",
+    "video/mp4",
+    "video/mpeg",
+    "video/ogg",
+    "video/quicktime",
+    "video/webm",
+    "video/x-flv",
+    "video/x-matroska",
+    "video/x-ms-wmv",
+    "video/x-msvideo"
+  ]
+};
+
 export const useGlobalStore = defineStore('example', {
   state: (): {
     theme: 'dark' | 'light',

@@ -4,11 +4,12 @@ import FieldHeader from '@/components/FieldHeader.vue';
 import type { IInterfaceData, IField, IServerSettings } from '@/interfaces';
 import Rules from '@/rules';
 import {deepToRaw, parseFields, phpStringSizeToBytes} from '@/utils';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { Services } from '@/services';
-import { useGlobalStore } from '@/stores/global';
+import { mimeTypes, useGlobalStore } from '@/stores/global';
 import { useDisplay } from 'vuetify';
 import type InterfaceModel from '@/models/interface.model';
+import type { VFileUpload } from 'vuetify/labs/VFileUpload';
 
 const { smAndDown } = useDisplay()
 const globalStore = useGlobalStore();
@@ -32,6 +33,8 @@ const {
   disabled?: boolean,
   loading?: boolean,
 }>();
+
+const fileUpload = ref<VFileUpload>(null);
 const showDatePicker = ref(false);
 const getRules = (field: IField): any[] => {
   const rules: any[] = [];
@@ -61,6 +64,18 @@ const optionItems = computed((): { title: string, value: string }[] => {
     }
   }
   return Object.entries(field.items || {}).map(([value, title]) => ({ title, value }));
+})
+const acceptMimeTypes = computed((): string | undefined => {
+  if (field.accept) {
+    return Array.isArray(field.accept) ? field.accept.join(',') : field.accept;
+  }
+  if (field.type === 'image') {
+    return mimeTypes.images.join(',');
+  }
+  if (field.type === 'video') {
+    return mimeTypes.videos.join(',');
+  }
+  return undefined;
 })
 const arrayFields = computed((): {[key: string]: IField} => {
   return field.fields || {};
@@ -138,6 +153,11 @@ const fileIcons: {[key: string]: string} = {
   'i18n:video': 'mdi-video-outline',
   'video': 'mdi-video-outline',
 }
+onMounted(() => {
+  if (fileUpload.value) {
+    console.log(fileUpload.value);
+  }
+})
 </script>
 
 <template>
@@ -498,6 +518,7 @@ const fileIcons: {[key: string]: string} = {
       </v-overlay>
       <v-file-upload
         v-model="fileValue"
+        ref="fileUpload"
         :label="field.label"
         :prepend-inner-icon="field.icon"
         :hint="field.hint"
@@ -508,6 +529,7 @@ const fileIcons: {[key: string]: string} = {
         :title="uploading ? '' : smAndDown ? 'Touch to upload' : undefined"
         :disabled="disabled"
         :loading="loading"
+        :accept="acceptMimeTypes"
         hide-details="auto"
         density="compact"
         variant="compact"
