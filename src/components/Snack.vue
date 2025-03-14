@@ -30,7 +30,7 @@ const close = () => {
       <div>
         <template v-if="globalStore.snack.title">
           <strong>{{ globalStore.snack.title }}</strong>
-          <br v-if="globalStore.snack.body" />
+          <br v-if="globalStore.snack.body">
         </template>
         {{ globalStore.snack.body }}
       </div>

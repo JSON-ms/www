@@ -554,7 +554,6 @@ onUnmounted(() => {
           <iframe
             ref="iframe"
             :src="sitePreviewUrl"
-            frameborder="0"
             style="float: left"
             class="w-100 fill-height"
           />
@@ -567,7 +566,6 @@ onUnmounted(() => {
             <iframe
               ref="iframe"
               :src="sitePreviewUrl"
-              frameborder="0"
               style="float: left"
               class="w-100 fill-height"
             />

@@ -512,8 +512,8 @@ const fileIcons: {[key: string]: string} = {
         <v-progress-circular color="primary" indeterminate />
       </v-overlay>
       <v-file-upload
-        v-model="fileValue"
         ref="fileUpload"
+        v-model="fileValue"
         :label="field.label"
         :prepend-inner-icon="field.icon"
         :hint="field.hint"
