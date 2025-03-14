@@ -4,7 +4,7 @@ import FieldHeader from '@/components/FieldHeader.vue';
 import type { IInterfaceData, IField, IServerSettings } from '@/interfaces';
 import Rules from '@/rules';
 import {deepToRaw, parseFields, phpStringSizeToBytes} from '@/utils';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { Services } from '@/services';
 import { mimeTypes, useGlobalStore } from '@/stores/global';
 import { useDisplay } from 'vuetify';
@@ -153,11 +153,6 @@ const fileIcons: {[key: string]: string} = {
   'i18n:video': 'mdi-video-outline',
   'video': 'mdi-video-outline',
 }
-onMounted(() => {
-  if (fileUpload.value) {
-    console.log(fileUpload.value);
-  }
-})
 </script>
 
 <template>
