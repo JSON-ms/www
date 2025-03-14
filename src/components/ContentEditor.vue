@@ -55,12 +55,12 @@ const showAppBar = computed((): boolean => {
   return true;
 })
 const showSitePreview = computed((): string | false => {
-  return !preview && sitePreviewMode.value !== 'off' && sitePreviewUrl.value || false;
+  return sitePreviewMode.value !== 'off' && sitePreviewUrl.value || false;
 })
 const sitePreviewUrl = computed((): string | null => {
   return getParsedInterface(interfaceModel.data).global.preview || null;
 })
-if (sitePreviewUrl.value) {
+if (sitePreviewUrl.value && !preview) {
   sitePreviewMode.value = 'mobile';
 }
 const showActionBar = computed((): boolean => {
@@ -394,20 +394,9 @@ onUnmounted(() => {
     </v-app-bar-title>
 
     <div class="d-flex align-center mx-3" style="gap: 1rem">
-      <v-btn
-        v-if="showFetchUserData"
-        :loading="loading"
-        :icon="mobileMode"
-        :disabled="loading || !canInteractWithServer || fetched"
-        @click="fetchData"
-      >
-        <v-icon v-if="!fetched" :start="!mobileMode" icon="mdi-monitor-arrow-down" />
-        <v-icon v-else :start="!mobileMode" icon="mdi-check" />
-        <span v-if="!mobileMode && !fetched">Fetch user data</span>
-        <span v-else-if="!mobileMode">Fetched!</span>
-      </v-btn>
-      <template v-if="!preview && globalStore.session.loggedIn">
+      <template v-if="globalStore.session.loggedIn">
         <v-btn-toggle
+          v-if="!smAndDown && !preview"
           v-model="sitePreviewMode"
           :color="theme.primary"
           :disabled="!sitePreviewUrl"
@@ -449,8 +438,21 @@ onUnmounted(() => {
           </v-tooltip>
         </v-btn-toggle>
 
+        <v-btn
+          v-if="showFetchUserData"
+          :loading="loading"
+          :icon="mobileMode"
+          :disabled="loading || !canInteractWithServer || fetched"
+          @click="fetchData"
+        >
+          <v-icon v-if="!fetched" :start="!mobileMode" icon="mdi-monitor-arrow-down" />
+          <v-icon v-else :start="!mobileMode" icon="mdi-check" />
+          <span v-if="!mobileMode && !fetched">Fetch data</span>
+          <span v-else-if="!mobileMode">Fetched!</span>
+        </v-btn>
+
         <SessionPanel
-          :show-username="!smAndDown"
+          :show-username="!smAndDown && !preview"
           @logout="onLogout"
         >
           <v-list-item
@@ -471,7 +473,7 @@ onUnmounted(() => {
     v-model="drawer"
     :permanent="!mobileMode"
     :mobile-breakpoint="preview ? 1400 : 960"
-    width="250"
+    width="260"
   >
     <v-list v-model="selectedSectionKey" nav>
       <template
@@ -526,9 +528,9 @@ onUnmounted(() => {
     }"
     :style="{
       gap: '1rem',
-      maxWidth: preview && !mobileMode && showNavigationDrawer ? 'calc(100% - 250px)' : undefined,
+      maxWidth: preview && !mobileMode && showNavigationDrawer ? 'calc(100% - 260px)' : undefined,
       marginTop: preview ? '64px' : undefined,
-      marginLeft: !mobileMode && showNavigationDrawer && preview ? '250px' : undefined,
+      marginLeft: !mobileMode && showNavigationDrawer && preview ? '260px' : undefined,
       marginBottom: showActionBar && preview ? '64px' : undefined,
     }"
   >

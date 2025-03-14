@@ -185,7 +185,7 @@ const onSelectInterface = () => {
     v-if="smAndDown"
     v-model="drawer"
     temporary
-    width="250"
+    width="260"
   >
     <v-list v-model="tab" color="primary" nav>
       <v-list-item
