@@ -5,7 +5,7 @@ import ContentEditor from '@/components/ContentEditor.vue';
 import Docs from '@/components/Docs.vue';
 import Settings from '@/components/Settings.vue';
 import SessionPanel from '@/components/SessionPanel.vue';
-import {computed, ref} from 'vue';
+import { computed, ref } from 'vue';
 import { useDisplay } from 'vuetify';
 import GoogleSignInButton from '@/components/GoogleSignInButton.vue';
 import { useGlobalStore } from '@/stores/global';
@@ -67,9 +67,9 @@ const applyTemplate = (template: string, hash?: string, updateLabel = true) => {
     const parsedContent = interfaceModel.getParsedData();
     interfaceModel.data.label = parsedContent.global.title || '';
     interfaceModel.data.logo = parsedContent.global.logo || '';
-    interfaceModel.copyDataToOriginalData();
   }
 
+  interfaceModel.copyDataToOriginalData();
   Changes.applySet('interface', interfaceModel.data, interfaceModel.originalData);
 }
 
@@ -105,7 +105,7 @@ const onInterfaceContentChange = (template: string) => {
 }
 
 const onSelectInterface = () => {
-  interfaceModel.copyDataToOriginalData();
+  applyTemplate(interfaceModel.data.content, interfaceModel.data.hash, true);
 }
 </script>
 
