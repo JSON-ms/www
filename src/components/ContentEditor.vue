@@ -20,7 +20,7 @@ import { Services } from '@/services';
 import { useRoute } from 'vue-router';
 import type { VForm } from 'vuetify/components';
 import type InterfaceModel from '@/models/interface.model';
-import Changes from '@/changes';
+import Changes, { nothingChangedButLocale } from '@/changes';
 
 const model = defineModel<InterfaceModel>({ required: true });
 const { preview = false, interfaces = [], autoload = false } = defineProps<{
@@ -36,6 +36,8 @@ const updateWindowWidth = () => {windowWidth.value = window.innerWidth};
 const currentRoute = useRoute();
 const globalStore = useGlobalStore();
 const sitePreviewMode = ref<'off' | 'mobile' | 'desktop'>('off');
+const loaded = ref(false);
+const initialized = ref(false);
 const formIsValid = ref(false);
 const saving = ref(false);
 const saved = ref(false);
@@ -55,7 +57,7 @@ const showAppBar = computed((): boolean => {
   return true;
 })
 const showSitePreview = computed((): string | false => {
-  return sitePreviewMode.value !== 'off' && sitePreviewUrl.value || false;
+  return !smAndDown.value && sitePreviewMode.value !== 'off' && sitePreviewUrl.value || false;
 })
 const sitePreviewUrl = computed((): string | null => {
   return getParsedInterface(interfaceModel.data).global.preview || null;
@@ -111,7 +113,7 @@ const adminData = parseInterfaceDataToAdminData(interfaceData.value);
 const userData = ref(structuredClone(adminData));
 const originalUserData = ref(structuredClone(adminData));
 const drawer = ref(!mobileMode.value);
-const selectedLocale = ref(getDefaultLocale(interfaceData.value));
+const selectedLocale = ref((currentRoute.params.locale || '').toString() || getDefaultLocale(interfaceData.value));
 const selectedSectionKey = ref(Object.keys(interfaceData.value.sections)[0]);
 const routeSection = interfaceData.value.sections[currentRoute.params.section?.toString()];
 
@@ -132,7 +134,7 @@ const goToSection = (section: string = '') => {
       drawer.value = false;
     }
   } else {
-    router.push('/admin/' + interfaceModel.data.hash + '/' + section);
+    router.push('/admin/' + interfaceModel.data.hash + '/' + section + '/' + selectedLocale.value);
   }
 }
 
@@ -208,6 +210,7 @@ const refresh = () => {
           form.value?.resetValidation();
           serverSettings.value = response.settings;
           applyUserData(parseInterfaceDataToAdminData(interfaceData.value, response.data));
+          loaded.value = true;
           resolve(userData.value);
         })
         .catch(reason => {
@@ -251,10 +254,15 @@ const applyUserData = (data: any) => {
 // Detect changes..
 const dataHasChanged = computed((): boolean => objectsAreDifferent(userData, originalUserData));
 
-router.afterEach((to) => {
-  applyUserData(originalUserData.value);
+router.afterEach((to, from) => {
+  if (!nothingChangedButLocale(to, from)) {
+    applyUserData(originalUserData.value);
+  }
   if (to.params.section) {
     selectedSectionKey.value = to.params.section.toString();
+  }
+  if (to.params.locale) {
+    selectedLocale.value = to.params.locale.toString();
   }
   if (mobileMode.value) {
     drawer.value = false;
@@ -319,19 +327,27 @@ const sendUserDataToIframe = () => {
   }));
   sendMessageToIframe('section', (currentRoute.params.section || '').toString());
 }
+let iframeRouteTimeout: any;
 const listenMessage = (event: MessageEvent) => {
   if (event.data.name === 'jsonms') {
     switch (event.data.type) {
       case 'init':
         sendUserDataToIframe();
+        initialized.value = true;
         break;
       case 'route':
         if (interfaceData.value.sections[event.data.data]) {
-          router.push('/admin/' + interfaceModel.data.hash + '/' + event.data.data);
+          clearTimeout(iframeRouteTimeout);
+          iframeRouteTimeout = setTimeout(() => {
+            router.push('/admin/' + interfaceModel.data.hash + '/' + event.data.data + '/' + selectedLocale.value);
+          }, 100);
         }
         break;
       case 'locale':
-        selectedLocale.value = event.data.data;
+        clearTimeout(iframeRouteTimeout);
+        iframeRouteTimeout = setTimeout(() => {
+          router.push('/admin/' + interfaceModel.data.hash + '/' + selectedSectionKey.value + '/' + event.data.data);
+        }, 100);
         break;
     }
   }
@@ -451,6 +467,16 @@ onUnmounted(() => {
           <span v-else-if="!mobileMode">Fetched!</span>
         </v-btn>
 
+        <LocaleSwitcher
+          v-if="!smAndDown && showLocaleSwitcher"
+          v-model="selectedLocale"
+          :locales="locales"
+          :dense="mobileMode"
+          :disabled="loading"
+          style="max-width: 12rem"
+          @update:model-value="onLocaleChange"
+        />
+
         <SessionPanel
           :show-username="!smAndDown && !preview"
           @logout="onLogout"
@@ -553,7 +579,11 @@ onUnmounted(() => {
         style="z-index: 1; width: 23rem; height: calc(100vh - 128px - 2rem)"
       >
         <v-card class="fill-height w-100 pa-1">
+          <v-overlay v-if="!loaded || !initialized" :model-value="true" contained absolute class="align-center justify-center" persistent>
+            <v-progress-circular color="primary" indeterminate />
+          </v-overlay>
           <iframe
+            v-if="loaded"
             ref="iframe"
             :src="sitePreviewUrl"
             style="float: left"
@@ -565,7 +595,11 @@ onUnmounted(() => {
       <div v-else class="w-100 fill-height d-flex align-center justify-center">
         <v-card class="desktop-preview-container">
           <div class="w-100 fill-height">
+            <v-overlay v-if="!loaded || !initialized" :model-value="true" contained absolute class="align-center justify-center" persistent>
+              <v-progress-circular color="primary" indeterminate />
+            </v-overlay>
             <iframe
+              v-if="loaded"
               ref="iframe"
               :src="sitePreviewUrl"
               style="float: left"
@@ -594,8 +628,9 @@ onUnmounted(() => {
         <div>
           <div class="d-flex align-center justify-space-between" style="gap: 1rem">
             <h1>{{ selectedSection.label }}</h1>
+
             <LocaleSwitcher
-              v-if="showLocaleSwitcher"
+              v-if="smAndDown && showLocaleSwitcher"
               v-model="selectedLocale"
               :locales="locales"
               :dense="mobileMode"
@@ -617,6 +652,7 @@ onUnmounted(() => {
             v-if="field.type.includes('i18n')"
             v-model="userData[selectedSectionKey][key][selectedLocale]"
             :field="field"
+            :field-key="selectedSectionKey + '.' + key"
             :locale="selectedLocale"
             :locales="interfaceData.locales"
             :structure="interfaceData"
@@ -628,6 +664,7 @@ onUnmounted(() => {
             v-else
             v-model="userData[selectedSectionKey][key]"
             :field="field"
+            :field-key="selectedSectionKey + '.' + key"
             :locale="selectedLocale"
             :locales="interfaceData.locales"
             :structure="interfaceData"
@@ -645,6 +682,23 @@ onUnmounted(() => {
 
     <!-- ACTION BAR -->
     <v-app-bar v-if="showActionBar" location="bottom">
+      <div class="pr-3">
+        <v-scroll-y-transition>
+          <v-alert
+            v-if="!formIsValid && loaded"
+            density="compact"
+            class="ml-3 my-n3"
+            variant="tonal"
+            type="warning"
+          >
+            <div class="d-flex">
+              <span class="text-truncate">
+                Please correct the errors in the form before submitting.
+              </span>
+            </div>
+          </v-alert>
+        </v-scroll-y-transition>
+      </div>
       <v-spacer />
       <div class="d-flex align-center pr-3" style="gap: 0.5rem">
         <v-btn
