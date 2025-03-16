@@ -113,6 +113,7 @@ For instance:
 - `markdown`: A fully-featured Markdown editor that allows for easy formatting of text using simple syntax.
 - `wysiwyg`: A fully-featured WYSIWYG (What You See Is What You Get) editor for rich text formatting.
 - `number`: A numeric input field for entering numbers.
+- `rating`: A component that allows users to provide feedback or evaluate an item using a star or point system, typically ranging from 1 to 5, visually represented through icons or bars.
 - `select`: A dropdown menu that allows users to choose one or multiple items from a predefined list.
 - `checkbox`: A binary input that allows users to select one or more items from a set of choices.
 - `radio`: A set of options where only one can be selected at a time, typically displayed as buttons.
@@ -120,13 +121,14 @@ For instance:
 - `switch`: A toggle switch that allows users to turn a setting on or off.
 - `array`: A collection of items that can hold multiple fields.
 - `file`: An option to upload a file.
-- `i18n`
+- `i18n`: A translatable single-line text input.
 - `i18n:[TYPE]`: You can use any of the above types to make them translatable. For example, you can specify `i18n:string`, `i18n:wysiwyg`, or even `i18n:file` to indicate that these fields should support multiple languages.
 
 #### Field Values:
 - `type`: Specifies a supported field type as defined earlier.
 - `label`: The title that will be displayed within the field.
 - `multiple`: A boolean value that indicates whether the field can accept multiple values (e.g., for `select` or `checkbox` types).
+- `accept`: For `file`, `image` and `video` field only. It takes as its value a comma-separated list of one or more file types. You can add file extensions `*.jpg,*.gif` or even mime types `application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document`.
 - `prepend`: An optional string that will be displayed before the input field.
 - `append`: An optional string that will be displayed after the input field.
 - `prepend-inner`: An optional string that will be displayed inside and before the input field. Can be used with `string`, `number`, `select`, `textarea` and `date` fields.'
