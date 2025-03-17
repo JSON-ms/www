@@ -217,6 +217,10 @@ const refresh = () => {
 
           let attemptCount = 0;
           const checkIframe = (timeout = 100) => {
+            if (siteCompatible.value) {
+              initialized.value = true;
+              return;
+            }
             setTimeout(() => {
               attemptCount++;
               if (!initialized.value && attemptCount > 30) {
@@ -317,6 +321,13 @@ watch(() => sitePreviewMode.value, () => {
 })
 
 watch(() => interfaceModel.data.hash, () => {
+  siteCompatible.value = false;
+  userDataLoaded.value = false;
+  initialized.value = false;
+  siteCompatible.value = false;
+  siteNotCompatibleSnack.value = false;
+  fetched.value = false;
+
   const newUserData = parseInterfaceDataToAdminData(interfaceData.value);
   applyUserData(newUserData);
   form.value?.resetValidation();
