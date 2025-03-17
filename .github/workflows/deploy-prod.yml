@@ -23,7 +23,10 @@ jobs:
           VITE_SERVER_URL: https://dev.json.ms
           VITE_ADMIN_DEMO_URL: https://json.ms/admin
           INTERFACE_EDITOR_URL: https://json.ms
-        run: echo "Defining environment variables"
+        run:
+          - echo "Value of VITE_SERVER_URL is $VITE_SERVER_URL"
+          - echo "Value of VITE_ADMIN_DEMO_URL is $VITE_ADMIN_DEMO_URL"
+          - echo "Value of INTERFACE_EDITOR_URL is $INTERFACE_EDITOR_URL"
 
       - name: Install dependencies
         run: npm install
@@ -37,5 +40,5 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}  # Your FTP server
           username: ${{ secrets.FTP_USERNAME }}  # Store your FTP username in GitHub Secrets
           password: ${{ secrets.FTP_PASSWORD }}  # Store your FTP password in GitHub Secrets
-          local-dir: dist/  # Adjust this to your build output directory
+          local-dir: /home/runner/work/www/www/dist/  # Adjust this to your build output directory
           server-dir: ${{ secrets.FTP_SERVER_PROD_PATH }}  # Adjust this to your desired server directory
