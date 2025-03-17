@@ -40,5 +40,5 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}  # Your FTP server
           username: ${{ secrets.FTP_USERNAME }}  # Store your FTP username in GitHub Secrets
           password: ${{ secrets.FTP_PASSWORD }}  # Store your FTP password in GitHub Secrets
-          local-dir: /home/runner/work/www/www/dist/  # Adjust this to your build output directory
+          local-dir: dist  # Adjust this to your build output directory
           server-dir: ${{ secrets.FTP_SERVER_PROD_PATH }}  # Adjust this to your desired server directory
