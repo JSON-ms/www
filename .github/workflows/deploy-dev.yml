@@ -1,0 +1,34 @@
+name: Deploy to FTP
+
+on:
+  push:
+    branches:
+      - dev  # Change this to your default branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'  # Specify your Node.js version
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build-only  # Adjust this if your build command is different
+
+      - name: FTP Deploy
+        uses: SamKirkland/FTP-Deploy-Action@4.1.0
+        with:
+          server: ${{ secrets.FTP_SERVER }}  # Your FTP server
+          username: ${{ secrets.FTP_USERNAME }}  # Store your FTP username in GitHub Secrets
+          password: ${{ secrets.FTP_PASSWORD }}  # Store your FTP password in GitHub Secrets
+          local-dir: dist  # Adjust this to your build output directory
+          server-dir: ${{ secrets.FTP_SERVER_DEV_PATH }}  # Adjust this to your desired server directory
