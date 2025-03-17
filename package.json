@@ -2,7 +2,7 @@
   "name": "@json.ms/www",
   "private": true,
   "type": "module",
-  "version": "0.0.42",
+  "version": "0.0.43",
   "scripts": {
     "dev": "vite --host",
     "build": "run-p type-check \"build-only {@}\" --",

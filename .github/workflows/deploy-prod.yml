@@ -1,4 +1,4 @@
-name: Deploy to FTP
+name: Deploy PROD to FTP
 
 on:
   push:
@@ -41,4 +41,4 @@ jobs:
           user: ${{ secrets.FTP_USERNAME }}  # Store your FTP username in GitHub Secrets
           pass: ${{ secrets.FTP_PASSWORD }}  # Store your FTP password in GitHub Secrets
           localDir: ./dist/  # Adjust this to your build output directory
-          remoteDir: ${{ secrets.FTP_SERVER_PROD_PATH }}  # Adjust this to your desired server directory
+          remoteDir: ${{ secrets.FTP_WWW_PROD_PATH }}  # Adjust this to your desired server directory
