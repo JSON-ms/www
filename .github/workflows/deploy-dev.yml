@@ -23,6 +23,7 @@ jobs:
           VITE_SERVER_URL: https://server.dev.json.ms
           VITE_ADMIN_DEMO_URL: https://dev.json.ms/admin
           INTERFACE_EDITOR_URL: https://dev.json.ms
+        run: echo "Defining environment variables"
 
       - name: Install dependencies
         run: npm install
