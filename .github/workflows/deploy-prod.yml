@@ -3,7 +3,7 @@ name: Deploy PROD to FTP
 on:
   push:
     branches:
-      - master  # Change this to your default branch
+      - master
 
 jobs:
   build:
@@ -16,7 +16,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: '>=18'  # Specify your Node.js version
+          node-version: '>=18'
 
       - name: Defining environment variables
         env:
@@ -32,13 +32,13 @@ jobs:
         run: yarn
 
       - name: Build project
-        run: yarn build-only  # Adjust this if your build command is different
+        run: yarn build-only
 
       - name: FTP Deploy
         uses: pressidium/lftp-mirror-action@v1
         with:
-          host: ${{ secrets.FTP_SERVER }}  # Your FTP server
-          user: ${{ secrets.FTP_USERNAME }}  # Store your FTP username in GitHub Secrets
-          pass: ${{ secrets.FTP_PASSWORD }}  # Store your FTP password in GitHub Secrets
-          localDir: ./dist/  # Adjust this to your build output directory
-          remoteDir: ${{ secrets.FTP_WWW_PROD_PATH }}  # Adjust this to your desired server directory
+          host: ${{ secrets.FTP_SERVER }}
+          user: ${{ secrets.FTP_USERNAME }}
+          pass: ${{ secrets.FTP_PASSWORD }}
+          localDir: ./dist/
+          remoteDir: ${{ secrets.FTP_WWW_PROD_PATH }}
