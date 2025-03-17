@@ -2,14 +2,15 @@
   "name": "@json.ms/www",
   "private": true,
   "type": "module",
-  "version": "0.0.35",
+  "version": "0.0.41",
   "scripts": {
     "dev": "vite --host",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
-    "build-only": "npm version patch --no-git-tag-version && vite build",
+    "build-only": "vite build",
     "type-check": "vue-tsc --build --force",
-    "lint": "eslint . --fix"
+    "lint": "eslint . --fix",
+    "setup-hooks": "cp .post-commit.hook .git/hooks/post-commit && chmod +x .git/hooks/post-commit"
   },
   "dependencies": {
     "@mdi/font": "7.4.47",
