@@ -23,10 +23,10 @@ jobs:
           VITE_SERVER_URL: https://dev.json.ms
           VITE_ADMIN_DEMO_URL: https://json.ms/admin
           INTERFACE_EDITOR_URL: https://json.ms
-        run:
-          - echo "Value of VITE_SERVER_URL is $VITE_SERVER_URL"
-          - echo "Value of VITE_ADMIN_DEMO_URL is $VITE_ADMIN_DEMO_URL"
-          - echo "Value of INTERFACE_EDITOR_URL is $INTERFACE_EDITOR_URL"
+        run: |
+          echo "Value of VITE_SERVER_URL is $VITE_SERVER_URL"
+          echo "Value of VITE_ADMIN_DEMO_URL is $VITE_ADMIN_DEMO_URL"
+          echo "Value of INTERFACE_EDITOR_URL is $INTERFACE_EDITOR_URL"
 
       - name: Install dependencies
         run: npm install
