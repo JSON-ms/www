@@ -29,5 +29,6 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     SessionPanel: typeof import('./src/components/SessionPanel.vue')['default']
     Settings: typeof import('./src/components/Settings.vue')['default']
+    Snack: typeof import('./src/components/Snack.vue')['default']
   }
 }

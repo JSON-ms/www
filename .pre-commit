@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Bump the minor version in package.json
+npm version patch --no-git-tag-version
+
+# Stage the changes to package.json
+git add package.json

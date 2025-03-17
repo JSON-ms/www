@@ -1,6 +1,23 @@
 import { objectsAreDifferent } from '@/utils';
 import router from '@/router';
 import { useGlobalStore } from '@/stores/global';
+import type { RouteLocationNormalizedGeneric } from 'vue-router';
+
+export const nothingChangedButLocale = (to: RouteLocationNormalizedGeneric, from: RouteLocationNormalizedGeneric) => {
+  if (to.name === from.name) {
+    const keys = Object.keys(to.params);
+    for (const key of keys) {
+      if (key === 'locale') {
+        continue;
+      }
+      if (to.params[key] !== from.params[key]) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+}
 
 const globalStore = useGlobalStore();
 const changesWillBeLostMsg = 'You have unsaved changes on this page. If you proceed, your changes will be lost.';
@@ -12,6 +29,12 @@ const beforeUnloadCallback = (event: any) => {
 };
 window.addEventListener('beforeunload', beforeUnloadCallback);
 router.beforeResolve((to, from, next) => {
+  if (!from.name) {
+    return next();
+  }
+  if (nothingChangedButLocale(to, from)) {
+    return next();
+  }
   Changes.doIfNoChanges(() => {
     Changes.clear();
     next();
@@ -44,8 +67,8 @@ export default class Changes {
       return false;
     }
     const keys = Object.keys(this.list);
-    for (const element of keys) {
-      if (this.hasSetChanges(element)) {
+    for (const key of keys) {
+      if (this.hasSetChanges(key)) {
         return true;
       }
     }

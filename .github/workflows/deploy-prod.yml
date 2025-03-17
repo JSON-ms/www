@@ -1,0 +1,40 @@
+name: Deploy PROD to host
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '>=18'
+
+      - name: Defining environment variables
+        run: |
+          echo "VITE_SERVER_URL=https://server.json.ms" > .env
+          echo "VITE_ADMIN_DEMO_URL=https://json.ms/admin" >> .env
+          echo "INTERFACE_EDITOR_URL=https://json.ms" >> .env
+
+      - name: Install dependencies
+        run: yarn
+
+      - name: Build project
+        run: yarn build-only
+
+      - name: FTP Deploy
+        uses: pressidium/lftp-mirror-action@v1
+        with:
+          host: ${{ secrets.FTP_SERVER }}
+          user: ${{ secrets.FTP_USERNAME }}
+          pass: ${{ secrets.FTP_PASSWORD }}
+          localDir: ./dist/
+          remoteDir: ${{ secrets.FTP_WWW_PROD_PATH }}

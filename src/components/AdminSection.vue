@@ -26,7 +26,7 @@ const sharedInterfaces = computed((): IInterface[] => {
 })
 
 const reload = () => {
-  parsedData.value.global.title = 'JSON.ms Admin Panels';
+  parsedData.value.global.title = 'My Admin Panels';
   if (currentRoute.params.interface) {
     interfaceModel.data = globalStore.session.interfaces.find(child => ['owner', 'admin'].includes(child.type) && child.hash === currentRoute.params.interface) || defaultInterface;
     if (interfaceModel.data.uuid) {
@@ -144,7 +144,7 @@ watch(() => currentRoute.path, reload);
         <v-divider />
         <v-card-actions
           v-if="parsedData.global.copyright"
-          class="text-caption justify-center"
+          class="text-caption justify-center text-disabled px-4"
         >
           {{ parsedData.global.copyright }}
         </v-card-actions>

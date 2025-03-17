@@ -22,6 +22,14 @@ export interface IPrompt {
   callback: () => Promise<void>,
 }
 
+export interface ISnack {
+  visible: boolean,
+  color?: string | undefined,
+  title?: string | undefined,
+  icon?: string | undefined,
+  body: string,
+}
+
 export interface IError {
   visible: boolean,
   title?: string | undefined,
@@ -71,6 +79,9 @@ export interface IField {
   inline?: boolean
   prepend?: string
   append?: string
+  accept?: string | string[]
+  'append-inner'?: string
+  'prepend-inner'?: string
   fields?: {[key: string]: IField}
   items?: {[key: string]: string} | string[]
 }
@@ -89,6 +100,7 @@ export interface IInterfaceData {
     title?: string
     copyright?: string
     logo?: string
+    preview?: string
     theme?: {
       default?: 'dark' | 'light',
       dark?: {

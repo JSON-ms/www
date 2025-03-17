@@ -4,6 +4,7 @@ import { useDisplay } from 'vuetify';
 import { useGlobalStore } from '@/stores/global';
 import type InterfaceModel from '@/models/interface.model';
 import {objectsAreDifferent} from '@/utils';
+import Rules from '@/rules';
 
 // Definitions
 const formIsValid = ref(false);
@@ -100,6 +101,10 @@ const getCyperKey = () => {
     </v-alert>
 
     <v-card>
+      <v-card-text class="pb-0">
+        <h1>Settings</h1>
+        <hr>
+      </v-card-text>
       <v-card-title>
         Admin
       </v-card-title>
@@ -167,6 +172,9 @@ const getCyperKey = () => {
           clearable
           autocomplete="webhook"
         >
+          <template v-if="interfaceModel.data.server_url && Rules.isUrl(interfaceModel.data.server_url) && !interfaceModel.data.server_url.startsWith('https://')" #message>
+            <span class="text-error">It is not safe to use an unsecured protocol (HTTP) to communicate your data. Please be aware that your information may be vulnerable to interception by unauthorized parties. For your safety, we enforce using a secure connection (HTTPS) to protect your sensitive data during transmission.</span>
+          </template>
           <template #label>
             <span class="mr-2 text-error">*</span>Webhook Endpoint
           </template>

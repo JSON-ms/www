@@ -1,6 +1,6 @@
 import type {IInterfaceData, IInterface} from '@/interfaces';
-import {getDefaultInterfaceContent, getInterface, getParsedInterface} from '@/utils';
-import {ref, toRaw} from 'vue';
+import {deepToRaw, getDefaultInterfaceContent, getInterface, getParsedInterface} from '@/utils';
+import {ref} from 'vue';
 import {Services} from '@/services';
 import {useGlobalStore} from '@/stores/global';
 import blankInterface from '@/assets/blank-interface.yaml';
@@ -34,7 +34,6 @@ export default class InterfaceModel extends BaseModel<IInterface, InterfaceModel
     const rules = [];
     if ([null, 'server_url'].includes(key)) {
         rules.push((value: string) => !value || Rules.isUrl(value) || 'This field must contain a valid URL');
-        rules.push((value: string) => value && Rules.isUrl(value) && !value.startsWith('https://') ? 'It is not safe to use an unsecured protocol (HTTP) to communicate your data. Please be aware that your information may be vulnerable to interception by unauthorized parties. For your safety, we enforce using a secure connection (HTTPS) to protect your sensitive data during transmission.' : true);
         rules.push((value: string) => Rules.maxLength(value, 255) || 'This field must contain 255 characters or fewer.');
     }
     if ([null, 'permission_admin', 'permission_interface'].includes(key)) {
@@ -126,7 +125,7 @@ export default class InterfaceModel extends BaseModel<IInterface, InterfaceModel
 
       this.states.value.saving = true;
       const globalStore = useGlobalStore();
-      const parsedInterface = getParsedInterface(toRaw(this.data));
+      const parsedInterface = getParsedInterface(deepToRaw(this.data));
       Services.post(import.meta.env.VITE_SERVER_URL + '/interface' + (this.data.uuid ? '/' + this.data.uuid : ''), {
         ...this.data,
         label: parsedInterface.global.title ?? 'Untitled',

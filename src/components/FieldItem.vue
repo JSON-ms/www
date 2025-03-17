@@ -3,33 +3,40 @@ import ListBuilder from '@/components/ListBuilder.vue';
 import FieldHeader from '@/components/FieldHeader.vue';
 import type { IInterfaceData, IField, IServerSettings } from '@/interfaces';
 import Rules from '@/rules';
-import { parseFields, phpStringSizeToBytes } from '@/utils';
-import { computed, ref, toRaw } from 'vue';
+import {deepToRaw, parseFields, phpStringSizeToBytes} from '@/utils';
+import { computed, ref } from 'vue';
 import { Services } from '@/services';
-import { useGlobalStore } from '@/stores/global';
+import { mimeTypes, useGlobalStore } from '@/stores/global';
 import { useDisplay } from 'vuetify';
 import type InterfaceModel from '@/models/interface.model';
+import type { VFileUpload } from 'vuetify/labs/VFileUpload';
 
 const { smAndDown } = useDisplay()
 const globalStore = useGlobalStore();
 const value = defineModel<any>({ required: true });
 const {
   field,
+  fieldKey,
   locale,
   locales,
   structure,
   serverSettings,
   interface: model,
   disabled = false,
+  loading = false,
 } = defineProps<{
   field: IField,
+  fieldKey: string,
   locale: string,
   locales: { [key: string]: string; },
   structure: IInterfaceData,
   interface: InterfaceModel,
   serverSettings: IServerSettings,
-  disabled: boolean
+  disabled?: boolean,
+  loading?: boolean,
 }>();
+
+const fileUpload = ref<VFileUpload>();
 const showDatePicker = ref(false);
 const getRules = (field: IField): any[] => {
   const rules: any[] = [];
@@ -60,6 +67,18 @@ const optionItems = computed((): { title: string, value: string }[] => {
   }
   return Object.entries(field.items || {}).map(([value, title]) => ({ title, value }));
 })
+const acceptMimeTypes = computed((): string | undefined => {
+  if (field.accept) {
+    return Array.isArray(field.accept) ? field.accept.join(',') : field.accept;
+  }
+  if (field.type === 'image') {
+    return mimeTypes.images.join(',');
+  }
+  if (field.type === 'video') {
+    return mimeTypes.videos.join(',');
+  }
+  return undefined;
+})
 const arrayFields = computed((): {[key: string]: IField} => {
   return field.fields || {};
 })
@@ -82,7 +101,43 @@ const computedReadOnlyDate = computed((): string => {
 });
 
 const getDefaultItem = () => {
-  return parseFields(structuredClone(toRaw(arrayFields.value) || {}), locales);
+  return parseFields(structuredClone(deepToRaw(arrayFields.value) || {}), locales);
+}
+
+const downloading = ref(false);
+const onDownloadFile = () => {
+  downloading.value = true;
+  fetch(filePath.value)
+    .then(response => response.blob())
+    .then(blob => {
+      const parsedUrl = new URL(filePath.value);
+      const pathSegments = parsedUrl.pathname.split('/');
+      const filename = pathSegments[pathSegments.length - 1];
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+    })
+    .catch(globalStore.catchError)
+    .finally(() => downloading.value = false);
+}
+const onRemoveFile = () => {
+  globalStore.setPrompt({
+    ...globalStore.prompt,
+    visible: true,
+    title: 'Remove file',
+    body: 'Are you sure you want to remove this file? The file won\'t be deleted and will remain on the server, but it will not be accessible once modifications are saved.',
+    btnText: 'Remove',
+    btnIcon: 'mdi-close',
+    btnColor: 'warning',
+    callback: () => new Promise(resolve => {
+      value.value = null;
+      resolve();
+    })
+  });
 }
 
 const uploading = ref(false);
@@ -100,7 +155,10 @@ const onFileChange = (file: File | File[] | null) => {
         'X-Jms-Interface-Hash': model.data.hash,
         'X-Jms-Api-Key': model.data.server_secret,
       })
-        .then(response => value.value = response.internalPath)
+        .then(response => value.value = {
+          'path': response.internalPath,
+          'meta': response.meta,
+        })
         .catch(globalStore.catchError)
         .finally(() => uploading.value = false);
     }
@@ -115,20 +173,32 @@ const fileValue = computed({
     value.value = file;
   }
 })
-const localeLabel = computed((): string => {
-  return (locales[locale] || '');
+const isImage = computed((): string => {
+  return ['image', 'i18n:image'].includes(field.type)
+    || value.value?.meta.type.includes('image');
+})
+const isVideo = computed((): string => {
+  return ['video', 'i18n:video'].includes(field.type)
+    || value.value?.meta.type.includes('video');
 })
 const filePath = computed((): string => {
-  return serverSettings.publicUrl + value.value;
+  return serverSettings.publicUrl + value.value?.path;
 })
-const fileType = computed((): string => {
-  return field.type.replace('i18n:', '');
+const showPrependInner = computed((): boolean => {
+  return !!(field['prepend-inner']);
+})
+const showAppendInner = computed((): boolean => {
+  return field.type.includes('i18n') || !!(field['append-inner']);
 })
 const fileIcons: {[key: string]: string} = {
   'i18n:file': 'mdi-file-outline',
   'file': 'mdi-file-outline',
   'i18n:video': 'mdi-video-outline',
   'video': 'mdi-video-outline',
+}
+
+const onWysiwygContentChange = (content: any) => {
+  console.log(content);
 }
 </script>
 
@@ -150,16 +220,27 @@ const fileIcons: {[key: string]: string} = {
     :required="field.required"
     :rules="getRules(field)"
     :disabled="disabled"
+    :loading="loading"
     hide-details="auto"
     clearable
   >
     <template v-if="field.required" #label>
       <span class="mr-2 text-error">*</span>{{ field.label }}
     </template>
-    <template v-if="field.type.includes('i18n')" #append-inner>
-      <v-chip label size="x-small">
-        {{ localeLabel }}
-      </v-chip>
+    <template v-if="showPrependInner" #prepend-inner>
+      <span class="text-no-wrap">{{ field['prepend-inner'] }}</span>
+    </template>
+    <template v-if="showAppendInner" #append-inner>
+      <span v-if="field['append-inner']" class="text-no-wrap">{{ field['append-inner'] }}</span>
+      <v-tooltip
+        v-if="field.type.includes('i18n')"
+        text="Translatable"
+        location="bottom"
+      >
+        <template #activator="{ props }">
+          <v-icon v-bind="props" size="small" icon="mdi-translate-variant" />
+        </template>
+      </v-tooltip>
     </template>
   </v-text-field>
 
@@ -174,22 +255,33 @@ const fileIcons: {[key: string]: string} = {
     :required="field.required"
     :rules="getRules(field)"
     :disabled="disabled"
+    :loading="loading"
     hide-details="auto"
     clearable
   >
     <template v-if="field.required" #label>
       <span class="mr-2 text-error">*</span>{{ field.label }}
     </template>
-    <template v-if="field.type.includes('i18n')" #append-inner>
-      <v-chip label size="x-small">
-        {{ localeLabel }}
-      </v-chip>
+    <template v-if="showPrependInner" #prepend-inner>
+      <span class="text-no-wrap ml-3 mr-2">{{ field['prepend-inner'] }}</span>
+    </template>
+    <template v-if="showAppendInner" #append-inner>
+      <span v-if="field['append-inner']" class="text-no-wrap mr-6">{{ field['append-inner'] }}</span>
+      <v-tooltip
+        v-if="field.type.includes('i18n')"
+        text="Translatable"
+        location="bottom"
+      >
+        <template #activator="{ props }">
+          <v-icon v-bind="props" size="small" icon="mdi-translate-variant" />
+        </template>
+      </v-tooltip>
     </template>
   </v-number-input>
 
   <!-- WYSIWYG -->
   <div v-else-if="['wysiwyg', 'i18n:wysiwyg'].includes(field.type)">
-    <FieldHeader :field="field" :locales="locales" :locale="locale" />
+    <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
     <v-input
       v-if="value !== null"
       v-model="value"
@@ -200,6 +292,7 @@ const fileIcons: {[key: string]: string} = {
       :required="field.required"
       :rules="getRules(field)"
       :disabled="disabled"
+      :loading="loading"
       hide-details="auto"
       clearable
     >
@@ -207,7 +300,10 @@ const fileIcons: {[key: string]: string} = {
         <QuillEditor
           v-model="value"
           theme="snow"
-          style="min-height: 100px"
+          style="height: 33vh"
+          @text-change="onWysiwygContentChange"
+          @selection-change="onWysiwygContentChange"
+          @editor-change="onWysiwygContentChange"
         />
       </div>
     </v-input>
@@ -215,7 +311,7 @@ const fileIcons: {[key: string]: string} = {
 
   <!-- MARKDOWN -->
   <div v-else-if="['markdown', 'i18n:markdown'].includes(field.type)">
-    <FieldHeader :field="field" :locales="locales" :locale="locale" />
+    <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
     <v-input
       v-model="value"
       :label="field.label"
@@ -225,6 +321,7 @@ const fileIcons: {[key: string]: string} = {
       :required="field.required"
       :rules="getRules(field)"
       :disabled="disabled"
+      :loading="loading"
       hide-details="auto"
       clearable
     >
@@ -233,7 +330,6 @@ const fileIcons: {[key: string]: string} = {
         v-model="value"
         :disabled="disabled"
         :options="{
-          minHeight: '100px',
           placeholder: 'Type here...',
           spellChecker: false,
           nativeSpellcheck: false,
@@ -257,16 +353,27 @@ const fileIcons: {[key: string]: string} = {
     :required="field.required"
     :rules="getRules(field)"
     :disabled="disabled"
+    :loading="loading"
     hide-details="auto"
     clearable
   >
     <template v-if="field.required" #label>
       <span class="mr-2 text-error">*</span>{{ field.label }}
     </template>
-    <template v-if="field.type.includes('i18n')" #append-inner>
-      <v-chip label size="x-small">
-        {{ localeLabel }}
-      </v-chip>
+    <template v-if="showPrependInner" #prepend-inner>
+      <span class="text-no-wrap">{{ field['prepend-inner'] }}</span>
+    </template>
+    <template v-if="showAppendInner" #append-inner>
+      <span v-if="field['append-inner']" class="text-no-wrap">{{ field['append-inner'] }}</span>
+      <v-tooltip
+        v-if="field.type.includes('i18n')"
+        text="Translatable"
+        location="bottom"
+      >
+        <template #activator="{ props }">
+          <v-icon v-bind="props" size="small" icon="mdi-translate-variant" />
+        </template>
+      </v-tooltip>
     </template>
   </v-textarea>
 
@@ -280,16 +387,27 @@ const fileIcons: {[key: string]: string} = {
     :items="optionItems"
     :multiple="!!(field.multiple)"
     :disabled="disabled"
+    :loading="loading"
     hide-details="auto"
     clearable
   >
     <template v-if="field.required" #label>
       <span class="mr-2 text-error">*</span>{{ field.label }}
     </template>
-    <template v-if="field.type.includes('i18n')" #append-inner>
-      <v-chip label size="x-small">
-        {{ localeLabel }}
-      </v-chip>
+    <template v-if="showPrependInner" #prepend-inner>
+      <span class="text-no-wrap">{{ field['prepend-inner'] }}</span>
+    </template>
+    <template v-if="showAppendInner" #append-inner>
+      <span v-if="field['append-inner']" class="text-no-wrap">{{ field['append-inner'] }}</span>
+      <v-tooltip
+        v-if="field.type.includes('i18n')"
+        text="Translatable"
+        location="bottom"
+      >
+        <template #activator="{ props }">
+          <v-icon v-bind="props" size="small" icon="mdi-translate-variant" />
+        </template>
+      </v-tooltip>
     </template>
   </v-autocomplete>
 
@@ -303,26 +421,46 @@ const fileIcons: {[key: string]: string} = {
     :hint="field.hint"
     :persistent-hint="!!field.hint"
     :disabled="disabled"
+    :loading="loading"
     color="primary"
     hide-details="auto"
     inset
   >
     <template #label>
       <span v-if="field.required" class="mr-2 text-error">*</span>{{ field.label }}
-      <v-chip
+      <v-tooltip
         v-if="field.type.includes('i18n')"
-        label
-        size="x-small"
-        class="ml-4"
+        text="Translatable"
+        location="bottom"
       >
-        {{ localeLabel }}
-      </v-chip>
+        <template #activator="{ props }">
+          <v-icon v-bind="props" size="small" icon="mdi-translate-variant" />
+        </template>
+      </v-tooltip>
     </template>
   </v-switch>
 
+  <!-- RATING -->
+  <div v-else-if="['rating', 'i18n:rating'].includes(field.type)">
+    <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
+    <v-rating
+      v-model="value"
+      :label="field.label"
+      :required="field.required"
+      :rules="getRules(field)"
+      :hint="field.hint"
+      :persistent-hint="!!field.hint"
+      :disabled="disabled"
+      :loading="loading"
+      color="primary"
+      hide-details="auto"
+      inset
+    />
+  </div>
+
   <!-- CHECKBOX -->
   <div v-else-if="['checkbox', 'i18n:checkbox'].includes(field.type)">
-    <FieldHeader :field="field" :locales="locales" :locale="locale" />
+    <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
     <v-checkbox
       v-for="item in optionItems"
       :key="item.value"
@@ -331,6 +469,7 @@ const fileIcons: {[key: string]: string} = {
       :value="item.value"
       :required="field.required"
       :disabled="disabled"
+      :loading="loading"
       color="primary"
       hide-details="auto"
     />
@@ -338,13 +477,14 @@ const fileIcons: {[key: string]: string} = {
 
   <!-- RADIO -->
   <div v-else-if="['radio', 'i18n:radio'].includes(field.type)">
-    <FieldHeader :field="field" :locales="locales" :locale="locale" />
+    <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
     <v-radio-group
       v-model="value"
       :required="field.required"
       :rules="getRules(field)"
       :inline="field.inline"
       :disabled="disabled"
+      :loading="loading"
       color="primary"
       hide-details="auto"
       clearable
@@ -355,6 +495,7 @@ const fileIcons: {[key: string]: string} = {
         :label="item.title"
         :value="item.value"
         :disabled="disabled"
+        :loading="loading"
       />
     </v-radio-group>
   </div>
@@ -365,6 +506,7 @@ const fileIcons: {[key: string]: string} = {
     v-model="showDatePicker"
     :close-on-content-click="false"
     :disabled="disabled"
+    :loading="loading"
     location="bottom"
   >
     <template #activator="{ props }">
@@ -377,6 +519,7 @@ const fileIcons: {[key: string]: string} = {
         :hint="field.hint"
         :persistent-hint="!!field.hint"
         :disabled="disabled"
+        :loading="loading"
         readonly
         hide-details="auto"
         clearable
@@ -386,10 +529,20 @@ const fileIcons: {[key: string]: string} = {
         <template v-if="field.required" #label>
           <span class="mr-2 text-error">*</span>{{ field.label }}
         </template>
-        <template v-if="field.type.includes('i18n')" #append-inner>
-          <v-chip label size="x-small">
-            {{ localeLabel }}
-          </v-chip>
+        <template v-if="showPrependInner" #prepend-inner>
+          <span class="text-no-wrap">{{ field['prepend-inner'] }}</span>
+        </template>
+        <template v-if="showAppendInner" #append-inner>
+          <span v-if="field['append-inner']" class="text-no-wrap">{{ field['append-inner'] }}</span>
+          <v-tooltip
+            v-if="field.type.includes('i18n')"
+            text="Translatable"
+            location="bottom"
+          >
+            <template #activator="{ props: transProps }">
+              <v-icon v-bind="transProps" size="small" icon="mdi-translate-variant" />
+            </template>
+          </v-tooltip>
         </template>
       </v-text-field>
     </template>
@@ -403,13 +556,12 @@ const fileIcons: {[key: string]: string} = {
   </v-menu>
 
   <!-- FILE -->
-  <div v-else-if="['file', 'i18n:file', 'image', 'i18n:image'].includes(field.type)">
-    <FieldHeader :field="field" :locales="locales" :locale="locale" />
-    <v-card v-if="typeof value === 'string'" variant="tonal" class="w-100">
+  <div v-else-if="['file', 'i18n:file', 'image', 'i18n:image', 'video', 'i18n:video'].includes(field.type)">
+    <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
+    <v-card v-if="typeof value === 'object' && value !== null && value.path" variant="tonal" class="w-100">
       <div class="d-flex align-center">
         <div class="pa-3 pr-0">
-          <v-icon v-if="!['image', 'i18n:image'].includes(field.type)" :icon="fileIcons[field.type]" :size="smAndDown ? 96 : 128" />
-          <v-avatar v-else :size="smAndDown ? 96 : 128" rounded="0">
+          <v-avatar v-if="isImage" :size="smAndDown ? 96 : 128" rounded="0">
             <v-img :src="filePath">
               <template #placeholder>
                 <v-overlay>
@@ -422,67 +574,109 @@ const fileIcons: {[key: string]: string} = {
               </template>
             </v-img>
           </v-avatar>
+          <video v-else-if="isVideo" :src="filePath" :style="{ height: smAndDown ? '96px' : '128px', float: 'left' }" controls />
+          <v-icon v-else-if="['file', 'i18n:file'].includes(field.type)" :icon="fileIcons[field.type]" :size="smAndDown ? 96 : 128" />
         </div>
-        <div class="pa-3 pl-0">
+        <div class="pa-3 pl-0 w-100">
           <v-card-title
             :class="{
-              'py-0 text-break text-truncate': true,
+              'py-0 d-flex': true,
               'text-body-1': smAndDown,
             }"
-            style="max-width: calc(200px)"
           >
-            {{ value }}
+            <div class="d-flex" style="flex: 1; width: 0">
+              <span class="text-truncate">{{ value.path }}</span>
+            </div>
           </v-card-title>
-          <v-card-subtitle class="py-0 text-capitalize">
-            {{ fileType }}
+          <v-card-subtitle class="py-0" style="font-size: 0.66rem">
+            Size: {{ $formatBytes(value.meta.size) }}
+            <br>Type: <span class="text-uppercase">{{ value.meta.type }}</span>
           </v-card-subtitle>
-          <v-card-actions class="pb-0">
-            <v-btn
-              :disabled="disabled"
-              color="error"
-              variant="text"
-              prepend-icon="mdi-trash-can-outline"
-              @click="value = null"
+          <v-card-actions class="pb-0 flex-wrap" style="min-height: 0">
+            <v-tooltip
+              text="Download"
+              location="bottom"
             >
-              Remove
-            </v-btn>
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  :loading="downloading"
+                  :disabled="disabled || downloading"
+                  :size="smAndDown ? 'small' : 'default'"
+                  color="primary"
+                  icon
+                  @click="onDownloadFile"
+                >
+                  <v-icon icon="mdi-download" />
+                </v-btn>
+              </template>
+            </v-tooltip>
+            <v-tooltip
+              text="Remove"
+              location="bottom"
+            >
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  :disabled="disabled"
+                  :size="smAndDown ? 'small' : 'default'"
+                  color="error"
+                  variant="text"
+                  icon
+                  @click="onRemoveFile"
+                >
+                  <v-icon icon="mdi-trash-can-outline" />
+                </v-btn>
+              </template>
+            </v-tooltip>
           </v-card-actions>
         </div>
       </div>
     </v-card>
-    <v-file-upload
-      v-else
-      v-model="fileValue"
-      :label="field.label"
-      :prepend-inner-icon="field.icon"
-      :hint="field.hint"
-      :persistent-hint="!!field.hint"
-      :required="field.required"
-      :rules="getRules(field)"
-      :icon="smAndDown ? 'mdi-gesture-tap-button' : undefined"
-      :title="smAndDown ? 'Touch to upload' : undefined"
-      :disabled="disabled"
-      hide-details="auto"
-      density="compact"
-      variant="compact"
-      scrim="primary"
-      clearable
-      @update:model-value="onFileChange"
-    >
-      <template #item />
-    </v-file-upload>
+    <div v-else class="position-relative">
+      <v-overlay :model-value="uploading" contained absolute class="align-center justify-center" persistent>
+        <v-progress-circular color="primary" indeterminate />
+      </v-overlay>
+      <v-file-upload
+        ref="fileUpload"
+        v-model="fileValue"
+        :label="field.label"
+        :prepend-inner-icon="field.icon"
+        :hint="field.hint"
+        :persistent-hint="!!field.hint"
+        :required="field.required"
+        :rules="getRules(field)"
+        :icon="uploading ? 'mdi-' :smAndDown ? 'mdi-gesture-tap-button' : undefined"
+        :title="uploading ? '' : smAndDown ? 'Touch to upload' : undefined"
+        :disabled="disabled"
+        :loading="loading"
+        :accept="acceptMimeTypes"
+        hide-details="auto"
+        density="compact"
+        variant="compact"
+        scrim="primary"
+        clearable
+        @update:model-value="onFileChange"
+      >
+        <template #item />
+      </v-file-upload>
+    </div>
   </div>
 
   <!-- ARRAY -->
   <div v-else-if="field.type.includes('array')">
-    <FieldHeader :field="field" :locales="locales" :locale="locale" />
+    <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
     <ListBuilder
       v-model="value"
       :label="field.label"
+      :field="field"
+      :locale="locale"
+      :server-settings="serverSettings"
       :required="field.required"
       :rules="getRules(field)"
       :default-item="getDefaultItem()"
       :disabled="disabled"
+      :loading="loading"
       class="d-flex flex-column"
       style="gap: 0.5rem"
       hide-details="auto"
@@ -498,23 +692,27 @@ const fileIcons: {[key: string]: string} = {
             v-if="arrayFields[key].type.includes('i18n')"
             v-model="item[key][locale]"
             :field="arrayFields[key]"
+            :field-key="fieldKey + '.' + key"
             :locale="locale"
             :locales="locales"
             :structure="structure"
             :interface="model"
             :server-settings="serverSettings"
             :disabled="disabled"
+            :loading="loading"
           />
           <FieldItem
             v-else-if="arrayFields[key]"
-            v-model="item[key].general"
+            v-model="item[key]"
             :field="arrayFields[key]"
+            :field-key="fieldKey + '.' + key"
             :locale="locale"
             :locales="locales"
             :structure="structure"
             :interface="model"
             :server-settings="serverSettings"
             :disabled="disabled"
+            :loading="loading"
           />
         </div>
       </template>
@@ -544,4 +742,8 @@ const fileIcons: {[key: string]: string} = {
 <style lang="scss">
 .v-file-upload-items { display: none; }
 .v-checkbox .v-selection-control { min-height: 0 !important; }
+.vue-easymde-editor .CodeMirror-scroll {
+  min-height: 6rem !important;
+  max-height: 40vh !important;
+}
 </style>

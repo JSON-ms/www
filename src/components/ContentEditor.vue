@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, nextTick, onMounted, onUnmounted, ref, toRaw, watch} from 'vue';
+import {computed, nextTick, onMounted, onUnmounted, ref, watch} from 'vue';
 import { useDisplay } from 'vuetify'
 import type {IInterfaceData, IInterface, IServerSettings} from '@/interfaces';
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
@@ -7,18 +7,25 @@ import SessionPanel from '@/components/SessionPanel.vue';
 import InterfaceSelector from '@/components/InterfaceSelector.vue';
 import FieldItem from '@/components/FieldItem.vue';
 import { useGlobalStore } from '@/stores/global';
-import { getDefaultInterfaceContent, getInterface, getParsedInterface, objectsAreDifferent, parseInterfaceDataToAdminData } from '@/utils';
 import router from '@/router';
 import { Services } from '@/services';
 import { useRoute } from 'vue-router';
 import type { VForm } from 'vuetify/components';
 import type InterfaceModel from '@/models/interface.model';
-import Changes from '@/changes';
+import Changes, { nothingChangedButLocale } from '@/changes';
+import {
+  deepToRaw,
+  getDefaultInterfaceContent,
+  getInterface,
+  getParsedInterface,
+  objectsAreDifferent,
+  parseInterfaceDataToAdminData
+} from '@/utils';
 
 const model = defineModel<InterfaceModel>({ required: true });
 const { preview = false, interfaces = [], autoload = false } = defineProps<{
   preview?: boolean,
-  autoload: boolean,
+  autoload?: boolean,
   interfaces: IInterface[],
 }>();
 
@@ -28,6 +35,13 @@ const windowWidth = ref(window.innerWidth);
 const updateWindowWidth = () => {windowWidth.value = window.innerWidth};
 const currentRoute = useRoute();
 const globalStore = useGlobalStore();
+const sitePreviewMode = ref<'off' | 'mobile' | 'desktop'>('off');
+const userDataLoaded = ref(false);
+const hideIframe = ref(false);
+const iframeErrorMsg = ref('This site is not JSONms compatible');
+const initialized = ref(false);
+const siteCompatible = ref(false);
+const siteNotCompatibleSnack = ref(false);
 const formIsValid = ref(false);
 const saving = ref(false);
 const saved = ref(false);
@@ -46,6 +60,15 @@ const serverSettings = ref<IServerSettings>({
 const showAppBar = computed((): boolean => {
   return true;
 })
+const showSitePreview = computed((): string | false => {
+  return !smAndDown.value && sitePreviewMode.value !== 'off' && sitePreviewUrl.value || false;
+})
+const sitePreviewUrl = computed((): string | null => {
+  return getParsedInterface(interfaceModel.data).global.preview || null;
+})
+if (sitePreviewUrl.value && !preview) {
+  sitePreviewMode.value = 'mobile';
+}
 const showActionBar = computed((): boolean => {
   return globalStore.session.loggedIn
     && canInteractWithServer.value;
@@ -94,7 +117,7 @@ const adminData = parseInterfaceDataToAdminData(interfaceData.value);
 const userData = ref(structuredClone(adminData));
 const originalUserData = ref(structuredClone(adminData));
 const drawer = ref(!mobileMode.value);
-const selectedLocale = ref(getDefaultLocale(interfaceData.value));
+const selectedLocale = ref((currentRoute.params.locale || '').toString() || getDefaultLocale(interfaceData.value));
 const selectedSectionKey = ref(Object.keys(interfaceData.value.sections)[0]);
 const routeSection = interfaceData.value.sections[currentRoute.params.section?.toString()];
 
@@ -115,7 +138,7 @@ const goToSection = (section: string = '') => {
       drawer.value = false;
     }
   } else {
-    router.push('/admin/' + interfaceModel.data.hash + '/' + section)
+    router.push('/admin/' + interfaceModel.data.hash + '/' + section + '/' + selectedLocale.value);
   }
 }
 
@@ -136,7 +159,7 @@ const save = async (): Promise<any> => {
     'X-Jms-Api-Key': interfaceModel.data.server_secret,
   })
     .then(() => {
-      originalUserData.value = structuredClone(toRaw(userData.value));
+      originalUserData.value = structuredClone(deepToRaw(userData.value));
       form.value?.resetValidation();
     })
     .catch(globalStore.catchError)
@@ -145,6 +168,10 @@ const save = async (): Promise<any> => {
       saved.value = true;
       setTimeout(() => saved.value = false, 1000);
     });
+}
+
+const onLocaleChange = (locale: string) => {
+  sendMessageToIframe('locale', locale)
 }
 
 const fetchData = () => {
@@ -159,7 +186,7 @@ const download = () => {
   return Services.get((interfaceModel.data.server_url + '?hash=' + interfaceModel.data.hash) || '', {
     'Content-Type': 'application/json',
     'X-Jms-Api-Key': interfaceModel.data.server_secret,
-  })
+  }, true)
     .then(response => {
       const json = JSON.stringify(response, null, 2);
       const blob = new Blob([json], { type: 'application/json' });
@@ -187,6 +214,37 @@ const refresh = () => {
           form.value?.resetValidation();
           serverSettings.value = response.settings;
           applyUserData(parseInterfaceDataToAdminData(interfaceData.value, response.data));
+
+          let attemptCount = 0;
+          const checkIframe = (timeout = 100) => {
+            if (siteCompatible.value) {
+              initialized.value = true;
+              return;
+            }
+            setTimeout(() => {
+              attemptCount++;
+              if (!initialized.value && attemptCount > 30) {
+                initialized.value = true;
+                siteNotCompatibleSnack.value = true;
+                setTimeout(() => {
+                  siteNotCompatibleSnack.value = false;
+                }, 3000)
+              } else {
+                checkIframe();
+              }
+            }, timeout);
+          }
+
+          // Wait for iframe to load and give it one full second
+          // to determine if its JSONms compatible or not.
+          nextTick(() => {
+            if (iframe.value) {
+              iframe.value.onload = () => checkIframe(0);
+              iframe.value.onerror = () => iframeErrorMsg.value = 'Unable to load website.';
+            }
+          })
+
+          userDataLoaded.value = true;
           resolve(userData.value);
         })
         .catch(reason => {
@@ -198,8 +256,18 @@ const refresh = () => {
   })
 }
 
+const onRefreshPreview = () => {
+  if (siteCompatible.value) {
+    initialized.value = false;
+    sendMessageToIframe('reload');
+  } else {
+    hideIframe.value = true;
+    setTimeout(() => hideIframe.value = false);
+  }
+}
+
 const cancel = () => {
-  userData.value = structuredClone(toRaw(originalUserData.value));
+  userData.value = structuredClone(deepToRaw(originalUserData.value));
   form.value?.resetValidation();
 }
 
@@ -222,36 +290,58 @@ const onScroll = (event: Event) => {
 }
 
 const applyUserData = (data: any) => {
-  userData.value = structuredClone(toRaw(data));
-  originalUserData.value = structuredClone(toRaw(data));
+  userData.value = structuredClone(deepToRaw(data));
+  originalUserData.value = structuredClone(deepToRaw(data));
   Changes.applySet('admin', userData, originalUserData);
 }
 
 // Detect changes..
 const dataHasChanged = computed((): boolean => objectsAreDifferent(userData, originalUserData));
 
-router.afterEach((to) => {
-  applyUserData(originalUserData.value);
+router.afterEach((to, from) => {
+  if (!nothingChangedButLocale(to, from)) {
+    applyUserData(originalUserData.value);
+  }
   if (to.params.section) {
     selectedSectionKey.value = to.params.section.toString();
+  }
+  if (to.params.locale) {
+    selectedLocale.value = to.params.locale.toString();
   }
   if (mobileMode.value) {
     drawer.value = false;
   }
   form.value?.resetValidation();
   nextTick(() => form.value?.resetValidation());
+  sendMessageToIframe('section', to.params.section.toString());
+})
+
+watch(() => sitePreviewMode.value, () => {
+  initialized.value = false;
 })
 
 watch(() => interfaceModel.data.hash, () => {
+  siteCompatible.value = false;
+  userDataLoaded.value = false;
+  initialized.value = false;
+  siteCompatible.value = false;
+  siteNotCompatibleSnack.value = false;
+  fetched.value = false;
+
   const newUserData = parseInterfaceDataToAdminData(interfaceData.value);
   applyUserData(newUserData);
   form.value?.resetValidation();
   if (autoload && interfaceModel.data.hash && !isDemo.value) {
+    userDataLoaded.value = false;
+    initialized.value = false;
     setTimeout(() => {
       refresh().catch(() => {
         applyUserData(newUserData);
       });
     })
+  }
+  if (!sitePreviewUrl.value) {
+    sitePreviewMode.value = 'off';
   }
   interfaceModel.copyDataToOriginalData();
   nextTick(() => form.value?.resetValidation());
@@ -279,8 +369,69 @@ watch(() => interfaceModel.data.content, () => {
   userData.value = parseInterfaceDataToAdminData(interfaceData.value, userData.value);
 }, { immediate: true });
 
-onMounted(() => window.addEventListener('resize', updateWindowWidth));
-onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
+const iframe = ref<HTMLIFrameElement>();
+const sendMessageToIframe = (type: string, data?: string) => {
+  if (!siteCompatible.value) {
+    return;
+  }
+  if (iframe.value) {
+    iframe.value.contentWindow?.postMessage({
+      name: 'jsonms',
+      type,
+      data,
+    }, '*');
+  }
+}
+const sendUserDataToIframe = () => {
+  sendMessageToIframe('data', JSON.stringify({
+    data: deepToRaw(userData.value),
+    settings: deepToRaw(serverSettings.value),
+    locale: selectedLocale.value,
+  }));
+  sendMessageToIframe('section', (currentRoute.params.section || '').toString());
+}
+let iframeRouteTimeout: any;
+const listenMessage = (event: MessageEvent) => {
+  if (event.data.name === 'jsonms') {
+    switch (event.data.type) {
+      case 'init':
+        setTimeout(() => {
+          sendUserDataToIframe();
+          initialized.value = true;
+        }, 500)
+        siteCompatible.value = true;
+        break;
+      case 'route':
+        if (interfaceData.value.sections[event.data.data]) {
+          clearTimeout(iframeRouteTimeout);
+          iframeRouteTimeout = setTimeout(() => {
+            router.push('/admin/' + interfaceModel.data.hash + '/' + event.data.data + '/' + selectedLocale.value);
+          }, 100);
+        }
+        break;
+      case 'locale':
+        clearTimeout(iframeRouteTimeout);
+        iframeRouteTimeout = setTimeout(() => {
+          router.push('/admin/' + interfaceModel.data.hash + '/' + selectedSectionKey.value + '/' + event.data.data);
+        }, 100);
+        break;
+    }
+  }
+}
+watch(() => userData.value, () => {
+  if (sitePreviewMode.value !== 'off') {
+    sendUserDataToIframe();
+  }
+}, { deep: true })
+
+onMounted(() => {
+  window.addEventListener('resize', updateWindowWidth)
+  window.addEventListener('message', listenMessage)
+});
+onUnmounted(() => {
+  window.removeEventListener('resize', updateWindowWidth)
+  window.removeEventListener('message', listenMessage)
+});
 </script>
 
 <template>
@@ -308,7 +459,7 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
             flat
             large-text
             :style="{
-              maxWidth: smAndDown ? 'auto' : '25rem'
+              maxWidth: smAndDown ? 'auto' : 'max-content'
             }"
           />
         </template>
@@ -325,21 +476,91 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
     </v-app-bar-title>
 
     <div class="d-flex align-center mx-3" style="gap: 1rem">
-      <v-btn
-        v-if="showFetchUserData"
-        :loading="loading"
-        :icon="mobileMode"
-        :disabled="loading || !canInteractWithServer || fetched"
-        @click="fetchData"
-      >
-        <v-icon v-if="!fetched" :start="!mobileMode" icon="mdi-monitor-arrow-down" />
-        <v-icon v-else :start="!mobileMode" icon="mdi-check" />
-        <span v-if="!mobileMode && !fetched">Fetch user data</span>
-        <span v-else-if="!mobileMode">Fetched!</span>
-      </v-btn>
-      <template v-if="!preview && globalStore.session.loggedIn">
+      <template v-if="globalStore.session.loggedIn">
+        <v-tooltip
+          v-if="!smAndDown && !preview"
+          text="Refresh Preview"
+          location="bottom"
+        >
+          <template #activator="{ props }">
+            <v-btn
+              v-bind="props"
+              :disabled="!showSitePreview || !initialized"
+              icon
+              @click="onRefreshPreview"
+            >
+              <v-icon icon="mdi-refresh" />
+            </v-btn>
+          </template>
+        </v-tooltip>
+        <v-btn-toggle
+          v-if="!smAndDown && !preview"
+          v-model="sitePreviewMode"
+          :color="theme.primary"
+          :disabled="!sitePreviewUrl"
+          mandatory
+          group
+          variant="text"
+        >
+          <v-tooltip
+            text="Data"
+            location="bottom"
+          >
+            <template #activator="{ props }">
+              <v-btn v-bind="props" value="off">
+                <v-icon icon="mdi-form-textarea" />
+              </v-btn>
+            </template>
+          </v-tooltip>
+
+          <v-tooltip
+            text="Mobile"
+            location="bottom"
+          >
+            <template #activator="{ props }">
+              <v-btn v-bind="props" value="mobile">
+                <v-icon icon="mdi-cellphone" />
+              </v-btn>
+            </template>
+          </v-tooltip>
+
+          <v-tooltip
+            text="Desktop"
+            location="bottom"
+          >
+            <template #activator="{ props }">
+              <v-btn v-bind="props" value="desktop">
+                <v-icon icon="mdi-monitor" />
+              </v-btn>
+            </template>
+          </v-tooltip>
+        </v-btn-toggle>
+
+        <v-btn
+          v-if="showFetchUserData"
+          :loading="loading"
+          :icon="mobileMode"
+          :disabled="loading || !canInteractWithServer || fetched"
+          @click="fetchData"
+        >
+          <v-icon v-if="!fetched" :start="!mobileMode" icon="mdi-monitor-arrow-down" />
+          <v-icon v-else :start="!mobileMode" icon="mdi-check" />
+          <span v-if="!mobileMode && !fetched">Fetch data</span>
+          <span v-else-if="!mobileMode">Fetched!</span>
+        </v-btn>
+
+        <LocaleSwitcher
+          v-if="!smAndDown && showLocaleSwitcher"
+          v-model="selectedLocale"
+          :locales="locales"
+          :dense="mobileMode"
+          :disabled="loading"
+          style="max-width: 12rem"
+          @update:model-value="onLocaleChange"
+        />
+
         <SessionPanel
-          :show-username="!smAndDown"
+          :show-username="!smAndDown && !preview"
           @logout="onLogout"
         >
           <v-list-item
@@ -360,7 +581,7 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
     v-model="drawer"
     :permanent="!mobileMode"
     :mobile-breakpoint="preview ? 1400 : 960"
-    width="250"
+    width="260"
   >
     <v-list v-model="selectedSectionKey" nav>
       <template
@@ -407,19 +628,100 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
     v-scroll.self="onScroll"
     :class="{
       'w-100': true,
+      'd-flex align-start fill-height': !preview,
       'pa-4': !mobileMode,
       'overflow-y-scroll': preview,
       'bg-surface': mobileMode,
       'fill-height': mobileMode && !preview,
     }"
     :style="{
-      maxWidth: preview && !mobileMode && showNavigationDrawer ? 'calc(100% - 250px)' : undefined,
+      gap: '1rem',
+      maxWidth: preview && !mobileMode && showNavigationDrawer ? 'calc(100% - 260px)' : undefined,
       marginTop: preview ? '64px' : undefined,
-      marginLeft: !mobileMode && showNavigationDrawer && preview ? '250px' : undefined,
-      marginBottom: showActionBar && !mobileMode && preview ? '64px' : undefined,
+      marginLeft: !mobileMode && showNavigationDrawer && preview ? '260px' : undefined,
+      marginBottom: showActionBar && preview ? '64px' : undefined,
     }"
   >
+    <!-- PREVIEW -->
+    <div
+      v-if="showSitePreview && sitePreviewUrl"
+      :style="{
+        width: sitePreviewMode === 'mobile' ? '23rem' : undefined,
+        height: 'calc(100vh - 128px - 2rem)',
+      }"
+      :class="{
+        'align-self-start': true,
+        'w-100 fill-height': sitePreviewMode === 'desktop',
+      }"
+    >
+      <v-responsive
+        v-if="sitePreviewMode === 'mobile'"
+        :aspect-ratio="9/16"
+        class="position-fixed"
+        style="z-index: 1; width: 23rem; height: calc(100vh - 128px - 2rem)"
+      >
+        <v-card class="fill-height w-100 pa-1">
+          <v-overlay
+            :model-value="!userDataLoaded || !initialized"
+            class="align-center justify-center"
+            contained
+            absolute
+            persistent
+          >
+            <v-progress-circular color="primary" size="64" indeterminate />
+          </v-overlay>
+          <iframe
+            v-if="userDataLoaded && !hideIframe"
+            ref="iframe"
+            :src="sitePreviewUrl"
+            :style="{
+              float: 'left',
+              opacity: !initialized ? 0.01 : 1,
+            }"
+            class="w-100 fill-height"
+          />
+          <div class="position-absolute w-100 pa-1" style="left: 0; bottom: 0">
+            <v-expand-transition>
+              <v-alert
+                v-if="siteNotCompatibleSnack"
+                :text="iframeErrorMsg"
+                type="warning"
+              />
+            </v-expand-transition>
+          </div>
+        </v-card>
+      </v-responsive>
+      <v-responsive v-if="sitePreviewMode === 'mobile'" :aspect-ratio="9/16" />
+      <div v-else class="w-100 fill-height d-flex align-center justify-center">
+        <v-card class="desktop-preview-container">
+          <div class="w-100 fill-height">
+            <v-overlay
+              :model-value="!userDataLoaded || !initialized"
+              class="align-center justify-center"
+              contained
+              absolute
+              persistent
+            >
+              <v-progress-circular color="primary" size="128" indeterminate />
+            </v-overlay>
+            <iframe
+              v-if="userDataLoaded && !hideIframe"
+              ref="iframe"
+              :src="sitePreviewUrl"
+              :style="{
+                float: 'left',
+                opacity: !initialized ? 0.01 : 1,
+              }"
+              class="w-100 fill-height"
+            />
+          </div>
+        </v-card>
+      </div>
+    </div>
+
+    <!-- DATA -->
     <v-card
+      v-if="sitePreviewMode !== 'desktop'"
       :flat="mobileMode"
       :tile="mobileMode"
       :class="{
@@ -428,19 +730,22 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
       }"
       :style="{
         gap: '1rem',
+        flex: 1,
       }"
     >
       <div class="d-flex flex-column" style="gap: 1rem">
         <div>
           <div class="d-flex align-center justify-space-between" style="gap: 1rem">
             <h1>{{ selectedSection.label }}</h1>
+
             <LocaleSwitcher
-              v-if="showLocaleSwitcher"
+              v-if="smAndDown && showLocaleSwitcher"
               v-model="selectedLocale"
               :locales="locales"
               :dense="mobileMode"
               :disabled="loading"
               style="max-width: 12rem"
+              @update:model-value="onLocaleChange"
             />
           </div>
 
@@ -456,23 +761,25 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
             v-if="field.type.includes('i18n')"
             v-model="userData[selectedSectionKey][key][selectedLocale]"
             :field="field"
+            :field-key="selectedSectionKey + '.' + key"
             :locale="selectedLocale"
             :locales="interfaceData.locales"
             :structure="interfaceData"
             :interface="interfaceModel"
             :server-settings="serverSettings"
-            :disabled="loading"
+            :loading="loading"
           />
           <FieldItem
             v-else
-            v-model="userData[selectedSectionKey][key].general"
+            v-model="userData[selectedSectionKey][key]"
             :field="field"
+            :field-key="selectedSectionKey + '.' + key"
             :locale="selectedLocale"
             :locales="interfaceData.locales"
             :structure="interfaceData"
             :interface="interfaceModel"
             :server-settings="serverSettings"
-            :disabled="loading"
+            :loading="loading"
           />
         </template>
 
@@ -484,6 +791,23 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
 
     <!-- ACTION BAR -->
     <v-app-bar v-if="showActionBar" location="bottom">
+      <div class="pr-3 pl-4 d-flex align-center" style="gap: 1rem">
+        <v-scroll-y-transition>
+          <v-alert
+            v-if="!formIsValid && userDataLoaded"
+            density="compact"
+            class="my-n3"
+            variant="tonal"
+            type="warning"
+          >
+            <div class="d-flex">
+              <span class="text-truncate">
+                Please correct the errors in the form before submitting.
+              </span>
+            </div>
+          </v-alert>
+        </v-scroll-y-transition>
+      </div>
       <v-spacer />
       <div class="d-flex align-center pr-3" style="gap: 0.5rem">
         <v-btn
@@ -514,3 +838,12 @@ onUnmounted(() => window.removeEventListener('resize', updateWindowWidth));
     </v-app-bar>
   </v-form>
 </template>
+
+<style lang="scss" scoped>
+.desktop-preview-container {
+  max-width: 150%;
+  width: calc((150vh - 192px - 3rem) * 1.7777777777777777);
+  height: calc(150vh - 192px - 3rem);
+  zoom: 0.666;
+}
+</style>

@@ -5,7 +5,7 @@ import ContentEditor from '@/components/ContentEditor.vue';
 import Docs from '@/components/Docs.vue';
 import Settings from '@/components/Settings.vue';
 import SessionPanel from '@/components/SessionPanel.vue';
-import {computed, ref} from 'vue';
+import { computed, ref } from 'vue';
 import { useDisplay } from 'vuetify';
 import GoogleSignInButton from '@/components/GoogleSignInButton.vue';
 import { useGlobalStore } from '@/stores/global';
@@ -67,9 +67,9 @@ const applyTemplate = (template: string, hash?: string, updateLabel = true) => {
     const parsedContent = interfaceModel.getParsedData();
     interfaceModel.data.label = parsedContent.global.title || '';
     interfaceModel.data.logo = parsedContent.global.logo || '';
-    interfaceModel.copyDataToOriginalData();
   }
 
+  interfaceModel.copyDataToOriginalData();
   Changes.applySet('interface', interfaceModel.data, interfaceModel.originalData);
 }
 
@@ -105,7 +105,7 @@ const onInterfaceContentChange = (template: string) => {
 }
 
 const onSelectInterface = () => {
-  interfaceModel.copyDataToOriginalData();
+  applyTemplate(interfaceModel.data.content, interfaceModel.data.hash, true);
 }
 </script>
 
@@ -130,6 +130,7 @@ const onSelectInterface = () => {
             :interfaces="globalStore.session.interfaces"
             :actions="!smAndDown && globalStore.session.loggedIn"
             :large-text="!smAndDown"
+            :can-save="!isPristine"
             type="interface"
             style="max-width: 35rem; width: 10rem; min-width: min-content"
             @change="onSelectInterface"
@@ -184,7 +185,7 @@ const onSelectInterface = () => {
     v-if="smAndDown"
     v-model="drawer"
     temporary
-    width="250"
+    width="260"
   >
     <v-list v-model="tab" color="primary" nav>
       <v-list-item
@@ -360,7 +361,6 @@ const onSelectInterface = () => {
                     v-model="interfaceModel"
                     :interfaces="globalStore.session.interfaces"
                     preview
-                    autoload
                   />
                 </v-layout>
               </div>

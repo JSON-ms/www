@@ -16,7 +16,7 @@ You don't need to install JSON.ms on your server; you can simply use our [online
 
 1. Clone the repository:
 ```sh
-git clone git@github.com:dannycoulombe/jsonms.git
+git clone git@github.com:JSON-ms/www.git
 cd jsonms
 ```
 

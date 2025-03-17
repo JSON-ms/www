@@ -4,7 +4,7 @@ import YAML from 'yamljs';
 import defaultInterfaceStructure from '@/assets/default-interface-structure.json';
 import merge from 'ts-deepmerge';
 import type {Ref} from 'vue';
-import {isRef} from 'vue';
+import {isReactive, isReadonly, isRef, toRaw} from 'vue';
 
 export const getParsedInterface = (data: IInterface = getInterface()): IInterfaceData => {
   let parseData: any = {};
@@ -49,12 +49,15 @@ export const parseFields = (fields: any = {}, locales = {}) => {
 
   const emptyStringTypes = ['i18n', 'wysiwyg', 'i18n:wysiwyg', 'markdown', 'i18n:markdown', 'date', 'i18n:date'];
   const multipleTypes = ['array', 'i18n:array'];
+  const fileTypes = ['file', 'i18n:file', 'image', 'i18n:image', 'video', 'i18n:video'];
   const mayBeMultipleTypes = ['select', 'i18n:select', 'checkbox', 'i18n:checkbox', 'radio', 'i18n:radio'];
   const applyValues = (key: string) => {
     const type = fields[key].type || '';
     let value;
     if (multipleTypes.includes(type) || (mayBeMultipleTypes.includes(type) && !!(fields[key].multiple))) {
       value = [];
+    } else if (fileTypes.includes(type)) {
+      value = null;
     } else {
       value = emptyStringTypes.includes(type) ? '' : null;
     }
@@ -72,10 +75,7 @@ export const parseFields = (fields: any = {}, locales = {}) => {
         }
       })
     } else {
-      result[key].general = applyValues(key);
-      if (result[key].general === undefined) {
-        delete result[key].general;
-      }
+      result[key] = applyValues(key);
     }
   });
   return result;
@@ -94,11 +94,43 @@ export const processObject = (obj: any, callback: (parent: any, key: string, pat
   }
 }
 
-export const getValueByPath = (obj: any, path = '') => {
+export const getDataByPath = (obj: any, path = '') => {
   const keys = path.split('.');
   return keys.reduce((accumulator: any, key: string) => {
     return (accumulator !== null && accumulator !== undefined) ? accumulator[key] : undefined;
   }, obj);
+}
+
+export const getFieldByPath = (obj: any, path: string): any => {
+  const keys = path.split('.');
+  let current = obj;
+  let lastFound = undefined;
+
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+
+    // If it's the first key, just access it directly
+    if (i === 0) {
+      current = current[key];
+    } else {
+      // For subsequent keys, first check 'fields', then the key itself
+      if (current && current.fields && current.fields[key] !== undefined) {
+        lastFound = current; // Update last found object
+        current = current.fields[key];
+      } else {
+        lastFound = current; // Update last found object
+        current = current[key];
+      }
+    }
+
+    // If current becomes undefined, we continue but keep track of last found
+    if (current === undefined) {
+      break;
+    }
+  }
+
+  // If the last key was not found, return the last found object
+  return current !== undefined ? current : lastFound;
 }
 
 export const parseInterfaceDataToAdminData = (data: IInterfaceData, override: any = {}): any => {
@@ -112,19 +144,30 @@ export const parseInterfaceDataToAdminData = (data: IInterfaceData, override: an
     }
   });
   processObject(result, (parent, key, path) => {
-    const overrideValue = getValueByPath(override, path);
-    if (Array.isArray(parent[key]) && Array.isArray(overrideValue)) {
+    const overrideValue = getDataByPath(override, path);
+    const field = getFieldByPath(data.sections, path);
+
+    // Array
+    if (['array', 'i18n:array'].includes(field.type) || field.multiple) {
+      if (Array.isArray(overrideValue)) {
+        return parent[key] = overrideValue;
+      }
+      return parent[key];
+    }
+
+    // Files
+    if (['file', 'i18n:file', 'image', 'i18n:image', 'video', 'i18n:video'].includes(field.type)) {
+      if (typeof overrideValue === 'object' && overrideValue !== null && typeof overrideValue.path === 'string' && typeof overrideValue.meta === 'object') {
+        return parent[key] = overrideValue;
+      }
+      return parent[key];
+    }
+
+    // Number/String
+    if ((typeof parent[key] !== 'object' || typeof parent[key] !== null) && ['number', 'string', 'boolean'].includes(typeof overrideValue)) {
       return parent[key] = overrideValue;
     }
-    if (
-      typeof parent[key] === 'object' && parent[key] !== null &&
-      typeof overrideValue === 'object' && overrideValue !== null
-    ) {
-      return parent[key] = overrideValue;
-    }
-    if (overrideValue !== undefined) {
-      return parent[key] = overrideValue;
-    }
+
     return parent[key];
   });
   return result;
@@ -200,4 +243,20 @@ export const phpStringSizeToBytes = (sizeString: string) => {
     default:
       return size;
   }
+}
+
+export const deepToRaw = (obj: any): any => {
+  const raw = toRaw(obj);
+  if (Array.isArray(raw)) {
+    return raw.map(item => deepToRaw(item));
+  } else if (typeof raw === 'object' && raw !== null) {
+    const result: any = {};
+    for (const key in raw) {
+      if (raw.hasOwnProperty(key)) {
+        result[key] = deepToRaw(raw[key]);
+      }
+    }
+    return result;
+  }
+  return raw;
 }

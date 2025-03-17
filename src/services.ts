@@ -4,8 +4,8 @@ export class Services {
 
   static get(url: string, headers: {[key: string]: any} = {
     'Content-Type': 'application/json'
-  }): Promise<any> {
-    return this.handle(url, 'GET', undefined, headers);
+  }, cache = true): Promise<any> {
+    return this.handle(url, 'GET', undefined, headers, undefined, cache);
   }
 
   static post(url: string, body?: any, headers: {[key: string]: any} = {
@@ -44,7 +44,7 @@ export class Services {
     }
   }
 
-  private static handle(url: string, method = 'GET', body?: any, headers: {[key: string]: any} = {}, params: {[key: string]: any} = {}): Promise<any> {
+  private static handle(url: string, method = 'GET', body?: any, headers: {[key: string]: any} = {}, params: {[key: string]: any} = {}, cache = true): Promise<any> {
     const finalParams: any = {
       credentials: 'include',
       method,
@@ -52,6 +52,9 @@ export class Services {
       headers,
       ...params
     };
+    if (!cache) {
+      finalParams.cache = 'no-store';
+    }
     this.doRequestCount(1)
     return new Promise((resolve, reject) => {
       fetch(url, finalParams)

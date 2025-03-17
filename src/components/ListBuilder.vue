@@ -1,25 +1,79 @@
 <script setup lang="ts">
 import draggable from 'vuedraggable'
 import { generateHash } from '@/utils';
-import { useDisplay } from 'vuetify';
 import { useGlobalStore } from '@/stores/global';
+import { computed, ref } from 'vue';
+import type { IField, IServerSettings } from '@/interfaces';
 
 const globalStore = useGlobalStore();
-const { smAndDown } = useDisplay()
 const list = defineModel<any[]>({ required: true });
 const {
   defaultItem,
+  field,
+  serverSettings,
+  locale,
   disabled = false,
-  label,
 } = defineProps<{
   defaultItem: any,
-  label: string,
+  field: IField,
+  serverSettings: IServerSettings,
+  locale: string,
   disabled: boolean,
 }>()
+
+const panel = ref<null | number>(null);
+
+const formattedList = computed({
+  get(): any[] {
+    return list.value.map((item: any, itemIdx: number) => {
+      let title;
+      let thumbnail: string | false = false;
+      const fields = field.fields || {};
+      for (const key in fields) {
+        const fieldItem = fields[key];
+        if (!title && ['string', 'i18n:string', 'i18n', 'date', 'i18n:date'].includes(fieldItem.type)) {
+          if (fieldItem.type.includes('i18n')) {
+            title = item[key][locale];
+          } else {
+            title = item[key];
+          }
+        }
+        if (fieldItem.type === 'image' && typeof item[key] === 'object' && item[key] !== null && item[key].path) {
+          thumbnail = serverSettings.publicUrl + item[key].path;
+        }
+        if (thumbnail && title) {
+          break;
+        }
+      }
+
+      if (thumbnail && !title) {
+        title = thumbnail.substring(thumbnail.lastIndexOf('/') + 1);
+      }
+
+      if (!title) {
+        const keys = Object.keys(fields);
+        if (keys.length === 1 && fields[keys[0]].label) {
+          title = fields[keys[0]].label + ' #' + (itemIdx + 1);
+        }
+      }
+      return {
+      ...item,
+        __listBuilderTitle: title || 'Item #' + (itemIdx + 1),
+        __listBuilderThumbnail: thumbnail,
+      }
+    })
+  },
+  set(items: any[]) {
+    list.value.length = 0
+    list.value.push(...items);
+  }
+})
+
 const addItem = () => {
   const newItem = structuredClone(defaultItem);
   newItem.hash = generateHash(8);
   list.value.push(newItem);
+  panel.value = list.value.length - 1;
 }
 const removeItem = (index: number) => {
   globalStore.setPrompt({
@@ -36,142 +90,72 @@ const removeItem = (index: number) => {
     })
   })
 }
-const canMoveUp = (index: number): boolean => {
-  return !disabled && index > 0;
-}
-const canMoveDown = (index: number): boolean => {
-  return !disabled && index < list.value.length - 1;
-}
-const moveUp = (index: number) => {
-  if (canMoveUp(index)) {
-    const temp = list.value[index - 1];
-    list.value[index - 1] = list.value[index];
-    list.value[index] = temp;
-  }
-}
-const moveDown = (index: number) => {
-  if (!canMoveDown) {
-    return;
-  }
-  [list.value[index], list.value[index + 1]] = [list.value[index + 1], list.value[index]];
-}
 </script>
 
 <template>
-  <draggable
-    v-model="list"
-    item-key="hash"
-    handle=".handle"
-  >
-    <template #item="{ element, index }">
-      <v-container
-        :class="{
-          'pa-0': true,
-          'mt-4': !smAndDown && list.length > 0,
-        }"
-        fluid
-      >
-        <template v-if="smAndDown && list.length > 0">
-          <v-divider v-if="index > 0" class="my-3" />
-          <v-row>
-            <v-col cols="12">
-              <div class="d-flex align-center justify-space-between" style="gap: 0.5rem">
-                <h3>
-                  <v-icon icon="mdi-circle-edit-outline" start />
-                  {{ label }} #{{ index + 1 }}
-                </h3>
-                <div>
-                  <v-tooltip location="bottom" text="Remove item">
-                    <template #activator="{ props }">
-                      <v-btn
-                        v-bind="props"
-                        :disabled="disabled"
-                        color="error"
-                        size="small"
-                        variant="text"
-                        icon
-                        @click="() => removeItem(index)"
-                      >
-                        <v-icon icon="mdi-delete-outline" />
-                      </v-btn>
-                    </template>
-                  </v-tooltip>
-
-                  <template v-if="list.length > 1">
-                    <v-tooltip location="bottom" text="Move up">
-                      <template #activator="{ props }">
-                        <v-btn
-                          v-bind="props"
-                          :disabled="!canMoveUp(index)"
-                          size="small"
-                          variant="text"
-                          icon
-                          @click="() => moveUp(index)"
-                        >
-                          <v-icon icon="mdi-arrow-up" />
-                        </v-btn>
-                      </template>
-                    </v-tooltip>
-                    <v-tooltip location="bottom" text="Move down">
-                      <template #activator="{ props }">
-                        <v-btn
-                          v-bind="props"
-                          :disabled="!canMoveDown(index)"
-                          size="small"
-                          variant="text"
-                          icon
-                          @click="() => moveDown(index)"
-                        >
-                          <v-icon icon="mdi-arrow-down" />
-                        </v-btn>
-                      </template>
-                    </v-tooltip>
-                  </template>
+  <v-expansion-panels v-model="panel">
+    <draggable
+      v-model="formattedList"
+      item-key="hash"
+      handle=".handle"
+    >
+      <template #item="{ element, index }">
+        <v-expansion-panel>
+          <template #title>
+            <div class="d-flex align-center justify-space-between w-100 pr-3" style="gap: 1rem">
+              <div class="d-flex align-center justify-start" style="flex: 1; gap: 1rem">
+                <v-icon class="handle" icon="mdi-drag-vertical px-4 ml-n3" @mousedown.stop />
+                <v-img
+                  v-if="element.__listBuilderThumbnail"
+                  :src="element.__listBuilderThumbnail"
+                  width="32"
+                  height="32"
+                  max-width="32"
+                  class="my-n3"
+                />
+                <div class="d-flex" style="flex: 1; width: 0">
+                  <span class="text-truncate">{{ element.__listBuilderTitle }}</span>
                 </div>
               </div>
-            </v-col>
-          </v-row>
-        </template>
-        <v-row no-gutters>
-          <v-col v-if="!smAndDown" style="flex: 0" class="pt-4 mr-3">
-            <v-icon class="handle" icon="mdi-drag-vertical" />
-          </v-col>
-          <v-col style="flex: 1">
+
+              <v-btn
+                :disabled="disabled"
+                color="error"
+                size="small"
+                variant="text"
+                icon
+                class="my-n3"
+                @click.stop="() => removeItem(index)"
+              >
+                <v-icon icon="mdi-delete-outline" />
+              </v-btn>
+            </div>
+          </template>
+          <template #text>
+            <!-- DO NOT RETURN ELEMENT, it is NOT the correct reference! -->
             <slot
               name="default"
-              :item="element"
+              :item="list[index]"
               :index="index"
             />
-          </v-col>
-          <v-col v-if="!smAndDown" style="flex: 0" class="pt-2 ml-3">
-            <v-btn
-              :disabled="disabled"
-              color="error"
-              size="small"
-              variant="text"
-              icon
-              @click="() => removeItem(index)"
-            >
-              <v-icon icon="mdi-delete-outline" />
-            </v-btn>
-          </v-col>
-        </v-row>
-      </v-container>
-    </template>
-    <template #footer>
-      <v-btn
-        :disabled="disabled"
-        :class="{
-          'mt-4': list.length > 0
-        }"
-        color="primary"
-        block
-        @click="addItem"
-      >
-        Add
-      </v-btn>
-    </template>
-  </draggable>
+          </template>
+        </v-expansion-panel>
+      </template>
+      <template #footer>
+        <v-btn
+          :disabled="disabled"
+          :class="{
+            'mt-4': list.length > 0
+          }"
+          color="primary"
+          block
+          @click="addItem"
+        >
+          Add
+        </v-btn>
+      </template>
+    </draggable>
+  </v-expansion-panels>
 </template>
 
 <style lang="scss" scoped>
