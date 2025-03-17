@@ -1,4 +1,4 @@
-name: Deploy DEV to FTP
+name: Deploy DEV to host
 
 on:
   push:

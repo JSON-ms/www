@@ -1,4 +1,4 @@
-name: Deploy PROD to FTP
+name: Deploy PROD to host
 
 on:
   push:
