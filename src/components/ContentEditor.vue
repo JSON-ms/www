@@ -7,6 +7,12 @@ import SessionPanel from '@/components/SessionPanel.vue';
 import InterfaceSelector from '@/components/InterfaceSelector.vue';
 import FieldItem from '@/components/FieldItem.vue';
 import { useGlobalStore } from '@/stores/global';
+import router from '@/router';
+import { Services } from '@/services';
+import { useRoute } from 'vue-router';
+import type { VForm } from 'vuetify/components';
+import type InterfaceModel from '@/models/interface.model';
+import Changes, { nothingChangedButLocale } from '@/changes';
 import {
   deepToRaw,
   getDefaultInterfaceContent,
@@ -15,12 +21,6 @@ import {
   objectsAreDifferent,
   parseInterfaceDataToAdminData
 } from '@/utils';
-import router from '@/router';
-import { Services } from '@/services';
-import { useRoute } from 'vue-router';
-import type { VForm } from 'vuetify/components';
-import type InterfaceModel from '@/models/interface.model';
-import Changes, { nothingChangedButLocale } from '@/changes';
 
 const model = defineModel<InterfaceModel>({ required: true });
 const { preview = false, interfaces = [], autoload = false } = defineProps<{
@@ -36,8 +36,12 @@ const updateWindowWidth = () => {windowWidth.value = window.innerWidth};
 const currentRoute = useRoute();
 const globalStore = useGlobalStore();
 const sitePreviewMode = ref<'off' | 'mobile' | 'desktop'>('off');
-const loaded = ref(false);
+const userDataLoaded = ref(false);
+const hideIframe = ref(false);
+const iframeErrorMsg = ref('This site is not JSONms compatible');
 const initialized = ref(false);
+const siteCompatible = ref(false);
+const siteNotCompatibleSnack = ref(false);
 const formIsValid = ref(false);
 const saving = ref(false);
 const saved = ref(false);
@@ -210,7 +214,33 @@ const refresh = () => {
           form.value?.resetValidation();
           serverSettings.value = response.settings;
           applyUserData(parseInterfaceDataToAdminData(interfaceData.value, response.data));
-          loaded.value = true;
+
+          let attemptCount = 0;
+          const checkIframe = (timeout = 100) => {
+            setTimeout(() => {
+              attemptCount++;
+              if (!initialized.value && attemptCount > 30) {
+                initialized.value = true;
+                siteNotCompatibleSnack.value = true;
+                setTimeout(() => {
+                  siteNotCompatibleSnack.value = false;
+                }, 3000)
+              } else {
+                checkIframe();
+              }
+            }, timeout);
+          }
+
+          // Wait for iframe to load and give it one full second
+          // to determine if its JSONms compatible or not.
+          nextTick(() => {
+            if (iframe.value) {
+              iframe.value.onload = () => checkIframe(0);
+              iframe.value.onerror = () => iframeErrorMsg.value = 'Unable to load website.';
+            }
+          })
+
+          userDataLoaded.value = true;
           resolve(userData.value);
         })
         .catch(reason => {
@@ -220,6 +250,16 @@ const refresh = () => {
         .finally(() => loading.value = false);
     }
   })
+}
+
+const onRefreshPreview = () => {
+  if (siteCompatible.value) {
+    initialized.value = false;
+    sendMessageToIframe('reload');
+  } else {
+    hideIframe.value = true;
+    setTimeout(() => hideIframe.value = false);
+  }
 }
 
 const cancel = () => {
@@ -272,16 +312,25 @@ router.afterEach((to, from) => {
   sendMessageToIframe('section', to.params.section.toString());
 })
 
+watch(() => sitePreviewMode.value, () => {
+  initialized.value = false;
+})
+
 watch(() => interfaceModel.data.hash, () => {
   const newUserData = parseInterfaceDataToAdminData(interfaceData.value);
   applyUserData(newUserData);
   form.value?.resetValidation();
   if (autoload && interfaceModel.data.hash && !isDemo.value) {
+    userDataLoaded.value = false;
+    initialized.value = false;
     setTimeout(() => {
       refresh().catch(() => {
         applyUserData(newUserData);
       });
     })
+  }
+  if (!sitePreviewUrl.value) {
+    sitePreviewMode.value = 'off';
   }
   interfaceModel.copyDataToOriginalData();
   nextTick(() => form.value?.resetValidation());
@@ -310,7 +359,10 @@ watch(() => interfaceModel.data.content, () => {
 }, { immediate: true });
 
 const iframe = ref<HTMLIFrameElement>();
-const sendMessageToIframe = (type: string, data: string) => {
+const sendMessageToIframe = (type: string, data?: string) => {
+  if (!siteCompatible.value) {
+    return;
+  }
   if (iframe.value) {
     iframe.value.contentWindow?.postMessage({
       name: 'jsonms',
@@ -332,8 +384,11 @@ const listenMessage = (event: MessageEvent) => {
   if (event.data.name === 'jsonms') {
     switch (event.data.type) {
       case 'init':
-        sendUserDataToIframe();
-        initialized.value = true;
+        setTimeout(() => {
+          sendUserDataToIframe();
+          initialized.value = true;
+        }, 500)
+        siteCompatible.value = true;
         break;
       case 'route':
         if (interfaceData.value.sections[event.data.data]) {
@@ -411,6 +466,22 @@ onUnmounted(() => {
 
     <div class="d-flex align-center mx-3" style="gap: 1rem">
       <template v-if="globalStore.session.loggedIn">
+        <v-tooltip
+          v-if="!smAndDown && !preview"
+          text="Refresh Preview"
+          location="bottom"
+        >
+          <template #activator="{ props }">
+            <v-btn
+              v-bind="props"
+              :disabled="!showSitePreview || !initialized"
+              icon
+              @click="onRefreshPreview"
+            >
+              <v-icon icon="mdi-refresh" />
+            </v-btn>
+          </template>
+        </v-tooltip>
         <v-btn-toggle
           v-if="!smAndDown && !preview"
           v-model="sitePreviewMode"
@@ -579,30 +650,57 @@ onUnmounted(() => {
         style="z-index: 1; width: 23rem; height: calc(100vh - 128px - 2rem)"
       >
         <v-card class="fill-height w-100 pa-1">
-          <v-overlay v-if="!loaded || !initialized" :model-value="true" contained absolute class="align-center justify-center" persistent>
-            <v-progress-circular color="primary" indeterminate />
+          <v-overlay
+            :model-value="!userDataLoaded || !initialized"
+            class="align-center justify-center"
+            contained
+            absolute
+            persistent
+          >
+            <v-progress-circular color="primary" size="64" indeterminate />
           </v-overlay>
           <iframe
-            v-if="loaded"
+            v-if="userDataLoaded && !hideIframe"
             ref="iframe"
             :src="sitePreviewUrl"
-            style="float: left"
+            :style="{
+              float: 'left',
+              opacity: !initialized ? 0.01 : 1,
+            }"
             class="w-100 fill-height"
           />
+          <div class="position-absolute w-100 pa-1" style="left: 0; bottom: 0">
+            <v-expand-transition>
+              <v-alert
+                v-if="siteNotCompatibleSnack"
+                :text="iframeErrorMsg"
+                type="warning"
+              />
+            </v-expand-transition>
+          </div>
         </v-card>
       </v-responsive>
       <v-responsive v-if="sitePreviewMode === 'mobile'" :aspect-ratio="9/16" />
       <div v-else class="w-100 fill-height d-flex align-center justify-center">
         <v-card class="desktop-preview-container">
           <div class="w-100 fill-height">
-            <v-overlay v-if="!loaded || !initialized" :model-value="true" contained absolute class="align-center justify-center" persistent>
-              <v-progress-circular color="primary" indeterminate />
+            <v-overlay
+              :model-value="!userDataLoaded || !initialized"
+              class="align-center justify-center"
+              contained
+              absolute
+              persistent
+            >
+              <v-progress-circular color="primary" size="128" indeterminate />
             </v-overlay>
             <iframe
-              v-if="loaded"
+              v-if="userDataLoaded && !hideIframe"
               ref="iframe"
               :src="sitePreviewUrl"
-              style="float: left"
+              :style="{
+                float: 'left',
+                opacity: !initialized ? 0.01 : 1,
+              }"
               class="w-100 fill-height"
             />
           </div>
@@ -682,12 +780,12 @@ onUnmounted(() => {
 
     <!-- ACTION BAR -->
     <v-app-bar v-if="showActionBar" location="bottom">
-      <div class="pr-3">
+      <div class="pr-3 pl-4 d-flex align-center" style="gap: 1rem">
         <v-scroll-y-transition>
           <v-alert
-            v-if="!formIsValid && loaded"
+            v-if="!formIsValid && userDataLoaded"
             density="compact"
-            class="ml-3 my-n3"
+            class="my-n3"
             variant="tonal"
             type="warning"
           >

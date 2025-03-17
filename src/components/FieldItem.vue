@@ -297,7 +297,6 @@ const onWysiwygContentChange = (content: any) => {
       clearable
     >
       <div class="w-100 mb-12">
-        {{typeof value}}=={{value}}
         <QuillEditor
           v-model="value"
           theme="snow"
@@ -540,8 +539,8 @@ const onWysiwygContentChange = (content: any) => {
             text="Translatable"
             location="bottom"
           >
-            <template #activator="{ props }">
-              <v-icon v-bind="props" size="small" icon="mdi-translate-variant" />
+            <template #activator="{ props: transProps }">
+              <v-icon v-bind="transProps" size="small" icon="mdi-translate-variant" />
             </template>
           </v-tooltip>
         </template>
@@ -594,27 +593,42 @@ const onWysiwygContentChange = (content: any) => {
             <br>Type: <span class="text-uppercase">{{ value.meta.type }}</span>
           </v-card-subtitle>
           <v-card-actions class="pb-0 flex-wrap" style="min-height: 0">
-            <v-btn
-              :loading="downloading"
-              :disabled="disabled || downloading"
-              :size="smAndDown ? 'small' : 'default'"
-              color="primary"
-              variant="outlined"
-              prepend-icon="mdi-download"
-              @click="onDownloadFile"
+            <v-tooltip
+              text="Download"
+              location="bottom"
             >
-              Download
-            </v-btn>
-            <v-btn
-              :disabled="disabled"
-              :size="smAndDown ? 'small' : 'default'"
-              color="error"
-              variant="text"
-              prepend-icon="mdi-close"
-              @click="onRemoveFile"
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  :loading="downloading"
+                  :disabled="disabled || downloading"
+                  :size="smAndDown ? 'small' : 'default'"
+                  color="primary"
+                  icon
+                  @click="onDownloadFile"
+                >
+                  <v-icon icon="mdi-download" />
+                </v-btn>
+              </template>
+            </v-tooltip>
+            <v-tooltip
+              text="Remove"
+              location="bottom"
             >
-              Remove
-            </v-btn>
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  :disabled="disabled"
+                  :size="smAndDown ? 'small' : 'default'"
+                  color="error"
+                  variant="text"
+                  icon
+                  @click="onRemoveFile"
+                >
+                  <v-icon icon="mdi-trash-can-outline" />
+                </v-btn>
+              </template>
+            </v-tooltip>
           </v-card-actions>
         </div>
       </div>

@@ -37,6 +37,7 @@ const { locales, dense = false, disabled = false } = defineProps<{
     :disabled="disabled"
     label="Locale"
     hide-details
+    min-width="max-content"
     density="compact"
   />
 </template>
