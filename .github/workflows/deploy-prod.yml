@@ -29,10 +29,10 @@ jobs:
           echo "Value of INTERFACE_EDITOR_URL is $INTERFACE_EDITOR_URL"
 
       - name: Install dependencies
-        run: npm install
+        run: yarn
 
       - name: Build project
-        run: npm run build-only  # Adjust this if your build command is different
+        run: yarn build-only  # Adjust this if your build command is different
 
       - name: FTP Deploy
         uses: SamKirkland/FTP-Deploy-Action@4.1.0
