@@ -107,9 +107,11 @@ const getDefaultItem = () => {
 const downloading = ref(false);
 const onDownloadFile = () => {
   downloading.value = true;
-  fetch(filePath.value)
-    .then(response => response.blob())
-    .then(blob => {
+  Services.download(filePath.value, {
+    headers: {
+      'X-Jms-Api-Key': model.data.server_secret,
+    }
+  }).then(blob => {
       const parsedUrl = new URL(filePath.value);
       const pathSegments = parsedUrl.pathname.split('/');
       const filename = pathSegments[pathSegments.length - 1];
@@ -152,8 +154,10 @@ const onFileChange = (file: File | File[] | null) => {
       uploading.value = true;
       uploadProgress.value = 0;
       Services.upload(model.data.server_url, file, progress => uploadProgress.value = progress, {
-        'X-Jms-Interface-Hash': model.data.hash,
-        'X-Jms-Api-Key': model.data.server_secret,
+        headers: {
+          'X-Jms-Interface-Hash': model.data.hash,
+          'X-Jms-Api-Key': model.data.server_secret,
+        }
       })
         .then(response => value.value = {
           'path': response.internalPath,

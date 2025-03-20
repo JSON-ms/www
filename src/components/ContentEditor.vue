@@ -155,8 +155,9 @@ const save = async (): Promise<any> => {
     data: userData.value,
     interface: parsedInterface,
   }, {
-    'Content-Type': 'application/json',
-    'X-Jms-Api-Key': interfaceModel.data.server_secret,
+    headers: {
+      'X-Jms-Api-Key': interfaceModel.data.server_secret,
+    }
   })
     .then(() => {
       originalUserData.value = structuredClone(deepToRaw(userData.value));
@@ -184,9 +185,10 @@ const fetchData = () => {
 const download = () => {
   downloading.value = true;
   return Services.get((interfaceModel.data.server_url + '?hash=' + interfaceModel.data.hash) || '', {
-    'Content-Type': 'application/json',
-    'X-Jms-Api-Key': interfaceModel.data.server_secret,
-  }, true)
+    headers: {
+      'X-Jms-Api-Key': interfaceModel.data.server_secret,
+    }
+  })
     .then(response => {
       const json = JSON.stringify(response, null, 2);
       const blob = new Blob([json], { type: 'application/json' });
@@ -207,8 +209,9 @@ const refresh = () => {
     if (interfaceModel.data.hash && interfaceModel.data.server_url) {
       loading.value = true;
       Services.get((interfaceModel.data.server_url + '?hash=' + interfaceModel.data.hash) || '', {
-        'Content-Type': 'application/json',
-        'X-Jms-Api-Key': interfaceModel.data.server_secret,
+        headers: {
+          'X-Jms-Api-Key': interfaceModel.data.server_secret,
+        }
       })
         .then(response => {
           form.value?.resetValidation();
