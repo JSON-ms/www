@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia';
-import type { ISession, IPrompt, IError, ISnack } from '@/interfaces';
-import InterfaceModel from '@/models/interface.model';
+import type {ISession, IPrompt, IError, ISnack, IAdmin, IInterface} from '@/interfaces';
 
 export const mimeTypes = {
   images: [
@@ -37,6 +36,7 @@ export const mimeTypes = {
 export const useGlobalStore = defineStore('example', {
   state: (): {
     theme: 'dark' | 'light',
+    admin: IAdmin,
     snack: ISnack,
     error: IError,
     prompt: IPrompt,
@@ -56,6 +56,12 @@ export const useGlobalStore = defineStore('example', {
       title: '',
       body: '',
       visible: false,
+    },
+    admin: {
+      drawer: true,
+      interface: false,
+      previewMode: 'mobile',
+      tab: 'data',
     },
     session: {
       loggedIn: false,
@@ -93,6 +99,9 @@ export const useGlobalStore = defineStore('example', {
         };
       }
     },
+    setAdmin(admin: Partial<IAdmin>) {
+      Object.assign(this.admin, admin);
+    },
     setPrompt(prompt: IPrompt) {
       this.prompt = prompt;
     },
@@ -108,11 +117,13 @@ export const useGlobalStore = defineStore('example', {
         this.session.interfaces = session.interfaces;
       }
     },
-    addInterface(item: InterfaceModel) {
-      this.session.interfaces.push(item.data);
+    addInterface(item: IInterface) {
+      if (!this.session.interfaces.find(inter => inter.uuid === item.uuid)) {
+        this.session.interfaces.push(item);
+      }
     },
-    removeInterface(item: InterfaceModel) {
-      const filteredItems = this.session.interfaces.filter(child => child.uuid !== item.data.uuid);
+    removeInterface(item: IInterface) {
+      const filteredItems = this.session.interfaces.filter(child => child.uuid !== item.uuid);
       this.session.interfaces.length = 0;
       Array.prototype.push.apply(this.session.interfaces, filteredItems);
     },

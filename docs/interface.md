@@ -17,14 +17,9 @@ global:
     
   # Specify a URL for a logo image that will be displayed alongside the title, enhancing the visual identity of your panel.
   logo: https://json.ms/favicon.ico
-  
-  # Customize the color scheme of your admin panel by defining primary and secondary colors, allowing for a personalized look and feel.
-  theme:
-    default: dark
-    dark:
-      primary: "#1867c0"
-    light:
-      primary: "#1867c0"
+
+  # Specify a URL of a JSON.ms compatible website that you can preview while you work on your data.
+  preview: https://demo.json.ms
 ```
 These settings allows to create an admin panel that aligns with your brand and user experience goals.
 

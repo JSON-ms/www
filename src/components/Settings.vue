@@ -2,15 +2,14 @@
 import {computed, ref} from 'vue';
 import { useDisplay } from 'vuetify';
 import { useGlobalStore } from '@/stores/global';
-import type InterfaceModel from '@/models/interface.model';
-import {objectsAreDifferent} from '@/utils';
 import Rules from '@/rules';
+import type {IInterface} from '@/interfaces';
+import {useInterface} from '@/composables/interface';
 
 // Definitions
 const formIsValid = ref(false);
-const model = defineModel<InterfaceModel>({ required: true });
-const interfaceModel = model.value;
-const states = interfaceModel.states;
+const interfaceModel = defineModel<IInterface>({ required: true });
+const { interfaceStates, getInterfaceRules, interfaceHasError, getSecretKey, getCypherKey } = useInterface(interfaceModel);
 const copied = ref(false);
 const globalStore = useGlobalStore();
 const { smAndDown } = useDisplay()
@@ -18,8 +17,7 @@ const adminBaseUrl = ref(import.meta.env.VITE_ADMIN_DEMO_URL);
 const secretKey = ref('');
 const cypherKey = ref('');
 
-// Emits
-const emit = defineEmits(['save'])
+// Props
 const {
   demo = false,
   disabled = false,
@@ -30,25 +28,20 @@ const {
 
 // Computed
 const canOpenAdminUrl = computed((): boolean => {
-  return !!(interfaceModel.data.uuid) || !globalStore.session.loggedIn;
+  return !!(interfaceModel.value.uuid) || !globalStore.session.loggedIn;
 })
 const adminUrl = computed((): string => {
-  return adminBaseUrl.value + '/' + (interfaceModel.data.hash || (globalStore.session.loggedIn ? 'new' : 'demo'));
+  return adminBaseUrl.value + '/' + (interfaceModel.value.hash || (globalStore.session.loggedIn ? 'new' : 'demo'));
 })
 const computedServerSecretKey = computed((): string => {
-  return states.value.secretKeyLoaded
+  return interfaceStates.value.secretKeyLoaded
     ? secretKey.value
-    : interfaceModel.data.server_secret || '';
+    : interfaceModel.value.server_secret || '';
 })
 const computedCypherKey = computed((): string => {
-  return states.value.cypherKeyLoaded
+  return interfaceStates.value.cypherKeyLoaded
     ? cypherKey.value
-    : interfaceModel.data.cypher_key || '';
-})
-const isPristine = computed((): boolean => {
-  return !objectsAreDifferent(interfaceModel.data, interfaceModel.originalData, [
-    'server_url', 'permission_admin', 'permission_interface',
-  ])
+    : interfaceModel.value.cypher_key || '';
 })
 
 const openAdminLink = () => {
@@ -73,11 +66,11 @@ const select = () => {
 }
 
 const getServerSecretKey = () => {
-  interfaceModel.getSecretKey().then(response => secretKey.value = response);
+  getSecretKey().then(response => secretKey.value = response);
 }
 
 const getCyperKey = () => {
-  interfaceModel.getCypherKey().then(response => cypherKey.value = response);
+  getCypherKey().then(response => cypherKey.value = response);
 }
 </script>
 
@@ -100,7 +93,7 @@ const getCyperKey = () => {
       <span v-else-if="disabled">Only the owner of this interface is allowed to modify the settings.</span>
     </v-alert>
 
-    <v-card>
+    <v-card tile flat>
       <v-card-text class="pb-0">
         <h1>Settings</h1>
         <hr>
@@ -161,9 +154,9 @@ const getCyperKey = () => {
 
         <!-- SERVER URL -->
         <v-text-field
-          v-model="interfaceModel.data.server_url"
+          v-model="interfaceModel.server_url"
           :disabled="demo || disabled"
-          :rules="interfaceModel.getRules('server_url')"
+          :rules="getInterfaceRules('server_url')"
           prepend-inner-icon="mdi-webhook"
           hide-details="auto"
           hint="This feature allows you to specify a URL that will be triggered whenever data is read from or saved to the admin panel. By integrating a webhook, you can synchronize data with a remote server and perform various transformations."
@@ -172,13 +165,13 @@ const getCyperKey = () => {
           clearable
           autocomplete="webhook"
         >
-          <template v-if="interfaceModel.data.server_url && Rules.isUrl(interfaceModel.data.server_url) && !interfaceModel.data.server_url.startsWith('https://')" #message>
+          <template v-if="interfaceModel.server_url && Rules.isUrl(interfaceModel.server_url) && !interfaceModel.server_url.startsWith('https://')" #message>
             <span class="text-error">It is not safe to use an unsecured protocol (HTTP) to communicate your data. Please be aware that your information may be vulnerable to interception by unauthorized parties. For your safety, we enforce using a secure connection (HTTPS) to protect your sensitive data during transmission.</span>
           </template>
           <template #label>
             <span class="mr-2 text-error">*</span>Webhook Endpoint
           </template>
-          <template v-if="!demo && interfaceModel.hasError('server_url')" #append-inner>
+          <template v-if="!demo && interfaceHasError('server_url')" #append-inner>
             <v-icon color="warning" icon="mdi-alert" />
           </template>
         </v-text-field>
@@ -186,8 +179,8 @@ const getCyperKey = () => {
         <!-- SERVER SECRET -->
         <v-text-field
           v-model="computedServerSecretKey"
-          :type="states.secretKeyLoaded ? 'text' : 'password'"
-          :disabled="demo || disabled || !interfaceModel.data.uuid"
+          :type="interfaceStates.secretKeyLoaded ? 'text' : 'password'"
+          :disabled="demo || disabled || !interfaceModel.uuid"
           prepend-inner-icon="mdi-key-chain"
           hide-details="auto"
           label="API Server Secret"
@@ -197,10 +190,10 @@ const getCyperKey = () => {
           name="server_secret"
           autocomplete="new-password"
         >
-          <template v-if="!states.secretKeyLoaded" #append-inner>
+          <template v-if="!interfaceStates.secretKeyLoaded" #append-inner>
             <v-btn
-              :disabled="!interfaceModel.data.uuid"
-              :loading="states.loadingSecretKey"
+              :disabled="!interfaceModel.uuid"
+              :loading="interfaceStates.loadingSecretKey"
               variant="outlined"
               size="small"
               @click="getServerSecretKey()"
@@ -213,8 +206,8 @@ const getCyperKey = () => {
         <!-- CYPHER KEY -->
         <v-text-field
           v-model="computedCypherKey"
-          :type="states.cypherKeyLoaded ? 'text' : 'password'"
-          :disabled="demo || disabled || !interfaceModel.data.uuid"
+          :type="interfaceStates.cypherKeyLoaded ? 'text' : 'password'"
+          :disabled="demo || disabled || !interfaceModel.uuid"
           prepend-inner-icon="mdi-script-text-key-outline"
           hide-details="auto"
           label="API Cypher Key"
@@ -224,10 +217,10 @@ const getCyperKey = () => {
           name="cypher_key"
           autocomplete="new-password"
         >
-          <template v-if="!states.cypherKeyLoaded" #append-inner>
+          <template v-if="!interfaceStates.cypherKeyLoaded" #append-inner>
             <v-btn
-              :disabled="!interfaceModel.data.uuid"
-              :loading="states.loadingCypherKey"
+              :disabled="!interfaceModel.uuid"
+              :loading="interfaceStates.loadingCypherKey"
               variant="outlined"
               size="small"
               @click="getCyperKey()"
@@ -244,10 +237,10 @@ const getCyperKey = () => {
           No emails will be sent to users. Please ensure that the Google account email addresses entered match the accounts that users are connected with when accessing the application.
         </v-alert>
         <v-combobox
-          v-model="interfaceModel.data.permission_interface"
+          v-model="interfaceModel.permission_interface"
           :disabled="demo || disabled"
           :items="[]"
-          :rules="interfaceModel.getRules('permission_interface')"
+          :rules="getInterfaceRules('permission_interface')"
           prepend-inner-icon="mdi-account-multiple-check"
           label="Interface User(s)"
           hide-details="auto"
@@ -259,10 +252,10 @@ const getCyperKey = () => {
           multiple
         />
         <v-combobox
-          v-model="interfaceModel.data.permission_admin"
+          v-model="interfaceModel.permission_admin"
           :disabled="demo || disabled"
           :items="[]"
-          :rules="interfaceModel.getRules('permission_admin')"
+          :rules="getInterfaceRules('permission_admin')"
           prepend-inner-icon="mdi-account-multiple-check"
           label="Admin User(s)"
           hide-details="auto"
@@ -274,24 +267,6 @@ const getCyperKey = () => {
           multiple
         />
       </v-card-text>
-
-      <!-- ACTIONS -->
-      <v-card-actions>
-        <v-spacer />
-        <v-btn
-          :loading="states.saving"
-          :disabled="states.saving || !formIsValid || isPristine"
-          :variant="states.saved ? 'tonal' : 'flat'"
-          :color="(!formIsValid || isPristine) && !states.saved ? undefined : 'primary'"
-          class="px-3"
-          @click="() => emit('save')"
-        >
-          <v-icon v-if="!states.saved" icon="mdi-content-save" start />
-          <v-icon v-else icon="mdi-check" start />
-          <span v-if="!states.saved">Save</span>
-          <span v-else>Saved!</span>
-        </v-btn>
-      </v-card-actions>
     </v-card>
   </v-form>
 </template>

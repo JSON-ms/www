@@ -2,20 +2,14 @@
 import interfaceMd from '@/docs/interface.md'
 import settingsMd from '@/docs/settings.md'
 import { marked } from 'marked';
-import 'ace-builds/src-noconflict/mode-yaml';
-import 'ace-builds/src-noconflict/mode-php';
-import 'ace-builds/src-noconflict/mode-python';
-import 'ace-builds/src-noconflict/mode-javascript';
-import 'ace-builds/src-noconflict/theme-github_dark';
 import { onMounted, ref } from 'vue';
-import ace from 'ace-builds';
 import { useDisplay } from 'vuetify';
 import PHPIntegration from '@/assets/integration-php.txt';
 import PythonIntegration from '@/assets/integration-python.txt';
 import NodeIntegration from '@/assets/integration-node.txt';
 import { VAceEditor } from 'vue3-ace-editor';
-
-ace.config.set("basePath", "/node_modules/ace-builds/src-min-noconflict");
+import '@/plugins/aceeditor';
+import ace from 'ace-builds';
 
 const { smAndDown } = useDisplay()
 
@@ -46,6 +40,7 @@ const applyEditors = () => {
       highlightActiveLine: false,
       showFoldWidgets: false,
       showGutter: false,
+      fontSize: 14,
     });
   }
 }
@@ -61,16 +56,18 @@ const content = ref({
   node: applyEnvVar(NodeIntegration),
 });
 
+const options = { fontSize: 14 };
+
 onMounted(() => {
   applyEditors();
 })
 </script>
 
 <template>
-  <v-container class="docs fill-height pa-0 align-start" style="gap: 0.66rem" fluid>
+  <v-container class="docs pa-0" fluid>
     <v-row :no-gutters="smAndDown">
       <v-col cols="12">
-        <v-card>
+        <v-card tile flat>
           <v-card-text class="d-flex flex-column" style="gap: 2rem">
             <div v-html="parsedHtml(interfaceMd)" />
             <div v-html="parsedHtml(settingsMd)" />
@@ -98,6 +95,7 @@ onMounted(() => {
                     <v-tabs-window-item value="php">
                       <v-ace-editor
                         v-model:value="content.php"
+                        :options="options"
                         style="height: 500px;"
                         lang="php"
                         theme="github_dark"
@@ -107,6 +105,7 @@ onMounted(() => {
                     <v-tabs-window-item value="python">
                       <v-ace-editor
                         v-model:value="content.python"
+                        :options="options"
                         style="height: 500px;"
                         lang="python"
                         theme="github_dark"
@@ -116,6 +115,7 @@ onMounted(() => {
                     <v-tabs-window-item value="node">
                       <v-ace-editor
                         v-model:value="content.node"
+                        :options="options"
                         style="height: 500px;"
                         lang="javascript"
                         theme="github_dark"

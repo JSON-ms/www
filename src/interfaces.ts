@@ -22,6 +22,13 @@ export interface IPrompt {
   callback: () => Promise<void>,
 }
 
+export interface IAdmin {
+  drawer: boolean,
+  interface: boolean,
+  previewMode: 'mobile' | 'desktop' | null,
+  tab: 'data' | 'settings' | 'docs',
+}
+
 export interface ISnack {
   visible: boolean,
   color?: string | undefined,

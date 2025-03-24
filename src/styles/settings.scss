@@ -12,8 +12,8 @@
 html.v-overlay-scroll-blocked {
   position: static !important;
 }
-html, body {
-  overflow-y: auto;
+html {
+  overflow-y: scroll !important;
 }
 body.ajax-loading,
 body.ajax-loading * {
@@ -23,7 +23,6 @@ body.ajax-loading * {
 .v-file-upload hr {
   width: 100px !important;
 }
-
 
 hr:not(.v-divider) {
   margin: 0.5rem 0 1rem 0;

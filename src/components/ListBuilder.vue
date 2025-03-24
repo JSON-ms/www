@@ -118,6 +118,12 @@ const removeItem = (index: number) => {
                 </div>
               </div>
 
+              <slot
+                name="actions"
+                :item="list[index]"
+                :index="index"
+              />
+
               <v-btn
                 :disabled="disabled"
                 color="error"

@@ -1,35 +1,35 @@
 <script setup lang="ts">
 import {computed} from 'vue';
 import { useGlobalStore } from '@/stores/global';
-import InterfaceModel from '@/models/interface.model';
 import type {IInterface} from '@/interfaces';
 import {deepToRaw} from '@/utils';
+import {useInterface} from '@/composables/interface';
 
 // Props
-const interfaceModel = defineModel<InterfaceModel>({ required: true });
-const states = interfaceModel.value.states;
+const interfaceModel = defineModel<IInterface>({ required: true });
 const {
   interfaces = [],
   type = null,
   actions = false,
-  canSave = false,
   largeText = false,
+  showIcon = true,
 } = defineProps<{
   interfaces: IInterface[],
   type: 'admin' | 'interface' | null,
   actions?: boolean,
-  canSave?: boolean,
   largeText?: boolean,
+  showIcon?: boolean,
 }>();
 
 // Declarations
 const globalStore = useGlobalStore();
+const { setInterfaceOriginalData, interfaceOriginalData, interfaceStates, canDeleteInterface, canSaveInterface, interfaceIsPristine } = useInterface(interfaceModel);
 
 // Emits
-const emit = defineEmits(['change', 'create', 'save', 'delete'])
-const create = (item: InterfaceModel) => emit('create', item);
-const save = (item: InterfaceModel) => emit('save', item);
-const remove = (item: InterfaceModel) =>  emit('delete', item);
+const emit = defineEmits(['change', 'create', 'save', 'delete', 'update:model-value'])
+const create = (item: IInterface) => emit('create', item);
+const save = (item: IInterface) => emit('save', item);
+const remove = (item: IInterface) =>  emit('delete', item);
 
 // Computed
 const computedInterfaces = computed((): (IInterface | { header: string })[] => {
@@ -60,11 +60,14 @@ const computedInterfaces = computed((): (IInterface | { header: string })[] => {
   return results;
 })
 
+const onInput = (model: IInterface) => {
+  setInterfaceOriginalData(model);
+}
 </script>
 
 <template>
   <v-select
-    v-model="interfaceModel.data"
+    v-model="interfaceModel"
     :items="computedInterfaces"
     item-title="label"
     item-value="hash"
@@ -75,14 +78,14 @@ const computedInterfaces = computed((): (IInterface | { header: string })[] => {
     density="compact"
     no-data-text="No interface available yet"
     return-object
-    @update:model-value="emit('change', interfaceModel)"
+    @update:model-value="onInput"
   >
     <!-- ICON/LOGO -->
-    <template #prepend-inner>
-      <v-icon v-if="!interfaceModel.originalData.logo" :icon="interfaceModel.originalData.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'" />
+    <template v-if="showIcon" #prepend-inner>
+      <v-icon v-if="!interfaceOriginalData.logo" :icon="interfaceOriginalData.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'" />
       <v-img
         v-else
-        :src="interfaceModel.originalData.logo"
+        :src="interfaceOriginalData.logo"
         width="24"
         height="24"
         class="mr-1"
@@ -93,10 +96,10 @@ const computedInterfaces = computed((): (IInterface | { header: string })[] => {
     <template #selection>
       <template v-if="largeText">
         <div class="text-h6 text-truncate">
-          {{ interfaceModel.originalData.label }}
+          {{ interfaceOriginalData.label }}
         </div>
       </template>
-      <span v-else class="text-truncate">{{ interfaceModel.originalData.label }}</span>
+      <span v-else class="text-truncate">{{ interfaceOriginalData.label }}</span>
     </template>
 
     <!-- ACTIONS -->
@@ -104,7 +107,7 @@ const computedInterfaces = computed((): (IInterface | { header: string })[] => {
 
       <!-- CREATE -->
       <v-tooltip
-        text="New interface"
+        text="New (ALT+N)"
         location="bottom"
       >
         <template #activator="{ props }">
@@ -122,21 +125,21 @@ const computedInterfaces = computed((): (IInterface | { header: string })[] => {
 
       <!-- SAVE -->
       <v-tooltip
-        text="Save"
+        text="Save (CTRL+S)"
         location="bottom"
       >
         <template #activator="{ props }">
           <v-btn
             v-bind="props"
-            :loading="states.saving"
-            :disabled="states.saving || states.saved || !canSave"
+            :loading="interfaceStates.saving"
+            :disabled="interfaceStates.saving || interfaceStates.saved || !canSaveInterface || interfaceIsPristine"
             variant="text"
             color="primary"
             size="small"
             icon
             @mousedown.stop.prevent="save(interfaceModel)"
           >
-            <v-icon v-if="!states.saved" icon="mdi-content-save" />
+            <v-icon v-if="!interfaceStates.saved" icon="mdi-content-save" />
             <v-icon v-else icon="mdi-check" />
           </v-btn>
         </template>
@@ -149,10 +152,10 @@ const computedInterfaces = computed((): (IInterface | { header: string })[] => {
       >
         <template #activator="{ props }">
           <v-btn
-            v-if="interfaceModel.originalData.type === 'owner'"
+            v-if="interfaceOriginalData.type === 'owner'"
             v-bind="props"
-            :disabled="!interfaceModel.originalData.uuid || states.deleting"
-            :loading="states.deleting"
+            :disabled="!canDeleteInterface || interfaceStates.deleting"
+            :loading="interfaceStates.deleting"
             color="error"
             size="small"
             icon
@@ -174,7 +177,7 @@ const computedInterfaces = computed((): (IInterface | { header: string })[] => {
       <v-list-item
         v-else
         v-bind="props"
-        :active="item.value === interfaceModel.originalData.hash"
+        :active="item.value === interfaceOriginalData.hash"
       >
         <template #prepend>
           <v-icon v-if="!item.raw.logo" :icon="item.raw.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'" />

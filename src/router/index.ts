@@ -1,26 +1,20 @@
 /**
- * router/index.ts
+ * router/plugin.ts
  *
- * Automatic routes for `./src/pages/*.vue`
+ * Automatic routes for `./src/views/*.vue`
  */
 
 // Composables
 import { createRouter, createWebHistory } from 'vue-router/auto'
-import { routes } from 'vue-router/auto-routes'
 import ErrorPage from '@/components/ErrorPage.vue'
+import MainView from '@/views/MainView.vue';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    ...routes, {
-      path: '/:pathMatch(.*)*',
-      name: 'ErrorPage',
-      component: ErrorPage,
-    }, {
-      path: '/error/:code',
-      name: 'ErrorPage',
-      component: ErrorPage,
-    }
+    { path: '/', redirect: '/admin/demo/home/en-US' },
+    { path: '/admin/:hash/:section/:locale', name: 'home', component: MainView },
+    { path: '/:pathMatch(.*)*', name: 'ErrorPageGeneral', component: ErrorPage },
   ],
 })
 

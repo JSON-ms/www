@@ -12,12 +12,6 @@ global:
   title: Dynamic Admin Panel Example
   copyright: JSON.ms v{{version}}. Licensed under the BSD-3-Clause.
   logo: [INTERFACE_EDITOR_URL]/favicon.ico
-  theme:
-    default: light
-    light:
-      primary: "#1867c0"
-    dark:
-      primary: "#1867c0"
 
 
 # Supported Languages:

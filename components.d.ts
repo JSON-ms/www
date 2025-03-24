@@ -7,10 +7,12 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    ActionBar: typeof import('./src/components/ActionBar.vue')['default']
     AdminSection: typeof import('./src/components/AdminSection.vue')['default']
     ContentEditor: typeof import('./src/components/ContentEditor.vue')['default']
+    DataEditor: typeof import('./src/components/DataEditor.vue')['default']
     Docs: typeof import('./src/components/Docs.vue')['default']
-    EditorSection: typeof import('./src/components/EditorSection.vue')['default']
+    EditorDrawer: typeof import('./src/components/EditorDrawer.vue')['default']
     Error: typeof import('./src/components/Error.vue')['default']
     ErrorPage: typeof import('./src/components/ErrorPage.vue')['default']
     FieldHeader: typeof import('./src/components/FieldHeader.vue')['default']
@@ -20,6 +22,8 @@ declare module 'vue' {
     InterfaceEditor: typeof import('./src/components/InterfaceEditor.vue')['default']
     InterfaceSelector: typeof import('./src/components/InterfaceSelector.vue')['default']
     IntroductionDialog: typeof import('./src/components/IntroductionDialog.vue')['default']
+    JsonEditModal: typeof import('./src/components/JsonEditModal.vue')['default']
+    JSONms: typeof import('./src/components/JSONms.vue')['default']
     ListBuilder: typeof import('./src/components/ListBuilder.vue')['default']
     LocaleSwitcher: typeof import('./src/components/LocaleSwitcher.vue')['default']
     Logo: typeof import('./src/components/Logo.vue')['default']
@@ -29,6 +33,9 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     SessionPanel: typeof import('./src/components/SessionPanel.vue')['default']
     Settings: typeof import('./src/components/Settings.vue')['default']
+    Sidebar: typeof import('./src/components/Sidebar.vue')['default']
+    SitePreview: typeof import('./src/components/SitePreview.vue')['default']
     Snack: typeof import('./src/components/Snack.vue')['default']
+    Toolbar: typeof import('./src/components/Toolbar.vue')['default']
   }
 }

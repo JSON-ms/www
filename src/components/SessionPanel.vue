@@ -41,7 +41,7 @@ const logout = () => {
 <template>
   <v-menu>
     <template #activator="{ props }">
-      <v-btn v-bind="props" :icon="dense">
+      <v-btn v-bind="props" :icon="dense" height="40">
         <v-avatar size="32" color="primary">
           <v-img
             v-if="globalStore.session.user.avatar"

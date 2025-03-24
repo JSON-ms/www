@@ -22,7 +22,6 @@ const items: any[] = [
   <v-dialog
     v-model="visible"
     width="450"
-    contained
     scrollable
   >
     <v-card>

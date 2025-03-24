@@ -1,10 +1,11 @@
 import demoInterface from '@/assets/demo-interface.yaml'
-import type { IInterfaceData, IInterface } from '@/interfaces';
+import type {IInterfaceData, IInterface, IField} from '@/interfaces';
 import YAML from 'yamljs';
 import defaultInterfaceStructure from '@/assets/default-interface-structure.json';
 import merge from 'ts-deepmerge';
 import type {Ref} from 'vue';
-import {isReactive, isReadonly, isRef, toRaw} from 'vue';
+import {isRef, toRaw} from 'vue';
+import JSZip from 'jszip';
 
 export const getParsedInterface = (data: IInterface = getInterface()): IInterfaceData => {
   let parseData: any = {};
@@ -23,7 +24,22 @@ export const getParsedInterface = (data: IInterface = getInterface()): IInterfac
   }
   // @ts-expect-error process.env is parsed from backend
   const version = JSON.parse(process.env.APP_VERSION);
-  parseData.global.copyright = (parseData.global.copyright || '').replace('{{version}}', version)
+  parseData.global.copyright = (parseData.global.copyright || '').replace('{{version}}', version);
+
+  // Check that all fields have required properties.
+  const checkFields = (fields: {[key: string]: IField}): void => {
+    Object.keys(fields).forEach(key => {
+      const field = fields[key];
+      if (field) {
+        field.type = field.type ?? 'unknown';
+        if (field.fields) {
+          checkFields(field.fields);
+        }
+      }
+    })
+  }
+  checkFields(parseData.sections);
+
   return parseData;
 }
 
@@ -67,7 +83,7 @@ export const parseFields = (fields: any = {}, locales = {}) => {
   const result: any = {};
   Object.entries(fields).forEach(([key, field]: any) => {
     result[key] = {};
-    if (field.type.includes('i18n')) {
+    if (field.type?.includes('i18n')) {
       Object.entries(locales).forEach(([locale]) => {
         result[key][locale] = applyValues(key);
         if (result[key][locale] === undefined) {
@@ -95,14 +111,18 @@ export const processObject = (obj: any, callback: (parent: any, key: string, pat
 }
 
 export const getDataByPath = (obj: any, path = '') => {
-  const keys = path.split('.');
+  const keys = path.split(/\.|\[|\]/).filter(key => key);
   return keys.reduce((accumulator: any, key: string) => {
-    return (accumulator !== null && accumulator !== undefined) ? accumulator[key] : undefined;
+    if (accumulator !== null && accumulator !== undefined) {
+      const index = Number(key);
+      return Array.isArray(accumulator) && !isNaN(index) ? accumulator[index] : accumulator[key];
+    }
+    return undefined;
   }, obj);
 }
 
 export const getFieldByPath = (obj: any, path: string): any => {
-  const keys = path.split('.');
+  const keys = path.split(/\.|\[|\]/).filter(key => key); // Split by dot or brackets and filter out empty strings
   let current = obj;
   let lastFound = undefined;
 
@@ -131,46 +151,6 @@ export const getFieldByPath = (obj: any, path: string): any => {
 
   // If the last key was not found, return the last found object
   return current !== undefined ? current : lastFound;
-}
-
-export const parseInterfaceDataToAdminData = (data: IInterfaceData, override: any = {}): any => {
-  const result: any = {};
-  Object.entries(data.sections).forEach(([key, section]) => {
-    if (section) {
-      result[key] = parseFields(structuredClone(section.fields), data.locales);
-      if (Object.keys(result[key]).length === 0) {
-        delete result[key];
-      }
-    }
-  });
-  processObject(result, (parent, key, path) => {
-    const overrideValue = getDataByPath(override, path);
-    const field = getFieldByPath(data.sections, path);
-
-    // Array
-    if (['array', 'i18n:array'].includes(field.type) || field.multiple) {
-      if (Array.isArray(overrideValue)) {
-        return parent[key] = overrideValue;
-      }
-      return parent[key];
-    }
-
-    // Files
-    if (['file', 'i18n:file', 'image', 'i18n:image', 'video', 'i18n:video'].includes(field.type)) {
-      if (typeof overrideValue === 'object' && overrideValue !== null && typeof overrideValue.path === 'string' && typeof overrideValue.meta === 'object') {
-        return parent[key] = overrideValue;
-      }
-      return parent[key];
-    }
-
-    // Number/String
-    if ((typeof parent[key] !== 'object' || typeof parent[key] !== null) && ['number', 'string', 'boolean'].includes(typeof overrideValue)) {
-      return parent[key] = overrideValue;
-    }
-
-    return parent[key];
-  });
-  return result;
 }
 
 export const objectsAreDifferent = (obj1: any | Ref<any>, obj2: any | Ref<any>, keys: string[] | null = null): boolean => {
@@ -259,4 +239,75 @@ export const deepToRaw = (obj: any): any => {
     return result;
   }
   return raw;
+}
+
+export async function downloadFilesAsZip(urls: string[], jsonData: object, zipFileName: string): Promise<Blob> {
+  return new Promise(async (resolve, reject) => {
+
+    const zip = new JSZip();
+
+    // Add JSON data as a file
+    zip.file("data.json", JSON.stringify(jsonData, null, 2));
+
+    // Fetch each URL and add it as a blob to the zip
+    for (const url of urls) {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.error(`Failed to fetch ${url}: ${response.statusText}`);
+          continue;
+        }
+        const blob = await response.blob();
+        const fileName = url.split('/').pop() ?? 'file';
+        zip.file(fileName, blob);
+      } catch (error) {
+        console.error(`Error fetching ${url}:`, error);
+      }
+    }
+
+    // Generate the zip file
+    try {
+      const content = await zip.generateAsync({ type: "blob" });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = zipFileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      resolve(content);
+    } catch (error) {
+      reject(error);
+    }
+  })
+}
+
+export function loopThroughFields(
+  fields: { [key: string]: IField },
+  parsedUserData: any,
+  callback: (field: IField, data: any) => void
+): void {
+  const loop = (items: { [key: string]: IField }, path = '') => {
+    Object.keys(items).forEach(key => {
+      const newPath = path === '' ? key : `${path}.${key}`;
+      const field = getFieldByPath(fields, newPath.replace(/\[\d+\]/gm, ''));
+      const data = getDataByPath(parsedUserData, newPath);
+
+      // Check if field and data are defined before calling the callback
+      if (field) {
+        callback(field, data);
+      }
+
+      if (field?.fields) {
+        if (field.type === 'array' && Array.isArray(data)) {
+          data.forEach((item, index) => {
+            loop(field.fields, `${newPath}[${index}]`);
+          });
+        } else {
+          loop(field.fields, newPath);
+        }
+      }
+    });
+  };
+
+  loop(fields);
 }

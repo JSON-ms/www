@@ -11,15 +11,20 @@ import { registerFilters } from './filters';
 // Components
 import App from './App.vue'
 import ErrorPage from './Error.vue';
+import VueEasymde from 'vue3-easymde'
+import { QuillEditor } from '@vueup/vue-quill'
+
+// Directives
+import ifRef from '@/directives/if-ref';
 
 // Composable
 import { createApp } from 'vue'
 import { createPinia } from 'pinia';
 import { useGlobalStore } from '@/stores/global';
 import { Services } from '@/services';
-import { QuillEditor } from '@vueup/vue-quill'
+
+// Stylesheets
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
-import VueEasymde from 'vue3-easymde'
 import "easymde/dist/easymde.min.css"
 
 const app = createApp(App)
@@ -27,6 +32,7 @@ const pinia = createPinia();
 app.use(pinia);
 app.use(VueEasymde);
 app.component('QuillEditor', QuillEditor)
+app.directive('if-ref', ifRef);
 
 registerFilters(app);
 registerPlugins(app)
@@ -48,8 +54,8 @@ const handleError = () => {
 
 loadSession()
   .then(globalStore.setSession)
+  .catch(handleError) // Do not catch errors from app.mount
   .then(() => app.mount('#app'))
-  .catch(handleError)
 
 document.addEventListener('visibilitychange', () => {
   const wasLoggedIn = globalStore.session.loggedIn;
