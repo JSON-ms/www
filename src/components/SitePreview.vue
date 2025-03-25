@@ -6,6 +6,7 @@ import {useLayout} from '@/composables/layout';
 import InterfaceEditor from '@/components/InterfaceEditor.vue';
 import {useIframe} from '@/composables/iframe';
 import router from '@/router';
+import {useUserData} from '@/composables/user-data';
 
 const interfaceModel = defineModel<IInterface>({ required: true });
 const emit = defineEmits(['save', 'create', 'change'])
@@ -22,13 +23,16 @@ const loading = ref(false);
 const killIframe = ref(false);
 const siteNotCompatibleSnack = ref(false);
 const { layoutSize, windowHeight } = useLayout();
-const { siteCompatible, sendMessageToIframe, listenIframeMessage, sendUserDataToIframe } = useIframe(interfaceModel, userData);
+const { reloading, siteCompatible, sendMessageToIframe, listenIframeMessage, sendUserDataToIframe } = useIframe(interfaceModel, userData);
+const { userDataLoading } = useUserData(interfaceEditor, userData);
 const iframeErrorMsg = ref('This site is not JSONms compatible');
 
 const refresh = () => {
   if (siteCompatible.value) {
+    reloading.value = true;
     sendMessageToIframe('reload');
   } else {
+    reloading.value = true;
     killIframe.value = true;
     nextTick(() => killIframe.value = false);
   }
@@ -55,15 +59,21 @@ const onIframeLoad = () => {
     if (siteCompatible.value) {
       clearInterval(checkIframeInterface);
       loading.value = false;
+      reloading.value = false;
     } else if (intervalCount >= 3000) {
       clearInterval(checkIframeInterface);
       loading.value = false;
       siteNotCompatibleSnack.value = true;
+      reloading.value = false;
       setTimeout(() => {
         siteNotCompatibleSnack.value = false;
       }, 3000)
     }
-    intervalCount += 100;
+
+    // // Do not increment if we're loading user data
+    if (!userDataLoading.value) {
+      intervalCount += 100;
+    }
   }, 100)
 }
 
@@ -145,7 +155,7 @@ defineExpose({
         />
         <template v-else>
           <v-overlay
-            :model-value="loading"
+            :model-value="loading || reloading"
             :transition="false"
             class="align-center justify-center"
             contained
@@ -162,7 +172,7 @@ defineExpose({
             :style="{
               border: 0,
               float: 'left',
-              opacity: loading ? 0.01 : 1,
+              opacity: reloading || loading ? 0.01 : 1,
               zoom: layoutSize.preview.zoom,
             }"
             class="w-100 fill-height"

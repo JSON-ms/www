@@ -83,8 +83,8 @@ const getCyperKey = () => {
   >
     <v-alert
       v-if="demo || disabled"
-      :tile="smAndDown"
-      :elevation="smAndDown ? 0 : undefined"
+      tile
+      elevation="0"
       border="start"
       type="warning"
       variant="elevated"

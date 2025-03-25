@@ -29,3 +29,19 @@ hr:not(.v-divider) {
   color: rgba(0, 0, 0, 0.1) !important;
   border-color: rgba(0, 0, 0, 0.1) !important;
 }
+
+@keyframes spin {
+  from {
+    transform:rotate(0deg);
+  }
+  to {
+    transform:rotate(360deg);
+  }
+}
+
+.spin {
+  animation-name: spin;
+  animation-duration: 4000ms;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}

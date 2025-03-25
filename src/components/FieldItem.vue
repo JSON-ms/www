@@ -201,14 +201,31 @@ const fileIcons: {[key: string]: string} = {
   'video': 'mdi-video-outline',
 }
 
-const getErrors = (index: number): { i18n: string[], currentI18n?: string, general: boolean } => {
+const getErrors = (index: number): { i18n: string[], currentI18n: string[], general: string[] } => {
   const allErrors = Object.keys(getUserDataErrors(field.fields, fieldKey + '[' + index + ']'));
   const i18n = allErrors.filter(item => Object.keys(locales).find(subLocale => item.endsWith(subLocale)));
   return {
     i18n,
-    currentI18n: i18n.find(item => item.endsWith(locale)),
-    general: allErrors.filter(item => Object.keys(locales).every(subLocale => item.endsWith(subLocale))).length !== allErrors.length,
+    currentI18n: i18n.filter(item => item.endsWith(locale)),
+    general: allErrors.filter(item => Object.keys(locales).every(subLocale => item.endsWith(subLocale))),
   }
+}
+
+const getErrorMsg = (index: number): string | null => {
+  const errors = getErrors(index);
+  if (errors.general.length > 0) {
+    const item = errors.general[0].split('.').pop();
+    return `${arrayFields.value[item].label} field has an issue`;
+  } else if (errors.currentI18n.length > 0) {
+    const items = errors.currentI18n[0].split('.');
+    return `${arrayFields.value[items[items.length - 2]].label} field has an issue`;
+  } else if (errors.i18n.length > 0) {
+    const items = errors.i18n[0].split('.');
+    const key = items.pop();
+    const field = items.pop();
+    return `${arrayFields.value[field].label} field has an issue in ${locales[key]}`
+  }
+  return null;
 }
 
 const onWysiwygContentChange = (content: any) => {
@@ -701,8 +718,24 @@ const onWysiwygContentChange = (content: any) => {
       clearable
     >
       <template #actions="{ index }">
-        <v-icon v-if="getErrors(index).general || getErrors(index).currentI18n" icon="mdi-alert" color="warning" />
-        <v-icon v-else-if="!getErrors(index).currentI18n && getErrors(index).i18n.length > 0 && getErrors(index).general" icon="mdi-alert-outline" />
+        <v-tooltip
+          v-if="getErrors(index).general.length > 0 || getErrors(index).currentI18n.length > 0"
+          :text="getErrorMsg(index)"
+          location="bottom"
+        >
+          <template #activator="{ props }">
+            <v-icon v-bind="props" icon="mdi-alert" color="warning" />
+          </template>
+        </v-tooltip>
+        <v-tooltip
+          v-else-if="getErrors(index).i18n.length > 0"
+          :text="getErrorMsg(index)"
+          location="bottom"
+        >
+          <template #activator="{ props }">
+            <v-icon v-bind="props" icon="mdi-alert-outline" color="warning" />
+          </template>
+        </v-tooltip>
       </template>
       <template #default="{ item, index }">
         <div

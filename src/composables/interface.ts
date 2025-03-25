@@ -33,7 +33,7 @@ export function useInterface(model: Ref<IInterface>) {
     })
 
     const setInterfaceModel = (data: Ref<IInterface>) => {
-      model = data;
+      model.value = data.value;
     }
 
     const setInterfaceData = (value: any): void => {

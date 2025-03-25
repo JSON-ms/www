@@ -6,6 +6,7 @@ import {useRoute} from 'vue-router';
 import router from '@/router';
 import {useUserData} from '@/composables/user-data';
 import {useLayout} from '@/composables/layout';
+import {useInterface} from '@/composables/interface';
 
 const interfaceModel = defineModel<IInterface>({ required: true });
 const { interfaceData, userData } = defineProps<{
@@ -16,6 +17,7 @@ const { layoutSize } = useLayout();
 const globalStore = useGlobalStore();
 const currentRoute = useRoute();
 const { getUserDataErrors, userDataLoaded } = useUserData(interfaceModel, userData);
+const { interfaceParsedData } = useInterface(interfaceData);
 
 const selectedSectionKey = computed((): string => {
   return currentRoute.params.section.toString();
@@ -27,6 +29,38 @@ const hasSections = computed((): boolean => {
 
 const goToSection = (section: string = '') => {
   router.push('/admin/' + currentRoute.params.hash + '/' + section + '/' + currentRoute.params.locale);
+}
+
+const getErrors = (section: string, sectionKey: string): { i18n: string[], currentI18n: string[], general: string[] } => {
+  const locale = currentRoute.params.locale;
+  const locales = interfaceParsedData.value.locales;
+  const allErrors = Object.keys(getUserDataErrors(section.fields, sectionKey));
+  const i18n = allErrors.filter(item => Object.keys(locales).find(subLocale => item.endsWith(subLocale)));
+  return {
+    i18n,
+    currentI18n: i18n.filter(item => item.endsWith(locale)),
+    general: allErrors.filter(item => Object.keys(locales).every(subLocale => !item.endsWith(subLocale))),
+  }
+}
+
+const getErrorMsg = (index: number, sectionKey: string): string | null => {
+  const errors = getErrors(index, sectionKey);
+  const locales = interfaceParsedData.value.locales;
+  if (errors.general.length > 0) {
+    const path = errors.general[0];
+    return `Field path "${path}" has an issue`
+  } else if (errors.currentI18n.length > 0) {
+    const items = errors.currentI18n[0].split('.');
+    items.pop();
+    const path = items.join('.')
+    return `Field path "${path}" has an issue`;
+  } else if (errors.i18n.length > 0) {
+    const items = errors.i18n[0].split('.');
+    const locale = items.pop();
+    const path = items.join('.');
+    return `Field path "${path}" field has an issue in ${locales[locale]}`
+  }
+  return null;
 }
 
 const version = JSON.parse(process.env.APP_VERSION);
@@ -62,8 +96,27 @@ const version = JSON.parse(process.env.APP_VERSION);
           color="primary"
           @click="goToSection(sectionKey.toString())"
         >
-          <template v-if="userDataLoaded && Object.keys(getUserDataErrors(section.fields, sectionKey)).length > 0" #append>
-            <v-icon icon="mdi-alert" color="warning" />
+          <template v-if="userDataLoaded" #append>
+            <v-tooltip
+              v-if="getErrors(section, sectionKey).general.length > 0 || getErrors(section, sectionKey).currentI18n.length > 0"
+              :text="getErrorMsg(section, sectionKey)"
+              location="right"
+              max-width="400"
+            >
+              <template #activator="{ props }">
+                <v-icon v-bind="props" icon="mdi-alert" color="warning" />
+              </template>
+            </v-tooltip>
+            <v-tooltip
+              v-else-if="getErrors(section, sectionKey).i18n.length > 0"
+              :text="getErrorMsg(section, sectionKey)"
+              location="right"
+              max-width="400"
+            >
+              <template #activator="{ props }">
+                <v-icon v-bind="props" icon="mdi-alert-outline" color="warning" />
+              </template>
+            </v-tooltip>
           </template>
         </v-list-item>
       </template>

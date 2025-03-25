@@ -5,13 +5,30 @@ import {useInterface} from '@/composables/interface';
 import {useLayout} from '@/composables/layout';
 
 const interfaceModel = defineModel<IInterface>({ required: true });
-const { userData } = defineProps<{
+const { userData, tab = 'data' } = defineProps<{
   userData: any,
+  tab: 'data' | 'settings',
 }>();
 
 const { interfaceHasError, interfaceIsPristine } = useInterface(interfaceModel);
 const { windowWidth, layoutSize } = useLayout();
 const { saveUserData, resetUserData, userDataHasChanged, userDataSaving, userDataSaved, userDataLoaded, canSave, userDataHasError } = useUserData(interfaceModel, userData);
+
+const save = () => {
+  if (tab === 'data') {
+    saveUserData();
+  } else if (tab === 'settings') {
+
+  }
+}
+
+const reset = () => {
+  if (tab === 'data') {
+    resetUserData();
+  } else if (tab === 'settings') {
+
+  }
+}
 </script>
 
 <template>
@@ -79,7 +96,7 @@ const { saveUserData, resetUserData, userDataHasChanged, userDataSaving, userDat
         :readonly="userDataSaved"
         :color="canSave ? 'primary' : undefined"
         style="flex: 1"
-        @click.stop.prevent="saveUserData"
+        @click.stop.prevent="save"
       >
         <template v-if="!userDataSaved">
           <v-icon start icon="mdi-content-save" />
@@ -94,7 +111,7 @@ const { saveUserData, resetUserData, userDataHasChanged, userDataSaving, userDat
         :disabled="!userDataHasChanged"
         variant="text"
         style="flex: 1"
-        @click="resetUserData"
+        @click="reset"
       >
         Reset
       </v-btn>

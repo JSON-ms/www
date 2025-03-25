@@ -132,11 +132,11 @@ export function useUserData(interfaceModel: Ref<IInterface>, userData: Ref<any>)
     const downloadUserData = () => {
 
       const files: string[] = [];
-      loopThroughFields(interfaceParsedData.value.sections, userData.value, (field, data) => {
+      loopThroughFields(interfaceParsedData.value.sections, (field, path, data) => {
         if (['i18n:file', 'i18n:image', 'i18n:video', 'file', 'image', 'video'].includes(field.type)) {
           files.push(interfaceModel.value.server_url + '/' + data.path);
         }
-      })
+      }, userData.value)
       downloading.value = true;
       return Services.get((interfaceModel.value.server_url + '?hash=' + interfaceModel.value.hash) || '', {
         'Content-Type': 'application/json',

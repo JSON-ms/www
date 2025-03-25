@@ -140,6 +140,11 @@ onMounted(() => {
   margin: 1rem 0;
 }
 .docs {
+  pre {
+    padding: 0.1rem 1rem;
+    background-color: #24292e;
+  }
+
   * + h2,
   * + h3,
   * + h4 {

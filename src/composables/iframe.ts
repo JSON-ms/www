@@ -5,6 +5,9 @@ import type {IInterface} from '@/interfaces';
 import {useRoute} from 'vue-router';
 import {useInterface} from '@/composables/interface';
 
+const siteCompatible = ref(false);
+const reloading = ref(false);
+
 export function useIframe(
   interfaceModel: Ref<IInterface>,
   userData: Ref<any>,
@@ -12,7 +15,6 @@ export function useIframe(
 
   let iframeRouteTimeout: any;
 
-  const siteCompatible = ref(false);
   const currentRoute = useRoute();
   const { serverSettings, interfaceParsedData, getAvailableSection, getAvailableLocale } = useInterface(interfaceModel);
 
@@ -47,6 +49,7 @@ export function useIframe(
             sendUserDataToIframe();
             sendMessageToIframe('section', (currentRoute.params.section || '').toString());
             siteCompatible.value = true;
+            reloading.value = false;
           }, 500)
           break;
         case 'route':
@@ -68,6 +71,7 @@ export function useIframe(
   }
 
   return {
+    reloading,
     siteCompatible,
     sendMessageToIframe,
     sendUserDataToIframe,

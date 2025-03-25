@@ -63,7 +63,6 @@ export const getDefaultInterfaceContent = (): string => {
 export const parseFields = (fields: any = {}, locales = {}) => {
   fields = fields ? fields : {}; // Make sure it's an object
 
-  const emptyStringTypes = ['i18n', 'wysiwyg', 'i18n:wysiwyg', 'markdown', 'i18n:markdown', 'date', 'i18n:date'];
   const multipleTypes = ['array', 'i18n:array'];
   const fileTypes = ['file', 'i18n:file', 'image', 'i18n:image', 'video', 'i18n:video'];
   const mayBeMultipleTypes = ['select', 'i18n:select', 'checkbox', 'i18n:checkbox', 'radio', 'i18n:radio'];
@@ -75,7 +74,7 @@ export const parseFields = (fields: any = {}, locales = {}) => {
     } else if (fileTypes.includes(type)) {
       value = null;
     } else {
-      value = emptyStringTypes.includes(type) ? '' : null;
+      value = null;
     }
     return value;
   }
@@ -283,21 +282,25 @@ export async function downloadFilesAsZip(urls: string[], jsonData: object, zipFi
 
 export function loopThroughFields(
   fields: { [key: string]: IField },
-  parsedUserData: any,
-  callback: (field: IField, data: any) => void
+  callback: (field: IField, data: any) => void,
+  parsedUserData?: any,
+  enterArrays = true,
 ): void {
   const loop = (items: { [key: string]: IField }, path = '') => {
     Object.keys(items).forEach(key => {
       const newPath = path === '' ? key : `${path}.${key}`;
       const field = getFieldByPath(fields, newPath.replace(/\[\d+\]/gm, ''));
-      const data = getDataByPath(parsedUserData, newPath);
+      const data = parsedUserData && getDataByPath(parsedUserData, newPath);
 
       // Check if field and data are defined before calling the callback
       if (field) {
-        callback(field, data);
+        callback(field, newPath, data);
       }
 
       if (field?.fields) {
+        if (!enterArrays && field.type === 'array') {
+          return;
+        }
         if (field.type === 'array' && Array.isArray(data)) {
           data.forEach((item, index) => {
             loop(field.fields, `${newPath}[${index}]`);

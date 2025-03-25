@@ -37,5 +37,6 @@ declare module 'vue' {
     SitePreview: typeof import('./src/components/SitePreview.vue')['default']
     Snack: typeof import('./src/components/Snack.vue')['default']
     Toolbar: typeof import('./src/components/Toolbar.vue')['default']
+    TypingsModal: typeof import('./src/components/TypingsModal.vue')['default']
   }
 }

@@ -2,6 +2,13 @@ import {ref} from 'vue';
 import useHotkey, {type HotKey, type RemoveHandler} from 'vue3-hotkey';
 import {useGlobalStore} from '@/stores/global';
 
+const isInput = () => {
+  return document.activeElement.tagName === 'INPUT'
+      || document.activeElement.tagName === 'TEXTAREA'
+      || document.activeElement.tagName === 'SELECT'
+
+}
+
 export function useShortcut(options: {
   onCreate: () => void,
   onSave: () => void,
@@ -14,9 +21,13 @@ export function useShortcut(options: {
 
   const globalStore = useGlobalStore();
   const hotkeys = ref<HotKey[]>([{
-    keys: ['ctrl', 'e'],
-    preventDefault: true,
-    handler() {
+    keys: ['ctrl', 'a'],
+    handler(shortcut, event) {
+      if (isInput()) {
+        return;
+      }
+
+      event.preventDefault();
       globalStore.setAdmin({
         interface: !globalStore.admin.interface,
       })
@@ -44,7 +55,7 @@ export function useShortcut(options: {
       options.onSiteRefresh();
     }
   }, {
-    keys: ['alt', 's'],
+    keys: ['ctrl', 'q'],
     preventDefault: true,
     handler() {
       globalStore.setAdmin({

@@ -21,8 +21,8 @@ const apply = () => {
       body: e.message,
     });
   }
-
 }
+
 const close = () => {
   visible.value = false;
 }
@@ -40,7 +40,7 @@ const close = () => {
       title="Edit JSON"
       prepend-icon="mdi-code-json"
     >
-      <v-card theme="dark" class="pa-1 pl-0">
+      <v-card theme="dark" class="pa-1 pl-0" tile elevation="0">
         <v-ace-editor
           v-model:value="content"
           :options="options"
@@ -54,10 +54,12 @@ const close = () => {
           variant="flat"
           color="primary"
           text="Apply"
+          class="px-3"
           @click="apply"
         />
         <v-btn
           text="Cancel"
+          class="px-3"
           @click="close"
         />
       </template>

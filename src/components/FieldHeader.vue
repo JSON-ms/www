@@ -17,7 +17,7 @@ const {
       <span>
         <span v-if="field.required" class="mr-2 text-error">*</span>
         <span>{{ field.label }}</span>{{}}
-        <span v-if="field.type.includes('array') && value.length > 0">
+        <span v-if="field?.type.includes('array') && value?.length > 0">
           ({{ value.length }})
         </span>
       </span>

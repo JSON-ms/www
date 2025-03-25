@@ -15,6 +15,8 @@ import {useRoute} from 'vue-router';
 import {useInterface} from '@/composables/interface';
 import type {VAppBar} from 'vuetify/components';
 import {useLayout} from '@/composables/layout';
+import {useTypings} from '@/composables/typings';
+import {useIframe} from '@/composables/iframe';
 
 const interfaceModel = defineModel<IInterface>({ required: true });
 const { interfaceData, userData, interfaces = [], defaultLocale = 'en-US' } = defineProps<{
@@ -31,7 +33,9 @@ const { smAndDown } = useDisplay();
 const { windowWidth } = useLayout();
 const { setInterfaceData, serverSettings, createInterface } = useInterface(interfaceModel)
 const { downloadUserData, downloading, userDataLoading, fetchUserData, userDataLoaded, canFetchUserData, applyUserData, canInteractWithServer, getUserDataErrors } = useUserData(interfaceModel, userData);
-const emit = defineEmits(['locale', 'preview', 'refresh', 'update:model-value', 'create', 'save', 'delete', 'edit-json'])
+const { hasSyncEnabled } = useTypings(interfaceModel, userData)
+const { reloading } = useIframe(interfaceModel, userData)
+const emit = defineEmits(['locale', 'preview', 'refresh', 'update:model-value', 'create', 'save', 'delete', 'edit-json', 'show-typings'])
 
 const locales = computed(() => {
   return Object.entries(interfaceData.locales).map(item => ({ value: item[0], title: item[1] }));
@@ -55,6 +59,10 @@ const userDataErrorList = computed((): {[key: string]: string} => {
 
 const onEditJson = () => {
   emit('edit-json');
+}
+
+const onShowTypings = () => {
+  emit('show-typings');
 }
 
 const onCreateInterface = (model: IInterface) => {
@@ -111,7 +119,7 @@ watch(() => currentRoute.params.locale, () => {
   <v-app-bar v-bind="$attrs" border>
     <template #prepend>
       <v-tooltip
-        text="Sections (ALT+S)"
+        text="Sections (CTRL+Q)"
         location="bottom"
       >
         <template #activator="{ props }">
@@ -157,13 +165,13 @@ watch(() => currentRoute.params.locale, () => {
         variant="text"
       >
         <v-tooltip
-          text="Editor (CTRL+E)"
+          text="Advanced (CTRL+A)"
           location="bottom"
         >
           <template #activator="{ props }">
             <v-btn v-bind="props" :value="true">
               <v-icon icon="mdi-code-tags" style="top: 1px" :start="windowWidth > 1400" />
-              <span v-if="windowWidth > 1400">Template</span>
+              <span v-if="windowWidth > 1400">Advanced</span>
             </v-btn>
           </template>
         </v-tooltip>
@@ -180,7 +188,7 @@ watch(() => currentRoute.params.locale, () => {
           <template #activator="{ props }">
             <v-btn
               v-bind="props"
-              :disabled="!showSitePreview"
+              :disabled="!showSitePreview || reloading"
               icon
               @click="onRefreshPreview"
             >
@@ -230,7 +238,7 @@ watch(() => currentRoute.params.locale, () => {
         >
           <template v-if="userDataLoaded" #prepend-inner-selection>
             <v-icon v-if="Object.keys(userDataErrorList).find(key => key.endsWith(selectedLocale))" icon="mdi-alert" color="warning"></v-icon>
-            <v-icon v-else-if="Object.keys(userDataErrorList).find(key => locales.find(locale => key.endsWith(locale.value)))" icon="mdi-alert-outline" />
+            <v-icon v-else-if="Object.keys(userDataErrorList).find(key => locales.find(locale => key.endsWith(locale.value)))" icon="mdi-alert-outline" color="warning" />
           </template>
           <template v-if="userDataLoaded" #prepend-inner-item="{ item }">
             <v-icon v-if="Object.keys(userDataErrorList).find(key => key.endsWith(item.value))" icon="mdi-alert" color="warning" class="mr-n4" />
@@ -258,6 +266,16 @@ watch(() => currentRoute.params.locale, () => {
             prepend-icon="mdi-code-json"
             @click="onEditJson"
           />
+          <v-divider class="my-1" />
+          <v-list-item
+            title="Typings"
+            prepend-icon="mdi-language-typescript"
+            @click="onShowTypings"
+          >
+            <template #append>
+              <v-chip v-if="hasSyncEnabled" variant="tonal" label size="x-small" color="success" class="ml-4">Synced!</v-chip>
+            </template>
+          </v-list-item>
         </SessionPanel>
       </template>
       <template v-else>

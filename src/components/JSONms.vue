@@ -6,6 +6,7 @@ import SitePreview from '@/components/SitePreview.vue';
 import DataEditor from '@/components/DataEditor.vue';
 import JsonEditModal from '@/components/JsonEditModal.vue';
 import ActionBar from '@/components/ActionBar.vue';
+import TypingsModal from '@/components/TypingsModal.vue';
 import type {IInterface} from '@/interfaces';
 import {useIframe} from '@/composables/iframe';
 import {computed, nextTick, ref, watch} from 'vue';
@@ -14,10 +15,14 @@ import {useUserData} from '@/composables/user-data';
 import {type RouteLocationNormalizedGeneric, useRoute} from 'vue-router';
 import router from '@/router';
 import {useInterface} from '@/composables/interface';
+import {useTypings} from '@/composables/typings';
 import {useLayout} from '@/composables/layout';
 import {useShortcut} from '@/composables/shortcut';
 import {deepToRaw, getInterface} from '@/utils';
 import NewInterfaceModal from '@/components/NewInterfaceModal.vue';
+import type {VForm} from 'vuetify/components';
+import Settings from '@/components/Settings.vue';
+import Docs from '@/components/Docs.vue';
 
 // Model & Props
 const interfaceModel = defineModel<IInterface>({ required: true });
@@ -30,15 +35,28 @@ const currentRoute = useRoute();
 const globalStore = useGlobalStore();
 const { layoutSize, init: initLayout, windowWidth, mobileFrameWidth } = useLayout();
 const showEditJson = ref(false);
+const showTypings = ref(false);
 const editJsonContent = ref('');
 const showNewInterfaceModal = ref(false);
 const interfaceEditor = ref<InstanceType<typeof InterfaceEditor> | null>();
 const sitePreview = ref<InstanceType<typeof SitePreview> | null>();
 const dataEditor = ref<InstanceType<typeof DataEditor> | null>();
-const { serverSettings, interfaceParsedData, getParsedInterfaceData, setInterfaceModel, getAvailableSection, deleteInterface, getAvailableLocale, interfaceHasSection, interfaceHasLocale, setInterfaceOriginalData, setInterfaceData, saveInterface, canSaveInterface, canDeleteInterface } = useInterface(interfaceModel);
+const { serverSettings, interfaceParsedData, getParsedInterfaceData, interfaceHasSettingsError, setInterfaceModel, getAvailableSection, deleteInterface, getAvailableLocale, interfaceHasSection, interfaceHasLocale, setInterfaceOriginalData, setInterfaceData, saveInterface, canSaveInterface, canDeleteInterface } = useInterface(interfaceModel);
 const userData = ref({});
-const { fetchUserData, applyUserData, userDataLoading, canSave, saveUserData, downloading, userDataLoaded } = useUserData(interfaceModel, userData);
+const { fetchUserData, applyUserData, canSave, saveUserData, downloading, userDataLoaded, userDataLoading } = useUserData(interfaceModel, userData);
 const { sendMessageToIframe } = useIframe(interfaceModel, userData);
+const { syncTypings } = useTypings(interfaceModel, userData);
+
+const tab = computed({
+  get: () => {
+    return globalStore.admin.interface ? globalStore.admin.tab : 'data';
+  },
+  set: (tab: any) => {
+    globalStore.setAdmin({
+      tab,
+    })
+  },
+})
 
 const updateRoute = (hash = currentRoute.params.hash, section = currentRoute.params.section, locale = currentRoute.params.locale) => {
   const toRoute = '/admin/' + hash + '/' + section + '/' + locale;
@@ -47,16 +65,16 @@ const updateRoute = (hash = currentRoute.params.hash, section = currentRoute.par
   }
 }
 
-// Make sure the selected interface has access to selected section and locale otherwise redirect
-const availableSection = getAvailableSection();
-const availableLocale = getAvailableLocale();
-if (availableSection !== currentRoute.params.section || availableLocale !== currentRoute.params.locale) {
-  updateRoute(currentRoute.params.hash || 'new', availableSection, availableLocale);
-}
-
 const showActionBar = computed((): boolean => {
-  return ['data', 'settings'].includes((dataEditor.value?.tab || '').toString());
+  return ['data', 'settings'].includes((tab.value || '').toString());
 });
+
+const bottomSheetMsg = ref('');
+const showBottomSheet = computed((): boolean => {
+  return downloading.value || userDataLoading.value;
+});
+watch(() => downloading.value, () => bottomSheetMsg.value = 'Downloading files and generating ZIP file. Please wait...');
+watch(() => userDataLoading.value, () => bottomSheetMsg.value = 'Fetching user data. Please wait...');
 
 const showEditor = computed({
   get(): boolean {
@@ -81,34 +99,34 @@ const onApplyNewInterface = (template: string) => {
   const newInterface = getInterface(template);
   const oldInterface = getInterface(template);
   setInterfaceModel(ref(getInterface(template)));
-  newInterface.label = '';
-  setInterfaceData(newInterface);
-  setInterfaceOriginalData(oldInterface);
-  showNewInterfaceModal.value = false;
-  applyUserData({})
-
-  // If template is blank
-  if (template === '') {
-    if (dataEditor.value) {
-      dataEditor.value.tab = 'docs';
-    }
-    globalStore.admin.previewMode = null;
-  }
-  // If template has content
-  else if (dataEditor.value && dataEditor.value.tab === 'docs') {
-    dataEditor.value.tab = 'data';
-  }
-
-  globalStore.admin.interface = true;
   nextTick(() => {
-    if (interfaceEditor.value) {
-      interfaceEditor.value.setFocus();
-      sitePreview.value?.interfaceEditor?.setFocus();
-    }
-    dataEditor.value?.resetValidation()
-  })
+    newInterface.label = '';
+    setInterfaceData(newInterface);
+    setInterfaceOriginalData(oldInterface);
+    showNewInterfaceModal.value = false;
+    applyUserData({})
 
-  updateRoute('new', getAvailableSection(), getAvailableLocale());
+    // If template is blank
+    if (template === '') {
+      tab.value = 'docs';
+      globalStore.admin.previewMode = null;
+    }
+    // If template has content
+    else if (tab.value === 'docs') {
+      tab.value = 'data';
+    }
+
+    globalStore.admin.interface = true;
+    nextTick(() => {
+      if (interfaceEditor.value) {
+        interfaceEditor.value.setFocus();
+        sitePreview.value?.interfaceEditor?.setFocus();
+      }
+      dataEditor.value?.resetValidation()
+    })
+
+    updateRoute('new', getAvailableSection(), getAvailableLocale());
+  })
 }
 
 const onSaveInterfaceContent = () => {
@@ -118,6 +136,7 @@ const onSaveInterfaceContent = () => {
 const onSaveInterface = (model: IInterface = interfaceModel.value) => {
   if (canSaveInterface.value) {
     saveInterface().then(() => {
+      syncTypings();
       globalStore.addInterface(model);
       updateRoute(model.hash, getAvailableSection(), getAvailableLocale());
     })
@@ -148,6 +167,10 @@ const onLocaleChange = (locale: string) => {
 const onEditJson = () => {
   showEditJson.value = true;
   editJsonContent.value = JSON.stringify(deepToRaw(userData.value), null, 2);
+}
+
+const onShowTypings = () => {
+  showTypings.value = true;
 }
 
 const onApplyJsonContent = (json: any) => {
@@ -200,15 +223,13 @@ const checkRoute = (to: RouteLocationNormalizedGeneric, from: RouteLocationNorma
   }
 
   if (from.params.section !== to.params.section) {
-    if (dataEditor.value) {
-      dataEditor.value.tab = 'data';
-    }
+    tab.value = 'data';
   }
 
   sitePreview.value?.interfaceEditor?.scrollToSection(getAvailableSection());
   interfaceEditor.value?.scrollToSection(getAvailableSection());
 }
-router.afterEach(checkRoute)
+router.afterEach(checkRoute);
 checkRoute(currentRoute, currentRoute);
 
 useShortcut({
@@ -238,6 +259,7 @@ if (autoload) {
     @delete="onDeleteInterface"
     @locale="onLocaleChange"
     @edit-json="onEditJson"
+    @show-typings="onShowTypings"
     @update:model-value="onInterfaceModelChange"
   />
 
@@ -292,14 +314,54 @@ if (autoload) {
 
   <!-- DATA -->
   <v-card class="fill-height" tile flat>
-    <DataEditor
-      ref="dataEditor"
-      v-model="interfaceModel"
-      :interface-data="interfaceParsedData"
-      :user-data="userData"
-      :server-settings="serverSettings"
-      :loading="userDataLoading"
-    />
+    <v-form
+      ref="form"
+      class="fill-height"
+    >
+      <v-expand-transition group>
+        <div v-if="globalStore.admin.interface">
+          <v-tabs v-model="tab" grow>
+            <v-tab value="data">
+              <v-icon icon="mdi-pencil" start />
+              Data
+            </v-tab>
+            <v-tab value="settings">
+              <v-icon start icon="mdi-cog" />
+              Settings
+              <v-icon v-if="interfaceHasSettingsError" color="warning" class="ml-3">
+                mdi-alert
+              </v-icon>
+            </v-tab>
+            <v-tab value="docs">
+              <v-icon start icon="mdi-book" />
+              Docs
+            </v-tab>
+          </v-tabs>
+        </div>
+      </v-expand-transition>
+      <v-tabs-window v-model="tab" class="fill-height">
+        <v-tabs-window-item value="data" class="fill-height">
+          <DataEditor
+            ref="dataEditor"
+            v-model="interfaceModel"
+            :interface-data="interfaceParsedData"
+            :user-data="userData"
+            :server-settings="serverSettings"
+            :loading="userDataLoading"
+          />
+        </v-tabs-window-item>
+        <v-tabs-window-item value="settings">
+          <Settings
+            v-model="interfaceModel"
+            :demo="!globalStore.session.loggedIn"
+            :disabled="interfaceModel.type !== 'owner'"
+          />
+        </v-tabs-window-item>
+        <v-tabs-window-item value="docs">
+          <Docs />
+        </v-tabs-window-item>
+      </v-tabs-window>
+    </v-form>
   </v-card>
 
   <!-- ACTIONS -->
@@ -308,19 +370,27 @@ if (autoload) {
       v-if="showActionBar"
       v-model="interfaceModel"
       :user-data="userData"
+      :tab="tab"
     />
   </v-expand-transition>
 
-  <!-- EDIT JSON -->
+  <!-- EDIT JSON MODAL -->
   <JsonEditModal
     v-model="editJsonContent"
     v-model:visible="showEditJson"
     @apply="onApplyJsonContent"
   />
 
+  <!-- TYPINGS MODAL -->
+  <TypingsModal
+    v-model="interfaceModel"
+    v-model:visible="showTypings"
+    :user-data="userData"
+  />
+
   <!-- DOWNLOAD DATA BOTTOM SHEET -->
   <v-bottom-sheet
-    v-model="downloading"
+    v-model="showBottomSheet"
     :scrim="false"
     inset
     persistent
@@ -333,7 +403,7 @@ if (autoload) {
         <v-progress-circular color="primary" indeterminate class="mr-4" />
       </template>
       <template #item>
-        Downloading files and generating ZIP file. Please wait...
+        {{ bottomSheetMsg }}
       </template>
     </v-card>
   </v-bottom-sheet>
