@@ -4,16 +4,21 @@ import {useGlobalStore} from '@/stores/global';
 let initialized = false
 export function useLayout() {
 
+  const globalStore = useGlobalStore();
+  const getPxFromHtmlFontSizeRatio = (pixels: number): number => {
+    const ratio = window.screen.availWidth / 1440;
+    return pixels * ratio;
+  }
+
   const windowWidth = ref(window.innerWidth);
   const windowHeight = ref(window.innerHeight);
-  const mobileFrameHeight = computed((): number => windowHeight.value - 64);
+  const mobileFrameHeight = computed((): number => windowHeight.value - getPxFromHtmlFontSizeRatio(64));
   const mobileFrameWidth = computed((): number => mobileFrameHeight.value / 1.777);
-  const globalStore = useGlobalStore();
 
   // Drawer
   const drawer = {
     temporary: false,
-    width: 261,
+    width: getPxFromHtmlFontSizeRatio(261),
     memory: globalStore.admin.drawer,
   };
 
@@ -68,7 +73,7 @@ export function useLayout() {
         const remainingWidth = windowWidth.value - total;
         const maxWidth = remainingWidth - windowHeight.value / 1.777;
         if (windowHeight.value * 1.777 > maxWidth) {
-          preview.width = maxWidth > 600 ? maxWidth : 600;
+          preview.width = maxWidth > getPxFromHtmlFontSizeRatio(600) ? maxWidth : getPxFromHtmlFontSizeRatio(600);
         } else {
           preview.width = windowHeight.value * 1.777;
         }
@@ -106,9 +111,9 @@ export function useLayout() {
     if (globalStore.admin.previewMode === 'desktop') {
       preview.height = preview.width / 1.777;
     } else {
-      preview.height = windowHeight.value - 96;
+      preview.height = windowHeight.value - getPxFromHtmlFontSizeRatio(96);
     }
-    const maxHeight = _mobileFrameHeight - 32;
+    const maxHeight = _mobileFrameHeight - getPxFromHtmlFontSizeRatio(32);
     if (preview.height > maxHeight) {
       const ratio = preview.height / maxHeight;
       preview.height = maxHeight;
@@ -117,8 +122,8 @@ export function useLayout() {
 
     // Preview: Zoom
     preview.zoom = globalStore.admin.previewMode === 'desktop'
-      ? (preview.width / 1500)
-      : (_mobileFrameWidth / 420)
+      ? (preview.width / getPxFromHtmlFontSizeRatio(1500))
+      : (_mobileFrameWidth / getPxFromHtmlFontSizeRatio(420))
 
     return {
       drawer,

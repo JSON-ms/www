@@ -5,10 +5,12 @@ import type { VAceEditorInstance } from 'vue3-ace-editor/types';
 import type {IInterface} from '@/interfaces';
 import {useInterface} from '@/composables/interface';
 import '@/plugins/aceeditor';
+import {useGlobalStore} from '@/stores/global';
 
 const emit = defineEmits(['save', 'create', 'change'])
 const interfaceModel = defineModel<IInterface>({ required: true });
-const { canSaveInterface, yamlException, interfaceParsedData } = useInterface(interfaceModel);
+const { canSaveInterface, yamlException } = useInterface(interfaceModel);
+const globalStore = useGlobalStore();
 const editor: Ref<VAceEditorInstance | null> = ref(null);
 const value = computed({
   get() {
@@ -122,8 +124,19 @@ const options = {
     ref="editor"
     v-model:value="value"
     :options="options"
+    :style="{
+      '--tooltip-position': globalStore.admin.drawer
+        ? 'translateY(-4rem) translateX(-261px)'
+        : 'translateY(-4rem)'
+    }"
+    class="fill-height"
     lang="yaml"
     theme="github_dark"
-    style="height: 100%"
   />
 </template>
+
+<style>
+.ace_tooltip {
+  transform: var(--tooltip-position);
+}
+</style>

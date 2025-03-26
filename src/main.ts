@@ -23,6 +23,14 @@ import { createPinia } from 'pinia';
 import { useGlobalStore } from '@/stores/global';
 import { Services } from '@/services';
 
+// Calculate <html> font-size based on a viewport width of 1800px
+const adjustHtmlFontSize = () => {
+  const htmlFontSize = (window.screen.availWidth / 1440) * 16;
+  document.documentElement.style.fontSize = htmlFontSize + 'px';
+}
+window.addEventListener('resize', adjustHtmlFontSize);
+adjustHtmlFontSize();
+
 // Stylesheets
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
 import "easymde/dist/easymde.min.css"
