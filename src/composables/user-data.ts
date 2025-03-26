@@ -23,7 +23,7 @@ export function useUserData(interfaceModel: Ref<IInterface>, userData: Ref<any>)
     const saving = ref(false);
     const saved = ref(false);
     const globalStore = useGlobalStore();
-    const { interfaceParsedData, interfaceIsPristine } = useInterface(interfaceModel);
+    const { interfaceParsedData, interfaceIsPristine, interfaceHasError } = useInterface(interfaceModel);
     const userOriginalData = ref(structuredClone(deepToRaw(userData.value)));
 
     const canFetchUserData = computed((): boolean => {
@@ -33,7 +33,8 @@ export function useUserData(interfaceModel: Ref<IInterface>, userData: Ref<any>)
 
     const canInteractWithServer = computed((): boolean => {
       return !!(interfaceModel.value.server_url)
-        && !!(interfaceModel.value.hash);
+        && !!(interfaceModel.value.hash)
+        && !interfaceHasError('server_url');
     })
 
     const userDataHasChanged = computed((): boolean => objectsAreDifferent(userData.value, userOriginalData.value));
@@ -70,7 +71,7 @@ export function useUserData(interfaceModel: Ref<IInterface>, userData: Ref<any>)
             }
           }
           const value = getFieldByPath(userData.value, fieldPath);
-          if (parent?.type?.includes('array') && Array.isArray(value)) {
+          if (['array', 'i18n:array'].includes(parent?.type ?? '') && Array.isArray(value)) {
             value.forEach((val, index) => {
               if (field.fields) {
                 dig(field.fields, fieldPath, field);
@@ -98,8 +99,8 @@ export function useUserData(interfaceModel: Ref<IInterface>, userData: Ref<any>)
       return errors;
     }
 
-    const applyUserData = (response: any, alsoOriginalData = true) => {
-      const parsedData = getParsedUserData(interfaceParsedData.value, deepToRaw(response));
+    const applyUserData = (data: any = userData.value, alsoOriginalData = true) => {
+      const parsedData = getParsedUserData(interfaceParsedData.value, deepToRaw(data));
       userData.value = structuredClone(parsedData);
       if (alsoOriginalData) {
         userOriginalData.value = structuredClone(parsedData);
@@ -223,7 +224,7 @@ export function useUserData(interfaceModel: Ref<IInterface>, userData: Ref<any>)
       return result;
     }
 
-    userData.value = getParsedUserData(interfaceParsedData.value, userData.value);
+    applyUserData();
 
     instance = {
       userDataSaving: saving,

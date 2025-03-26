@@ -3,9 +3,9 @@ import useHotkey, {type HotKey, type RemoveHandler} from 'vue3-hotkey';
 import {useGlobalStore} from '@/stores/global';
 
 const isInput = () => {
-  return document.activeElement.tagName === 'INPUT'
-      || document.activeElement.tagName === 'TEXTAREA'
-      || document.activeElement.tagName === 'SELECT'
+  return document.activeElement?.tagName === 'INPUT'
+      || document.activeElement?.tagName === 'TEXTAREA'
+      || document.activeElement?.tagName === 'SELECT'
 
 }
 

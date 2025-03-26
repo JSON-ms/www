@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {useGlobalStore} from '@/stores/global';
-import type {IInterface, IInterfaceData} from '@/interfaces';
+import type {IInterface, IInterfaceData, ISection} from '@/interfaces';
 import {computed} from 'vue';
 import {useRoute} from 'vue-router';
 import router from '@/router';
@@ -16,8 +16,8 @@ const { interfaceData, userData } = defineProps<{
 const { layoutSize } = useLayout();
 const globalStore = useGlobalStore();
 const currentRoute = useRoute();
-const { getUserDataErrors, userDataLoaded } = useUserData(interfaceModel, userData);
-const { interfaceParsedData } = useInterface(interfaceData);
+const { getUserDataErrors, userDataLoading } = useUserData(interfaceModel, userData);
+const { interfaceParsedData } = useInterface(interfaceModel);
 
 const selectedSectionKey = computed((): string => {
   return currentRoute.params.section.toString();
@@ -31,8 +31,8 @@ const goToSection = (section: string = '') => {
   router.push('/admin/' + currentRoute.params.hash + '/' + section + '/' + currentRoute.params.locale);
 }
 
-const getErrors = (section: string, sectionKey: string): { i18n: string[], currentI18n: string[], general: string[] } => {
-  const locale = currentRoute.params.locale;
+const getErrors = (section: ISection, sectionKey: string | number): { i18n: string[], currentI18n: string[], general: string[] } => {
+  const locale = currentRoute.params.locale.toString();
   const locales = interfaceParsedData.value.locales;
   const allErrors = Object.keys(getUserDataErrors(section.fields, sectionKey));
   const i18n = allErrors.filter(item => Object.keys(locales).find(subLocale => item.endsWith(subLocale)));
@@ -43,8 +43,8 @@ const getErrors = (section: string, sectionKey: string): { i18n: string[], curre
   }
 }
 
-const getErrorMsg = (index: number, sectionKey: string): string | null => {
-  const errors = getErrors(index, sectionKey);
+const getErrorMsg = (section: ISection, sectionKey: string | number): string | null => {
+  const errors = getErrors(section, sectionKey);
   const locales = interfaceParsedData.value.locales;
   if (errors.general.length > 0) {
     const path = errors.general[0];
@@ -58,11 +58,14 @@ const getErrorMsg = (index: number, sectionKey: string): string | null => {
     const items = errors.i18n[0].split('.');
     const locale = items.pop();
     const path = items.join('.');
-    return `Field path "${path}" field has an issue in ${locales[locale]}`
+    if (locale) {
+      return `Field path "${path}" field has an issue in ${locales[locale]}`
+    }
   }
   return null;
 }
 
+// @ts-expect-error Need to declare typings for process.env
 const version = JSON.parse(process.env.APP_VERSION);
 </script>
 
@@ -96,10 +99,10 @@ const version = JSON.parse(process.env.APP_VERSION);
           color="primary"
           @click="goToSection(sectionKey.toString())"
         >
-          <template v-if="userDataLoaded" #append>
+          <template v-if="!userDataLoading" #append>
             <v-tooltip
               v-if="getErrors(section, sectionKey).general.length > 0 || getErrors(section, sectionKey).currentI18n.length > 0"
-              :text="getErrorMsg(section, sectionKey)"
+              :text="getErrorMsg(section, sectionKey) || ''"
               location="right"
               max-width="400"
             >
@@ -109,7 +112,7 @@ const version = JSON.parse(process.env.APP_VERSION);
             </v-tooltip>
             <v-tooltip
               v-else-if="getErrors(section, sectionKey).i18n.length > 0"
-              :text="getErrorMsg(section, sectionKey)"
+              :text="getErrorMsg(section, sectionKey) || ''"
               location="right"
               max-width="400"
             >
@@ -145,7 +148,7 @@ const version = JSON.parse(process.env.APP_VERSION);
         </v-btn>
       </div>
       <v-footer color="#f9f9f9">
-        <small style="font-size: 0.6rem">JSON.ms v{{version}}. Licensed under the BSD-3-Clause.</small>
+        <small style="font-size: 0.6rem">JSON.ms v{{ version }}. Licensed under the BSD-3-Clause.</small>
       </v-footer>
     </template>
   </v-navigation-drawer>

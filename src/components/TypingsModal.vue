@@ -6,13 +6,16 @@ import {useTypings} from '@/composables/typings';
 
 const interfaceModel = defineModel<IInterface>({ required: true });
 const visible = defineModel<boolean>('visible');
-const { userData, locales } = defineProps<{
+const { userData } = defineProps<{
   userData: any,
 }>();
 
-const language = ref('typescript')
+const language = ref<'typescript' | 'php'>('typescript')
 const content = ref('')
-const options = { fontSize: 14 };
+const options = {
+  fontSize: 14,
+  showPrintMargin: false,
+};
 const { getTypescriptTypings, getPhpTypings, typingFileHandle, askForSyncTypings, syncTypings } = useTypings(interfaceModel, userData);
 
 const sync = async () => {

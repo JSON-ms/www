@@ -7,18 +7,18 @@ import {useLayout} from '@/composables/layout';
 const interfaceModel = defineModel<IInterface>({ required: true });
 const { userData, tab = 'data' } = defineProps<{
   userData: any,
-  tab: 'data' | 'settings',
+  tab: 'data' | 'settings' | 'docs',
 }>();
 
-const { interfaceHasError, interfaceIsPristine } = useInterface(interfaceModel);
+const { interfaceHasError, interfaceIsPristine, resetInterface } = useInterface(interfaceModel);
 const { windowWidth, layoutSize } = useLayout();
-const { saveUserData, resetUserData, userDataHasChanged, userDataSaving, userDataSaved, userDataLoaded, canSave, userDataHasError } = useUserData(interfaceModel, userData);
+const { saveUserData, resetUserData, userDataHasChanged, canInteractWithServer, userDataSaving, saveInterface, userDataSaved, userDataLoaded, canSave, userDataHasError } = useUserData(interfaceModel, userData);
 
 const save = () => {
   if (tab === 'data') {
     saveUserData();
   } else if (tab === 'settings') {
-
+    saveInterface();
   }
 }
 
@@ -26,7 +26,7 @@ const reset = () => {
   if (tab === 'data') {
     resetUserData();
   } else if (tab === 'settings') {
-
+    resetInterface();
   }
 }
 </script>
@@ -76,6 +76,26 @@ const reset = () => {
           >
             <div class="d-flex">
               <span class="text-truncate">Please save your interface before continuing.</span>
+            </div>
+          </v-alert>
+        </div>
+        <div v-else-if="!canInteractWithServer">
+          <v-tooltip v-if="layoutSize.data < 850" location="top" text="You need to define your webhook URL to communicate with your server">
+            <template #activator="{ props }">
+              <v-btn icon color="warning" variant="tonal" style="cursor: default">
+                <v-icon v-bind="props" icon="mdi-alert" />
+              </v-btn>
+            </template>
+          </v-tooltip>
+          <v-alert
+            v-else
+            density="compact"
+            variant="tonal"
+            type="error"
+            icon="mdi-alert"
+          >
+            <div class="d-flex">
+              <span class="text-truncate">You need to define your webhook URL to communicate with your server</span>
             </div>
           </v-alert>
         </div>

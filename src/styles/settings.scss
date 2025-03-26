@@ -15,6 +15,9 @@ html.v-overlay-scroll-blocked {
 html {
   overflow-y: scroll !important;
 }
+.v-toolbar__content {
+  height: 4rem !important;
+}
 body.ajax-loading,
 body.ajax-loading * {
   cursor: wait !important;

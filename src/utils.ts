@@ -1,47 +1,8 @@
 import demoInterface from '@/assets/demo-interface.yaml'
-import type {IInterfaceData, IInterface, IField} from '@/interfaces';
-import YAML from 'yamljs';
-import defaultInterfaceStructure from '@/assets/default-interface-structure.json';
-import merge from 'ts-deepmerge';
+import type {IInterface, IField} from '@/interfaces';
 import type {Ref} from 'vue';
 import {isRef, toRaw} from 'vue';
 import JSZip from 'jszip';
-
-export const getParsedInterface = (data: IInterface = getInterface()): IInterfaceData => {
-  let parseData: any = {};
-  try {
-    const json: IInterfaceData | string = YAML.parse(data.content) || {};
-    if (typeof json === 'string') {
-      return defaultInterfaceStructure as IInterfaceData;
-    }
-    const mergedInterface = merge(defaultInterfaceStructure as IInterfaceData, json);
-    if (Object.keys(mergedInterface.locales).length === 0) {
-      mergedInterface.locales = { 'en-US': 'English (US)' };
-    }
-    parseData = mergedInterface as IInterfaceData;
-  } catch {
-    parseData = defaultInterfaceStructure as IInterfaceData;
-  }
-  // @ts-expect-error process.env is parsed from backend
-  const version = JSON.parse(process.env.APP_VERSION);
-  parseData.global.copyright = (parseData.global.copyright || '').replace('{{version}}', version);
-
-  // Check that all fields have required properties.
-  const checkFields = (fields: {[key: string]: IField}): void => {
-    Object.keys(fields).forEach(key => {
-      const field = fields[key];
-      if (field) {
-        field.type = field.type ?? 'unknown';
-        if (field.fields) {
-          checkFields(field.fields);
-        }
-      }
-    })
-  }
-  checkFields(parseData.sections);
-
-  return parseData;
-}
 
 export const getInterface = (content: string = getDefaultInterfaceContent()): IInterface => {
   return {
@@ -55,9 +16,14 @@ export const getInterface = (content: string = getDefaultInterfaceContent()): II
   }
 }
 
+export const isNativeObject = (obj: any) => {
+  return obj && !Array.isArray(obj) && typeof obj === 'object';
+}
+
 export const getDefaultInterfaceContent = (): string => {
   return (demoInterface as string)
-    .replace('[INTERFACE_EDITOR_URL]', window.location.origin);
+    .replace('[INTERFACE_EDITOR_URL]', window.location.origin)
+    .replace('[DEMO_PREVIEW_URL]', import.meta.env.VITE_DEMO_PREVIEW_URL);
 }
 
 export const parseFields = (fields: any = {}, locales = {}) => {
@@ -282,7 +248,7 @@ export async function downloadFilesAsZip(urls: string[], jsonData: object, zipFi
 
 export function loopThroughFields(
   fields: { [key: string]: IField },
-  callback: (field: IField, data: any) => void,
+  callback: (field: IField, path: string, data: any) => void,
   parsedUserData?: any,
   enterArrays = true,
 ): void {

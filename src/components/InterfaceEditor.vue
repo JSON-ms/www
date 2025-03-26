@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {computed, onMounted, type Ref, ref, defineExpose, onBeforeUnmount} from 'vue';
+import {computed, onMounted, type Ref, ref, defineExpose, onBeforeUnmount, watch} from 'vue';
 import { VAceEditor } from 'vue3-ace-editor';
 import type { VAceEditorInstance } from 'vue3-ace-editor/types';
 import type {IInterface} from '@/interfaces';
@@ -8,13 +8,14 @@ import '@/plugins/aceeditor';
 
 const emit = defineEmits(['save', 'create', 'change'])
 const interfaceModel = defineModel<IInterface>({ required: true });
-const { canSaveInterface } = useInterface(interfaceModel);
+const { canSaveInterface, yamlException, interfaceParsedData } = useInterface(interfaceModel);
 const editor: Ref<VAceEditorInstance | null> = ref(null);
 const value = computed({
   get() {
     return interfaceModel.value.content;
   },
   set(value: string) {
+    // console.log(interfaceParsedData.value)
     emit('change', value);
   }
 });
@@ -52,10 +53,6 @@ const scrollToSection = (section: string) => {
     instance.session.setAnnotations(annotations);
   }
 }
-defineExpose({
-  scrollToSection,
-  setFocus,
-});
 
 onMounted(() => {
   const instance = editor.value?.getAceInstance();
@@ -84,6 +81,18 @@ onBeforeUnmount(() => {
   // editor.value?.destroy();
 })
 
+watch(() => yamlException.value, () => {
+  const instance = editor.value?.getAceInstance();
+  if (instance) {
+    instance.session.setAnnotations(yamlException.value);
+  }
+})
+
+defineExpose({
+  scrollToSection,
+  setFocus,
+});
+
 // const yamlStructure = {
 //   global: ['title', 'copyright', 'logo', 'preview', 'theme'],
 //   theme: ['default', 'light', 'dark'],
@@ -92,17 +101,17 @@ onBeforeUnmount(() => {
 // };
 
 const options = {
-  enableBasicAutocompletion: [{
-    getCompletions: (editor, session, pos, prefix, callback) => {
-      console.log(pos, prefix)
-      callback(null, [
-        {value: 'global', score: 1, meta: 'Global site configurations'},
-        {value: 'locales', score: 2, meta: 'I18n Internationalization'},
-      ]);
-    },
-  }],
+  // enableBasicAutocompletion: [{
+  //   getCompletions: (editor, session, pos, prefix, callback) => {
+  //     console.log(pos, prefix)
+  //     callback(null, [
+  //       {value: 'global', score: 1, meta: 'Global site configurations'},
+  //       {value: 'locales', score: 2, meta: 'I18n Internationalization'},
+  //     ]);
+  //   },
+  // }],
   fontSize: 14,
-  enableLiveAutocompletion: true,
+  // enableLiveAutocompletion: true,
   tabSize: 2,
   useSoftTabs: true
 }

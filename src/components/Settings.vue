@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import {computed, ref} from 'vue';
+import {ref} from 'vue';
 import { useDisplay } from 'vuetify';
-import { useGlobalStore } from '@/stores/global';
 import Rules from '@/rules';
 import type {IInterface} from '@/interfaces';
 import {useInterface} from '@/composables/interface';
@@ -9,13 +8,9 @@ import {useInterface} from '@/composables/interface';
 // Definitions
 const formIsValid = ref(false);
 const interfaceModel = defineModel<IInterface>({ required: true });
-const { interfaceStates, getInterfaceRules, interfaceHasError, getSecretKey, getCypherKey } = useInterface(interfaceModel);
+const { adminUrl, canOpenAdminUrl, computedServerSecretKey, secretKey, cypherKey, computedCypherKey, interfaceStates, getInterfaceRules, interfaceHasError, getSecretKey, getCypherKey } = useInterface(interfaceModel);
 const copied = ref(false);
-const globalStore = useGlobalStore();
 const { smAndDown } = useDisplay()
-const adminBaseUrl = ref(import.meta.env.VITE_ADMIN_DEMO_URL);
-const secretKey = ref('');
-const cypherKey = ref('');
 
 // Props
 const {
@@ -25,28 +20,6 @@ const {
   demo?: boolean,
   disabled?: boolean,
 }>();
-
-// Computed
-const canOpenAdminUrl = computed((): boolean => {
-  return !!(interfaceModel.value.uuid) || !globalStore.session.loggedIn;
-})
-const adminUrl = computed((): string => {
-  return adminBaseUrl.value + '/' + (interfaceModel.value.hash || (globalStore.session.loggedIn ? 'new' : 'demo'));
-})
-const computedServerSecretKey = computed((): string => {
-  return interfaceStates.value.secretKeyLoaded
-    ? secretKey.value
-    : interfaceModel.value.server_secret || '';
-})
-const computedCypherKey = computed((): string => {
-  return interfaceStates.value.cypherKeyLoaded
-    ? cypherKey.value
-    : interfaceModel.value.cypher_key || '';
-})
-
-const openAdminLink = () => {
-  window.open(adminUrl.value, '_blank');
-}
 
 const copy = () => {
   const field: HTMLInputElement = document.getElementById('adminRef') as HTMLInputElement;
@@ -134,17 +107,6 @@ const getCyperKey = () => {
                   <span>Copied!</span>
                 </template>
               </v-btn>
-              <v-btn
-                :disabled="!canOpenAdminUrl"
-                :icon="smAndDown"
-                color="primary"
-                size="small"
-                variant="flat"
-                @click="openAdminLink"
-              >
-                <v-icon :start="!smAndDown" icon="mdi-open-in-new" />
-                <span v-if="!smAndDown">Open</span>
-              </v-btn>
             </div>
           </template>
         </v-text-field>
@@ -170,9 +132,6 @@ const getCyperKey = () => {
           </template>
           <template #label>
             <span class="mr-2 text-error">*</span>Webhook Endpoint
-          </template>
-          <template v-if="!demo && interfaceHasError('server_url')" #append-inner>
-            <v-icon color="warning" icon="mdi-alert" />
           </template>
         </v-text-field>
 

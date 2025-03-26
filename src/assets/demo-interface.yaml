@@ -12,6 +12,7 @@ global:
   title: Dynamic Admin Panel Example
   copyright: JSON.ms v{{version}}. Licensed under the BSD-3-Clause.
   logo: [INTERFACE_EDITOR_URL]/favicon.ico
+  preview: [DEMO_PREVIEW_URL]
 
 
 # Supported Languages:

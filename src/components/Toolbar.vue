@@ -32,7 +32,7 @@ const globalStore = useGlobalStore();
 const { smAndDown } = useDisplay();
 const { windowWidth } = useLayout();
 const { setInterfaceData, serverSettings, createInterface } = useInterface(interfaceModel)
-const { downloadUserData, downloading, userDataLoading, fetchUserData, userDataLoaded, canFetchUserData, applyUserData, canInteractWithServer, getUserDataErrors } = useUserData(interfaceModel, userData);
+const { downloadUserData, downloading, userDataLoading, fetchUserData, canFetchUserData, applyUserData, canInteractWithServer, getUserDataErrors } = useUserData(interfaceModel, userData);
 const { hasSyncEnabled } = useTypings(interfaceModel, userData)
 const { reloading } = useIframe(interfaceModel, userData)
 const emit = defineEmits(['locale', 'preview', 'refresh', 'update:model-value', 'create', 'save', 'delete', 'edit-json', 'show-typings'])
@@ -236,11 +236,11 @@ watch(() => currentRoute.params.locale, () => {
           style="width: 14rem"
           @update:model-value="onLocaleChange"
         >
-          <template v-if="userDataLoaded" #prepend-inner-selection>
+          <template v-if="!userDataLoading" #prepend-inner-selection>
             <v-icon v-if="Object.keys(userDataErrorList).find(key => key.endsWith(selectedLocale))" icon="mdi-alert" color="warning"></v-icon>
             <v-icon v-else-if="Object.keys(userDataErrorList).find(key => locales.find(locale => key.endsWith(locale.value)))" icon="mdi-alert-outline" color="warning" />
           </template>
-          <template v-if="userDataLoaded" #prepend-inner-item="{ item }">
+          <template v-if="!userDataLoading" #prepend-inner-item="{ item }">
             <v-icon v-if="Object.keys(userDataErrorList).find(key => key.endsWith(item.value))" icon="mdi-alert" color="warning" class="mr-n4" />
           </template>
         </LocaleSwitcher>
@@ -273,7 +273,14 @@ watch(() => currentRoute.params.locale, () => {
             @click="onShowTypings"
           >
             <template #append>
-              <v-chip v-if="hasSyncEnabled" variant="tonal" label size="x-small" color="success" class="ml-4">Synced!</v-chip>
+              <v-chip
+                v-if="hasSyncEnabled"
+                variant="tonal"
+                label
+                size="x-small"
+                color="success"
+                class="ml-4"
+              >Synced!</v-chip>
             </template>
           </v-list-item>
         </SessionPanel>

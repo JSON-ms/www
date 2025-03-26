@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type {VForm} from 'vuetify/components';
 import FieldItem from '@/components/FieldItem.vue';
-import {useGlobalStore} from '@/stores/global';
 import {computed, defineExpose, ref} from 'vue';
 import {useRoute} from 'vue-router';
 import type {IField, IInterface, IInterfaceData, IServerSettings} from '@/interfaces';
@@ -14,7 +13,6 @@ const { interfaceData, userData, serverSettings, loading = false } = defineProps
   loading?: boolean,
 }>();
 
-const globalStore = useGlobalStore();
 const currentRoute = useRoute();
 
 const userDataSection = computed(() => {

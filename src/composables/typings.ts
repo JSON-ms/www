@@ -12,10 +12,10 @@ type JmsInterface = {
   }[]
 }
 
-const typingFileHandle: {
+const typingFileHandle = ref<{
   typescript: null,
   php: null,
-} = ref({
+}>({
   typescript: null,
   php: null,
 });

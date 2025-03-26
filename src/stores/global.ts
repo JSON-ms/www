@@ -58,9 +58,9 @@ export const useGlobalStore = defineStore('example', {
       visible: false,
     },
     admin: {
-      drawer: true,
-      interface: false,
-      previewMode: 'mobile',
+      drawer: window.innerWidth >= 1300,
+      interface: window.innerWidth >= 1400,
+      previewMode: window.innerWidth >= 1400 ? 'desktop' : 'mobile',
       tab: 'data',
     },
     session: {

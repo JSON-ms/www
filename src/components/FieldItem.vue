@@ -228,6 +228,15 @@ const getErrorMsg = (index: number): string | null => {
   return null;
 }
 
+const computedStringValue = computed({
+  get() {
+    return typeof value.value === 'string' ? value.value : '';
+  },
+  set(content: string) {
+    value.value = content;
+  }
+})
+
 const onWysiwygContentChange = (content: any) => {
   console.log(content);
 }
@@ -326,7 +335,7 @@ const onWysiwygContentChange = (content: any) => {
     >
       <div class="w-100 mb-12">
         <QuillEditor
-          v-model="value"
+          v-model="computedStringValue"
           theme="snow"
           style="height: 33vh"
           @text-change="onWysiwygContentChange"
@@ -350,8 +359,7 @@ const onWysiwygContentChange = (content: any) => {
       hide-details="auto"
     >
       <vue-easymde
-        v-if="value !== null"
-        v-model="value"
+        v-model="computedStringValue"
         :disabled="disabled"
         :options="{
           placeholder: 'Type here...',
@@ -720,7 +728,7 @@ const onWysiwygContentChange = (content: any) => {
       <template #actions="{ index }">
         <v-tooltip
           v-if="getErrors(index).general.length > 0 || getErrors(index).currentI18n.length > 0"
-          :text="getErrorMsg(index)"
+          :text="getErrorMsg(index) || ''"
           location="bottom"
         >
           <template #activator="{ props }">
@@ -729,7 +737,7 @@ const onWysiwygContentChange = (content: any) => {
         </v-tooltip>
         <v-tooltip
           v-else-if="getErrors(index).i18n.length > 0"
-          :text="getErrorMsg(index)"
+          :text="getErrorMsg(index) || ''"
           location="bottom"
         >
           <template #activator="{ props }">

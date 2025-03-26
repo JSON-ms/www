@@ -18,13 +18,14 @@ const props = defineProps<{
 const interfaceEditor = ref<InstanceType<typeof InterfaceEditor> | null>();
 const userData = computed(() => props.userData);
 const globalStore = useGlobalStore();
+const demoPreviewUrl = ref(import.meta.env.VITE_DEMO_PREVIEW_URL);
 const loaded = ref(false);
 const loading = ref(false);
 const killIframe = ref(false);
 const siteNotCompatibleSnack = ref(false);
 const { layoutSize, windowHeight } = useLayout();
 const { reloading, siteCompatible, sendMessageToIframe, listenIframeMessage, sendUserDataToIframe } = useIframe(interfaceModel, userData);
-const { userDataLoading } = useUserData(interfaceEditor, userData);
+const { userDataLoading } = useUserData(interfaceModel, userData);
 const iframeErrorMsg = ref('This site is not JSONms compatible');
 
 const refresh = () => {
@@ -32,9 +33,9 @@ const refresh = () => {
     reloading.value = true;
     sendMessageToIframe('reload');
   } else {
-    reloading.value = true;
     killIframe.value = true;
     nextTick(() => killIframe.value = false);
+    onIframeLoad();
   }
 }
 
@@ -173,7 +174,7 @@ defineExpose({
               border: 0,
               float: 'left',
               opacity: reloading || loading ? 0.01 : 1,
-              zoom: layoutSize.preview.zoom,
+              zoom: interfaceData.global.preview === demoPreviewUrl ? 1 : layoutSize.preview.zoom,
             }"
             class="w-100 fill-height"
             @error="() => iframeErrorMsg = 'Unable to load website.'"
@@ -184,6 +185,7 @@ defineExpose({
                 <v-alert
                   :text="iframeErrorMsg"
                   type="warning"
+                  tile
                 />
               </div>
             </v-expand-transition>

@@ -66,7 +66,7 @@ const updateRoute = (hash = currentRoute.params.hash, section = currentRoute.par
 }
 
 const showActionBar = computed((): boolean => {
-  return ['data', 'settings'].includes((tab.value || '').toString());
+  return ['data'].includes((tab.value || '').toString());
 });
 
 const bottomSheetMsg = ref('');
@@ -190,7 +190,7 @@ const onInterfaceModelChange = (model: IInterface) => {
 
 const onInterfaceContentChange = (content: string) => {
   interfaceModel.value.content = content;
-  applyUserData(userData.value, false)
+  applyUserData(userData.value)
 }
 
 watch(() => globalStore.admin.interface, () => {

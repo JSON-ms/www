@@ -96,7 +96,7 @@ onMounted(() => {
                       <v-ace-editor
                         v-model:value="content.php"
                         :options="options"
-                        style="height: 500px;"
+                        style="height: 500px"
                         lang="php"
                         theme="github_dark"
                         readonly
@@ -134,16 +134,17 @@ onMounted(() => {
 </template>
 
 <style lang="scss">
+pre {
+  padding: 0 !important;
+  margin: 1rem 0;
+}
 .language-yaml.ace_editor {
   display: block;
   height: auto;
-  margin: 1rem 0;
+  background-color: #24292e;
+  padding: 1rem 0;
 }
 .docs {
-  pre {
-    padding: 0.1rem 1rem;
-    background-color: #24292e;
-  }
 
   * + h2,
   * + h3,
