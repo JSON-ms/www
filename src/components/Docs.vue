@@ -2,12 +2,8 @@
 import interfaceMd from '@/docs/interface.md'
 import settingsMd from '@/docs/settings.md'
 import { marked } from 'marked';
-import { onMounted, ref } from 'vue';
+import { onMounted } from 'vue';
 import { useDisplay } from 'vuetify';
-import PHPIntegration from '@/assets/integration-php.txt';
-import PythonIntegration from '@/assets/integration-python.txt';
-import NodeIntegration from '@/assets/integration-node.txt';
-import { VAceEditor } from 'vue3-ace-editor';
 import '@/plugins/aceeditor';
 import ace from 'ace-builds';
 
@@ -19,18 +15,18 @@ renderer.link = ({ href, title, text }) => {
 }
 
 const parsedHtml = (str: string) => {
-  setTimeout(applyEditors);
+  setTimeout(() => applyEditors('yaml'));
   return marked(str, {
     renderer
   });
 }
 
-const applyEditors = () => {
-  const instances = document.getElementsByClassName('language-yaml');
+const applyEditors = (language = 'yaml') => {
+  const instances = document.getElementsByClassName('language-' + language);
   for (const element of instances) {
     ace.edit(element as HTMLElement, {
       value: element.innerHTML.trimEnd(),
-      mode: 'ace/mode/yaml',
+      mode: 'ace/mode/' + language,
       theme: 'ace/theme/github_dark',
       maxLines: Infinity,
       readOnly: true,
@@ -45,21 +41,8 @@ const applyEditors = () => {
   }
 }
 
-const languageTab = ref('php');
-
-const applyEnvVar = (content: string) => {
-  return content.replace('[INTERFACE_EDITOR_URL]', window.location.origin);
-}
-const content = ref({
-  php: applyEnvVar(PHPIntegration),
-  python: applyEnvVar(PythonIntegration),
-  node: applyEnvVar(NodeIntegration),
-});
-
-const options = { fontSize: 14 };
-
 onMounted(() => {
-  applyEditors();
+  applyEditors('yaml');
 })
 </script>
 
@@ -71,61 +54,6 @@ onMounted(() => {
           <v-card-text class="d-flex flex-column" style="gap: 2rem">
             <div v-html="parsedHtml(interfaceMd)" />
             <div v-html="parsedHtml(settingsMd)" />
-
-            <div>
-              <h1>Server Integration</h1>
-              <hr />
-              <v-card>
-                <v-tabs v-model="languageTab" color="primary">
-                  <v-tab value="php">
-                    <v-icon start icon="mdi-language-php" />
-                    PHP
-                  </v-tab>
-                  <v-tab value="python">
-                    <v-icon start icon="mdi-language-python" />
-                    Python
-                  </v-tab>
-                  <v-tab value="node">
-                    <v-icon start icon="mdi-nodejs" />
-                    Node
-                  </v-tab>
-                </v-tabs>
-                <v-sheet theme="dark" class="pa-2">
-                  <v-tabs-window v-model="languageTab">
-                    <v-tabs-window-item value="php">
-                      <v-ace-editor
-                        v-model:value="content.php"
-                        :options="options"
-                        style="height: 500px"
-                        lang="php"
-                        theme="github_dark"
-                        readonly
-                      />
-                    </v-tabs-window-item>
-                    <v-tabs-window-item value="python">
-                      <v-ace-editor
-                        v-model:value="content.python"
-                        :options="options"
-                        style="height: 500px;"
-                        lang="python"
-                        theme="github_dark"
-                        readonly
-                      />
-                    </v-tabs-window-item>
-                    <v-tabs-window-item value="node">
-                      <v-ace-editor
-                        v-model:value="content.node"
-                        :options="options"
-                        style="height: 500px;"
-                        lang="javascript"
-                        theme="github_dark"
-                        readonly
-                      />
-                    </v-tabs-window-item>
-                  </v-tabs-window>
-                </v-sheet>
-              </v-card>
-            </div>
           </v-card-text>
         </v-card>
       </v-col>

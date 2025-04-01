@@ -12,6 +12,9 @@ ace.config.setModuleUrl('ace/mode/yaml_worker', workerYamlUrl);
 import modePhpUrl from 'ace-builds/src-noconflict/mode-php?url';
 ace.config.setModuleUrl('ace/mode/php', modePhpUrl);
 
+import modeShUrl from 'ace-builds/src-noconflict/mode-sh?url';
+ace.config.setModuleUrl('ace/mode/sh', modeShUrl);
+
 import modeTypescriptUrl from 'ace-builds/src-noconflict/mode-typescript?url';
 ace.config.setModuleUrl('ace/mode/typescript', modeTypescriptUrl);
 

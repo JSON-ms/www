@@ -2,8 +2,10 @@
 import { useGlobalStore } from '@/stores/global';
 import { ref } from 'vue';
 import { Services } from '@/services';
+import {useModelStore} from '@/stores/model';
 
 const globalStore = useGlobalStore();
+const modelStore = useModelStore();
 const sessionLoginOut = ref(false);
 const emit = defineEmits(['logout'])
 const {
@@ -26,11 +28,10 @@ const logout = () => {
       sessionLoginOut.value = true;
       Services.get(import.meta.env.VITE_SERVER_URL + '/session/logout')
         .then(response => {
-          emit('logout');
-          return response;
+          globalStore.setSession(response);
+          emit('logout', response);
+          resolve(response);
         })
-        .then(globalStore.setSession)
-        .then(resolve)
         .catch(globalStore.catchError)
         .finally(() => sessionLoginOut.value = false);
     })

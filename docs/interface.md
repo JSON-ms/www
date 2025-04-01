@@ -11,14 +11,11 @@ global:
   
   # Set the title of your admin panel, which will be displayed prominently in the toolbar.
   title: Title of your admin panel
-  
-  # Add copyright text that will appear at the bottom of the sidebar, providing legal information or branding.
-  copyright: Brand © 2025 - All rights reserved
     
-  # Specify a URL for a logo image that will be displayed alongside the title, enhancing the visual identity of your panel.
+  # (Optional) Specify a URL for a logo image that will be displayed alongside the title, enhancing the visual identity of your panel.
   logo: https://json.ms/favicon.ico
 
-  # Specify a URL of a JSON.ms compatible website that you can preview while you work on your data.
+  # (Optional) Specify a URL of a JSON.ms compatible website that you can preview while you work on your data.
   preview: https://demo.json.ms
 ```
 These settings allows to create an admin panel that aligns with your brand and user experience goals.
@@ -35,41 +32,18 @@ locales:
   es-MX: Spanish (Mexico)
 ```
 
-## Enums
-
-Reusable enumerations (enums) are a powerful feature that allows you to define a set of predefined values that can be referenced multiple times throughout your document or schema. This promotes consistency in your data definitions and reduces redundancy, making your code cleaner and easier to maintain.
-
-```yaml
-enums:
-  countries:
-    ca: Canada
-    us: United-States
-    mx: Mexico
-```
-
-You can later use these enums seperated by commas (ex: enums.countries) as `items` value for supported types: `select`, `checkbox` and `radio`.
-
-Here's an example of a field using an enum:
-
-```yaml
-      country: 
-        type: select
-        label: Title
-        items: enums.countries
-```
-
 ## Sections
 The following YAML example defines a simplified section for an admin panel, specifically for managing content related to the home page. Here’s a breakdown of its components:
 
 ```yaml
 sections:
-  home:
+  home: # Customizable key
     label: Home page
     fields:
-      title: 
+      title: # Customizable key
         type: i18n
         label: Title
-      body:
+      body: # Customizable key
         type: i18n:wysiwyg
         label: Body
 ```
@@ -80,16 +54,6 @@ sections:
 - `home`: This **customizable key** represents a specific section for your app. It will be used as the identifier in the payload when saving the field data in the admin panel.
 - `label`: The value associated with this key is the label that will be displayed in the sidebar of the admin panel.
 - `fields`: This key contains all the fields that will be displayed and editable by the user within this section.
-
-**Note**: You can create a separator by adding a `separator` key either above or below any other section, as shown below:
-
-```yaml
-  home:
-    label: Home page
-  separator:
-  contact:
-    label: Contact Us
-```
 
 ### Fields
 
@@ -115,11 +79,12 @@ For instance:
 - `date`: A date picker input for selecting a specific date.
 - `switch`: A toggle switch that allows users to turn a setting on or off.
 - `array`: A collection of items that can hold multiple fields.
+- `node`: A fieldset (aka group) that contains a list of fields. Useful to categorize information both visually and structurally.
 - `file`: An option to upload a file.
 - `i18n`: A translatable single-line text input.
-- `i18n:[TYPE]`: You can use any of the above types to make them translatable. For example, you can specify `i18n:string`, `i18n:wysiwyg`, or even `i18n:file` to indicate that these fields should support multiple languages.
+- `i18n:[TYPE]`: You can use any of the above types except `node` to make them translatable. For example, you can specify `i18n:string`, `i18n:wysiwyg`, or even `i18n:file` to indicate that these fields should support multiple languages.
 
-#### Field Values:
+#### All Field Properties:
 - `type`: Specifies a supported field type as defined earlier.
 - `label`: The title that will be displayed within the field.
 - `multiple`: A boolean value that indicates whether the field can accept multiple values (e.g., for `select` or `checkbox` types).
@@ -133,5 +98,28 @@ For instance:
   - Make sure to prefix all icons with "mdi-". For instance: mdi-check will show the "check" icon.
   - Documentation: https://pictogrammers.com/library/mdi/
 - `required`: (Optional) It ensures that the user must provide a value, preventing the form from being submitted until the field is completed.
-- `fields`: This is applicable only for `array` types. You can use any supported type here, and you can nest sub-arrays as needed to create complex data structures and hierarchies.
+- `fields`: This is applicable only for `array` and `node` types. You can use any supported type here, and you can nest sub-arrays as needed to create complex data structures and hierarchies.
 - `items`: This is applicable only for `select`, `checkbox` and `radio` types. You can list all available values or even use an enum.
+
+## Enums
+
+Reusable enumerations (enums) are a powerful feature that allows you to define a set of predefined values that can be referenced multiple times throughout your document or schema. This promotes consistency in your data definitions and reduces redundancy, making your code cleaner and easier to maintain.
+
+```yaml
+enums:
+  countries:
+    ca: Canada
+    us: United-States
+    mx: Mexico
+```
+
+You can later use these enums seperated by commas (ex: enums.countries) as `items` value for supported types: `select`, `checkbox` and `radio`.
+
+Here's an example of a field using an enum:
+
+```yaml
+      country: 
+        type: select
+        label: Title
+        items: enums.countries
+```

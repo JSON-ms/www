@@ -52,8 +52,13 @@ const formattedList = computed({
 
       if (!title) {
         const keys = Object.keys(fields);
-        if (keys.length === 1 && fields[keys[0]].label) {
-          title = fields[keys[0]].label + ' #' + (itemIdx + 1);
+        if (keys.length > 0) {
+          const fieldItem = fields[keys[0]];
+          if (fieldItem.type.includes('i18n')) {
+            title = item[keys[0]][locale].substring(0, 64);
+          } else {
+            title = item[keys[0]].substring(0, 64);
+          }
         }
       }
       return {

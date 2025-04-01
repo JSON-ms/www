@@ -16,6 +16,7 @@
     "@mdi/font": "7.4.47",
     "@types/yamljs": "^0.2.34",
     "@vueup/vue-quill": "^1.2.0",
+    "@yeger/vue-masonry-wall": "^5.0.18",
     "ace-builds": "^1.39.0",
     "core-js": "^3.37.1",
     "easymde": "^2.20.0",

@@ -44,6 +44,23 @@ export interface IError {
   body: string,
 }
 
+export interface IFile {
+  path: string | null,
+  meta: {
+    type: string,
+    size: number,
+    width?: number,
+    height?: number,
+    originalFileName: string,
+  }
+}
+
+export interface IFileManager {
+  visible: boolean,
+  canSelect: boolean,
+  callback?: (files?: IFile[]) => Promise<boolean>,
+}
+
 export interface IInterface {
   uuid?: string
   hash?: string
@@ -64,7 +81,7 @@ export interface IInterface {
 
 export interface ISession {
   loggedIn: boolean
-  user: {
+  user?: {
     id: number | null,
     googleId: string | null,
     name: string,
@@ -89,8 +106,8 @@ export interface IField {
   accept?: string | string[]
   'append-inner'?: string
   'prepend-inner'?: string
-  fields?: {[key: string]: IField}
-  items?: {[key: string]: string} | string[]
+  fields: {[key: string]: IField}
+  items?: {[key: string]: string} | string[] | string
 }
 
 export interface ISection {

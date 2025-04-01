@@ -26,7 +26,6 @@ const apply = () => {
 const close = () => {
   visible.value = false;
 }
-
 </script>
 
 <template>

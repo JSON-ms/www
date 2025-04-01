@@ -7,25 +7,25 @@ import InterfaceEditor from '@/components/InterfaceEditor.vue';
 import {useIframe} from '@/composables/iframe';
 import router from '@/router';
 import {useUserData} from '@/composables/user-data';
+import {useModelStore} from '@/stores/model';
 
 const interfaceModel = defineModel<IInterface>({ required: true });
 const emit = defineEmits(['save', 'create', 'change'])
 const props = defineProps<{
   interfaceData: IInterfaceData,
-  userData: any,
 }>();
 
 const interfaceEditor = ref<InstanceType<typeof InterfaceEditor> | null>();
-const userData = computed(() => props.userData);
+const modelStore = useModelStore();
 const globalStore = useGlobalStore();
 const demoPreviewUrl = ref(import.meta.env.VITE_DEMO_PREVIEW_URL);
 const loaded = ref(false);
 const loading = ref(false);
 const killIframe = ref(false);
 const siteNotCompatibleSnack = ref(false);
-const { layoutSize, windowHeight } = useLayout();
-const { reloading, siteCompatible, sendMessageToIframe, listenIframeMessage, sendUserDataToIframe } = useIframe(interfaceModel, userData);
-const { userDataLoading } = useUserData(interfaceModel, userData);
+const { layoutSize, windowHeight, layoutPx } = useLayout();
+const { reloading, siteCompatible, sendMessageToIframe, listenIframeMessage, sendUserDataToIframe } = useIframe();
+const { userDataLoading } = useUserData();
 const iframeErrorMsg = ref('This site is not JSONms compatible');
 
 const refresh = () => {
@@ -49,21 +49,24 @@ const onInterfaceContentChange = (content: string) => {
   emit('change', content);
 }
 
+let loadingIframeTimeout: any;
 let checkIframeInterface: any;
 const onIframeLoad = () => {
   let intervalCount = 0;
   loading.value = true;
   siteCompatible.value = false;
   siteNotCompatibleSnack.value = false;
+  clearTimeout(loadingIframeTimeout);
+  loadingIframeTimeout = setTimeout(() => {
+    loading.value = false;
+  }, 1000)
   clearInterval(checkIframeInterface);
   checkIframeInterface = setInterval(() => {
     if (siteCompatible.value) {
       clearInterval(checkIframeInterface);
-      loading.value = false;
       reloading.value = false;
-    } else if (intervalCount >= 3000) {
+    } else if (intervalCount >= 5000) {
       clearInterval(checkIframeInterface);
-      loading.value = false;
       siteNotCompatibleSnack.value = true;
       reloading.value = false;
       setTimeout(() => {
@@ -101,7 +104,7 @@ watch(() => props.interfaceData.global.preview, () => {
   }
 }, { immediate: !!props.interfaceData.global.preview })
 
-watch(() => userData, () => {
+watch(() => modelStore.userData, () => {
   if (siteCompatible.value && globalStore.admin.previewMode !== null) {
     sendUserDataToIframe();
   }
@@ -174,7 +177,7 @@ defineExpose({
               border: 0,
               float: 'left',
               opacity: reloading || loading ? 0.01 : 1,
-              zoom: interfaceData.global.preview === demoPreviewUrl ? 1 : layoutSize.preview.zoom,
+              zoom: interfaceData.global.preview === demoPreviewUrl ? layoutPx(1) : layoutSize.preview.zoom,
             }"
             class="w-100 fill-height"
             @error="() => iframeErrorMsg = 'Unable to load website.'"

@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import {VAceEditor} from 'vue3-ace-editor';
-import {ref, watch} from 'vue';
+import {computed, ref, watch} from 'vue';
 import type {IInterface} from '@/interfaces';
 import {useTypings} from '@/composables/typings';
 
 const interfaceModel = defineModel<IInterface>({ required: true });
 const visible = defineModel<boolean>('visible');
-const { userData } = defineProps<{
-  userData: any,
-}>();
 
 const language = ref<'typescript' | 'php'>('typescript')
 const content = ref('')
@@ -16,7 +13,7 @@ const options = {
   fontSize: 14,
   showPrintMargin: false,
 };
-const { getTypescriptTypings, getPhpTypings, typingFileHandle, askForSyncTypings, syncTypings } = useTypings(interfaceModel, userData);
+const { getTypescriptTypings, getPhpTypings, typingFileHandle, askForSyncTypings, syncTypings } = useTypings();
 
 const sync = async () => {
   await askForSyncTypings('typescript');
@@ -24,7 +21,12 @@ const sync = async () => {
 }
 
 const unsync = async () => {
-  typingFileHandle.value[language.value] = null;
+  if (interfaceModel.value.hash) {
+    const instance = typingFileHandle.value[interfaceModel.value.hash];
+    if (instance) {
+      instance[language.value] = null;
+    }
+  }
 }
 
 const close = () => {
@@ -39,9 +41,19 @@ const updateContent = () => {
   }
 }
 
+const handle = computed((): FileSystemFileHandle | null => {
+  if (interfaceModel.value.hash) {
+    const instance = typingFileHandle.value[interfaceModel.value.hash];
+    if (instance) {
+      return instance[language.value] || null;
+    }
+  }
+  return null;
+})
+
 watch(language, updateContent)
 watch(visible, () => {
-  if (visible) {
+  if (visible.value) {
     updateContent();
   }
 })
@@ -81,7 +93,9 @@ watch(visible, () => {
         />
       </v-card>
       <template #actions>
-        <span v-if="typingFileHandle[language]" class="text-truncate">Automatically synced with local file <strong>{{ typingFileHandle[language].name }}</strong></span>
+        <span v-if="handle" class="text-truncate">
+          Automatically synced with local file <strong>{{ handle.name }}
+        </strong></span>
         <v-spacer />
         <v-btn
           v-if="!typingFileHandle[language]"
@@ -94,12 +108,12 @@ watch(visible, () => {
         />
         <v-btn
           v-else
-           prepend-icon="mdi-close"
-           variant="outlined"
-           color="primary"
-           text="Unsync"
-           class="px-3"
-           @click="unsync"
+          prepend-icon="mdi-close"
+          variant="outlined"
+          color="primary"
+          text="Unsync"
+          class="px-3"
+          @click="unsync"
         ></v-btn>
         <v-btn
           text="Close"

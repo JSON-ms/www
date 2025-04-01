@@ -10,13 +10,17 @@ import ErrorPage from '@/components/ErrorPage.vue'
 import MainView from '@/views/MainView.vue';
 import {useInterface} from '@/composables/interface';
 import {useGlobalStore} from '@/stores/global';
+import type {RouteLocationGeneric} from 'vue-router';
+import {useModelStore} from '@/stores/model';
 
-const getValidInterfaceRoute = (route) => {
+const getValidInterfaceRoute = (route:  RouteLocationGeneric): string => {
   const globalStore = useGlobalStore();
   const foundInterface = globalStore.session.interfaces.find(item => item.hash === route.params.hash);
   if (foundInterface) {
-    const { getAvailableSection, getAvailableLocale } = useInterface(foundInterface);
-    return `/admin/${route.params.hash}/${getAvailableSection()}/${getAvailableLocale()}`;
+    const modelStore = useModelStore();
+    modelStore.setInterface(foundInterface);
+    const { interfaceParsedData, getAvailableSection, getAvailableLocale } = useInterface();
+    return `/admin/${route.params.hash}/${getAvailableSection(undefined, Object.keys(interfaceParsedData.value.sections)[0])}/${getAvailableLocale(undefined, Object.keys(interfaceParsedData.value.locales)[0])}`;
   }
   return `/admin/${route.params.hash}/home/en-US`;
 }

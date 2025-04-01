@@ -1,8 +1,40 @@
-import demoInterface from '@/assets/demo-interface.yaml'
+import exampleInterface from '@/assets/example-interface.yaml'
 import type {IInterface, IField} from '@/interfaces';
 import type {Ref} from 'vue';
 import {isRef, toRaw} from 'vue';
 import JSZip from 'jszip';
+
+export const allNonI18nFields: string[] = [
+  'string',
+  'markdown',
+  'wysiwyg',
+  'number',
+  'rating',
+  'select',
+  'checkbox',
+  'radio',
+  'date',
+  'switch',
+  'array',
+  'file',
+];
+export const allFields: string[] = [
+  ...allNonI18nFields,
+  ...allNonI18nFields.map(item => 'i18n:' + item),
+  'i18n',
+]
+export const isFieldType = (field: IField, type: string): boolean => {
+  if (!field) {
+    return false;
+  }
+  if (field.type === type) {
+    return true;
+  }
+  return (type === 'i18n' && ['i18n', ...allNonI18nFields.map(item => 'i18n:' + item)].includes(field.type));
+}
+export const getFieldType = (field: IField): string => {
+  return typeof field?.type === 'string' ? field.type : 'unknown'
+}
 
 export const getInterface = (content: string = getDefaultInterfaceContent()): IInterface => {
   return {
@@ -21,9 +53,8 @@ export const isNativeObject = (obj: any) => {
 }
 
 export const getDefaultInterfaceContent = (): string => {
-  return (demoInterface as string)
-    .replace('[INTERFACE_EDITOR_URL]', window.location.origin)
-    .replace('[DEMO_PREVIEW_URL]', import.meta.env.VITE_DEMO_PREVIEW_URL);
+  return (exampleInterface as string)
+    .replace('[INTERFACE_EDITOR_URL]', window.location.origin);
 }
 
 export const parseFields = (fields: any = {}, locales = {}) => {
@@ -33,14 +64,20 @@ export const parseFields = (fields: any = {}, locales = {}) => {
   const fileTypes = ['file', 'i18n:file', 'image', 'i18n:image', 'video', 'i18n:video'];
   const mayBeMultipleTypes = ['select', 'i18n:select', 'checkbox', 'i18n:checkbox', 'radio', 'i18n:radio'];
   const applyValues = (key: string) => {
-    const type = fields[key].type || '';
+    const field = fields[key];
+    if (!field) {
+      return;
+    }
+    const type = field.type || '';
+    const required = !!(field.required);
+    const multiple = !!(field.multiple);
     let value;
-    if (multipleTypes.includes(type) || (mayBeMultipleTypes.includes(type) && !!(fields[key].multiple))) {
+    if (multipleTypes.includes(type) || (mayBeMultipleTypes.includes(type) && multiple)) {
       value = [];
     } else if (fileTypes.includes(type)) {
-      value = null;
+      value = required ? { path: '', meta: {} } : null;
     } else {
-      value = null;
+      value = required ? isFieldType(field, 'number') ? 0 : '' : null;
     }
     return value;
   }
@@ -48,7 +85,7 @@ export const parseFields = (fields: any = {}, locales = {}) => {
   const result: any = {};
   Object.entries(fields).forEach(([key, field]: any) => {
     result[key] = {};
-    if (field.type?.includes('i18n')) {
+    if (isFieldType(field, 'i18n')) {
       Object.entries(locales).forEach(([locale]) => {
         result[key][locale] = applyValues(key);
         if (result[key][locale] === undefined) {
@@ -206,13 +243,15 @@ export const deepToRaw = (obj: any): any => {
   return raw;
 }
 
-export async function downloadFilesAsZip(urls: string[], jsonData: object, zipFileName: string): Promise<Blob> {
+export async function downloadFilesAsZip(urls: string[], jsonData: object | false, zipFileName: string): Promise<Blob> {
   return new Promise(async (resolve, reject) => {
 
     const zip = new JSZip();
 
     // Add JSON data as a file
-    zip.file("data.json", JSON.stringify(jsonData, null, 2));
+    if (jsonData) {
+      zip.file("data.json", JSON.stringify(jsonData, null, 2));
+    }
 
     // Fetch each URL and add it as a blob to the zip
     for (const url of urls) {
@@ -251,6 +290,7 @@ export function loopThroughFields(
   callback: (field: IField, path: string, data: any) => void,
   parsedUserData?: any,
   enterArrays = true,
+  enterNodes = true,
 ): void {
   const loop = (items: { [key: string]: IField }, path = '') => {
     Object.keys(items).forEach(key => {
@@ -264,14 +304,14 @@ export function loopThroughFields(
       }
 
       if (field?.fields) {
-        if (!enterArrays && field.type === 'array') {
+        if (!enterArrays && isFieldType(field, 'array')) {
           return;
         }
-        if (field.type === 'array' && Array.isArray(data)) {
+        if (isFieldType(field, 'array') && Array.isArray(data)) {
           data.forEach((item, index) => {
             loop(field.fields, `${newPath}[${index}]`);
           });
-        } else {
+        } else if (!isFieldType(field, 'node') || enterNodes) {
           loop(field.fields, newPath);
         }
       }

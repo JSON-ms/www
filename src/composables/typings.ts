@@ -1,8 +1,15 @@
-import type {IField, IInterface} from '@/interfaces';
-import {computed, ref, type Ref} from 'vue';
+import type {IField} from '@/interfaces';
+import {computed, ref} from 'vue';
 import {useInterface} from '@/composables/interface';
 import {loopThroughFields} from '@/utils';
 import {useUserData} from '@/composables/user-data';
+import {useModelStore} from '@/stores/model';
+
+declare global {
+  export interface Window {
+    showOpenFilePicker: () => Promise<[FileSystemFileHandle]>;
+  }
+}
 
 type JmsInterface = {
   name: string,
@@ -12,40 +19,58 @@ type JmsInterface = {
   }[]
 }
 
-const typingFileHandle = ref<{
-  typescript: null,
-  php: null,
-}>({
-  typescript: null,
-  php: null,
-});
+const typingFileHandle = ref<{[key: string]: {
+  typescript?: FileSystemFileHandle | null,
+  php?: FileSystemFileHandle | null,
+}}>({});
 
-export function useTypings(interfaceModel: Ref<IInterface>, userData: Ref<any>) {
+export function useTypings() {
 
-  const { interfaceParsedData } = useInterface(interfaceModel);
-  const { getParsedUserData } = useUserData(interfaceModel, userData);
+  const modelStore = useModelStore();
+  const { interfaceParsedData } = useInterface();
+  const { getParsedUserData } = useUserData();
 
   const askForSyncTypings = async (language: 'typescript' | 'php') => {
-    const [fsa] = await window.showOpenFilePicker();
-    typingFileHandle.value[language] = fsa;
+    const hash = modelStore.interface.hash;
+    if (hash) {
+      const [fsa] = await window.showOpenFilePicker();
+      const handle = typingFileHandle.value[hash];
+      if (!handle) {
+        typingFileHandle.value[hash] = {}
+      }
+      typingFileHandle.value[hash][language] = fsa;
+    }
   }
 
   const syncTypings = async () => {
-    if (typingFileHandle.value.typescript) {
-      const writable = await typingFileHandle.value.typescript.createWritable();
-      await writable.write(getTypescriptTypings());
-      await writable.close();
-    }
-    if (typingFileHandle.value.php) {
-      const writable = await typingFileHandle.value.php.createWritable();
-      await writable.write(getPhpTypings());
-      await writable.close();
+    const hash = modelStore.interface.hash;
+    if (hash) {
+      const handle = typingFileHandle.value[hash];
+      if (handle) {
+        if (handle.typescript) {
+          const writable = await handle.typescript.createWritable();
+          await writable.write(getTypescriptTypings());
+          await writable.close();
+        }
+        if (handle.php) {
+          const writable = await handle.php.createWritable();
+          await writable.write(getPhpTypings());
+          await writable.close();
+        }
+      }
     }
   }
 
   const hasSyncEnabled = computed((): boolean => {
-    return !!(typingFileHandle.value.typescript)
-      || !!(typingFileHandle.value.php);
+    const hash = modelStore.interface.hash;
+    if (hash) {
+      const handle = typingFileHandle.value[hash];
+      if (handle) {
+        return !!(handle.typescript)
+          || !!(handle.php);
+      }
+    }
+    return false;
   })
 
   const getInterfaceName = (path: string): string => {
@@ -58,7 +83,7 @@ export function useTypings(interfaceModel: Ref<IInterface>, userData: Ref<any>) 
   }
 
   const getFieldType = (field: IField): string => {
-    const keys = {
+    const keys: {[key: string]: string} = {
       string: 'string',
       url: 'string',
       wysiwyg: 'string',
@@ -94,9 +119,13 @@ export function useTypings(interfaceModel: Ref<IInterface>, userData: Ref<any>) 
     }
 
     if (field?.type.includes('i18n')) {
-      type = `JmsLocaleSet<${type} | null>`;
-    } else {
-      type + ' | null';
+      let i18nType = type;
+      if (!field.required && !field?.multiple) {
+        i18nType += ' | null';
+      }
+      type = `JmsLocaleSet<${i18nType}>`;
+    } else if (!field.required && !field?.multiple) {
+      type += ' | null';
     }
     return type;
   }
@@ -105,21 +134,30 @@ export function useTypings(interfaceModel: Ref<IInterface>, userData: Ref<any>) 
     const items: JmsInterface[] = [];
 
     // Loop through all fields and push to interfaces to the list
-    const innerLoop = (fields: IField, key: string, jmsInterface: JmsInterface, parent = '') => {
+    const innerLoop = (fields: { [key: string]: IField }, key: string, jmsInterface: JmsInterface, parent = '') => {
       const nameKey = parent === '' ? key : (parent + '.' + key);
       loopThroughFields(fields || {}, (field, path) => {
         const lastKey = path.split('.').pop();
-        if (field?.type) {
+        if (lastKey && field?.type) {
           if (field.type.includes('array')) {
             const name = getInterfaceName(nameKey + '.items');
             const jmsArrInterface = { name, fields: [] };
-            innerLoop(field.fields, lastKey, jmsArrInterface, nameKey);
+            const fields = structuredClone(field.fields);
+            fields.hash = { type: 'string', required: true, label: '', fields: {} }
+            innerLoop(fields, lastKey, jmsArrInterface, nameKey);
             jmsInterface.fields.push({ key: lastKey, type: `Jms${name}[]` })
+          } else if (field.type === 'node') {
+            const nodeKey = nameKey + '.' + path;
+            const name = getInterfaceName(nodeKey);
+            const jmsNodeInterface = { name, fields: [] };
+            const fields = structuredClone(field.fields);
+            innerLoop(fields, lastKey, jmsNodeInterface, nameKey);
+            jmsInterface.fields.push({ key: lastKey, type: `Jms${name}` })
           } else {
             jmsInterface.fields.push({ key: lastKey, type: getFieldType(field) })
           }
         }
-      }, undefined, false)
+      }, undefined, false, false)
       items.push(jmsInterface);
     }
     Object.keys(interfaceParsedData.value.sections).forEach((key: string) => {
@@ -165,6 +203,7 @@ export function useTypings(interfaceModel: Ref<IInterface>, userData: Ref<any>) 
       fields: [
         { key: 'size', type: 'number' },
         { key: 'type', type: 'string' },
+        { key: 'originalFileName', type: 'string' },
       ]
     });
 
@@ -176,6 +215,7 @@ export function useTypings(interfaceModel: Ref<IInterface>, userData: Ref<any>) 
         { key: 'type', type: 'string' },
         { key: 'width', type: 'number' },
         { key: 'height', type: 'number' },
+        { key: 'originalFileName', type: 'string' },
       ]
     });
 
@@ -187,9 +227,11 @@ export function useTypings(interfaceModel: Ref<IInterface>, userData: Ref<any>) 
     const locales = interfaceParsedData.value.locales;
     const typescript: JmsInterface[] = [];
     let result = `export type JmsLocale = '${Object.keys(locales).join('\' | \'')}'`;
+    result += '\n\n';
+    result += `export type JmsSection = '${Object.keys(interfaceParsedData.value.sections).join('\' | \'')}'`;
 
     // Add enums if any...
-    if (interfaceParsedData.value.enums) {
+    if (Object.keys(interfaceParsedData.value.enums).length > 0) {
       result += '\n\n';
       Object.keys(interfaceParsedData.value.enums).forEach((enumKey, enumIndex) => {
         if (enumIndex > 0) {
@@ -212,8 +254,8 @@ export function useTypings(interfaceModel: Ref<IInterface>, userData: Ref<any>) 
     typescript.reverse();
 
     // Generate base JmsObject
-    const jmsObject = { name: 'Object', fields: [] };
-    Object.keys(interfaceParsedData.value.sections).forEach((key, index) => {
+    const jmsObject: { name: string, fields: { key: string, type: string }[] } = { name: 'Object', fields: [] };
+    Object.keys(interfaceParsedData.value.sections).forEach((key) => {
       if (interfaceParsedData.value.sections[key]) {
         jmsObject.fields.push({ key, type: 'Jms' + getInterfaceName(key) })
       }
@@ -238,19 +280,23 @@ export function useTypings(interfaceModel: Ref<IInterface>, userData: Ref<any>) 
     })
 
     // Prepare default Jms object
-    const defaultObjectStr = 'export const defaultJmsObject: JmsObject = ' + JSON.stringify(defaultObject, null, 2);
+    const defaultObjectStr = 'const defaultJmsObject: JmsObject = ' + JSON.stringify(defaultObject, null, 2);
 
-    return result + '\n\n' + defaultObjectStr;
+    return result
+      + '\n\n' + defaultObjectStr
+      + '\n\nexport default defaultJmsObject';
   }
 
   const getPhpTypings = (): string => {
     const defaultObject = getParsedUserData();
     const locales = interfaceParsedData.value.locales;
     const typescript: JmsInterface[] = [];
-    let result = `export interface JmsLocale = '${Object.keys(locales).join('\' | \'')}'`;
+    let result = `export type JmsLocale = '${Object.keys(locales).join('\' | \'')}'`;
+    result += '\n\n';
+    result += `export type JmsSection = '${Object.keys(interfaceParsedData.value.sections).join('\' | \'')}'`;
 
     // Add enums if any...
-    if (interfaceParsedData.value.enums) {
+    if (Object.keys(interfaceParsedData.value.enums).length > 0) {
       result += '\n\n';
       Object.keys(interfaceParsedData.value.enums).forEach((enumKey, enumIndex) => {
         if (enumIndex > 0) {
@@ -273,8 +319,8 @@ export function useTypings(interfaceModel: Ref<IInterface>, userData: Ref<any>) 
     typescript.reverse();
 
     // Generate base JmsObject
-    const jmsObject = { name: 'Object', fields: [] };
-    Object.keys(interfaceParsedData.value.sections).forEach((key, index) => {
+    const jmsObject: { name: string, fields: { key: string, type: string }[] } = { name: 'Object', fields: [] };
+    Object.keys(interfaceParsedData.value.sections).forEach((key) => {
       if (interfaceParsedData.value.sections[key]) {
         jmsObject.fields.push({ key, type: 'Jms' + getInterfaceName(key) })
       }

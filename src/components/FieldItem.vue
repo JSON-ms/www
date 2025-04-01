@@ -3,7 +3,7 @@ import ListBuilder from '@/components/ListBuilder.vue';
 import FieldHeader from '@/components/FieldHeader.vue';
 import type {IInterfaceData, IField, IServerSettings, IInterface} from '@/interfaces';
 import Rules from '@/rules';
-import {deepToRaw, parseFields, phpStringSizeToBytes} from '@/utils';
+import {deepToRaw, parseFields, phpStringSizeToBytes, getFieldType, isFieldType} from '@/utils';
 import { computed, ref } from 'vue';
 import { Services } from '@/services';
 import { mimeTypes, useGlobalStore } from '@/stores/global';
@@ -17,7 +17,6 @@ const value = defineModel<any>({ required: true });
 const {
   field,
   fieldKey,
-  userData,
   locale,
   locales,
   structure,
@@ -28,7 +27,6 @@ const {
 } = defineProps<{
   field: IField,
   fieldKey: string,
-  userData: any,
   locale: string,
   locales: { [key: string]: string; },
   structure: IInterfaceData,
@@ -38,8 +36,7 @@ const {
   loading?: boolean,
 }>();
 
-const model = ref(interfaceModel);
-const { getUserDataErrors } = useUserData(model, userData);
+const { getUserDataErrors } = useUserData();
 const fileUpload = ref<VFileUpload>();
 const showDatePicker = ref(false);
 const getRules = (field: IField): any[] => {
@@ -47,10 +44,10 @@ const getRules = (field: IField): any[] => {
   if (field.required) {
     rules.push((value: string) => Rules.required(value) || 'This field is required');
   }
-  if (field.type.includes('url') && value.value) {
+  if (fieldType.value.includes('url') && value.value) {
     rules.push((value: string) => Rules.isUrl(value) || 'This field must be an URL');
   }
-  if (field.type.includes('number') && value.value) {
+  if (fieldType.value.includes('number') && value.value) {
     rules.push((value: string) => Rules.digit(value) || 'This field must be a digit');
   }
   return rules;
@@ -75,10 +72,10 @@ const acceptMimeTypes = computed((): string | undefined => {
   if (field.accept) {
     return Array.isArray(field.accept) ? field.accept.join(',') : field.accept;
   }
-  if (field.type === 'image') {
+  if (fieldType.value === 'image') {
     return mimeTypes.images.join(',');
   }
-  if (field.type === 'video') {
+  if (fieldType.value === 'video') {
     return mimeTypes.videos.join(',');
   }
   return undefined;
@@ -168,6 +165,12 @@ const onFileChange = (file: File | File[] | null) => {
     }
   }
 }
+const fields = computed((): {[key: string]: IField } => {
+  return field.fields ?? {};
+})
+const fieldType = computed((): string => {
+  return getFieldType(field);
+})
 const fileValue = computed({
   get: ():  File | File[] | undefined => {
     const file = new File([], value.value);
@@ -178,11 +181,11 @@ const fileValue = computed({
   }
 })
 const isImage = computed((): string => {
-  return ['image', 'i18n:image'].includes(field.type)
+  return ['image', 'i18n:image'].includes(fieldType.value)
     || value.value?.meta.type.includes('image');
 })
 const isVideo = computed((): string => {
-  return ['video', 'i18n:video'].includes(field.type)
+  return ['video', 'i18n:video'].includes(fieldType.value)
     || value.value?.meta.type.includes('video');
 })
 const filePath = computed((): string => {
@@ -192,7 +195,7 @@ const showPrependInner = computed((): boolean => {
   return !!(field['prepend-inner']);
 })
 const showAppendInner = computed((): boolean => {
-  return field.type.includes('i18n') || !!(field['append-inner']);
+  return fieldType.value.includes('i18n') || !!(field['append-inner']);
 })
 const fileIcons: {[key: string]: string} = {
   'i18n:file': 'mdi-file-outline',
@@ -215,7 +218,9 @@ const getErrorMsg = (index: number): string | null => {
   const errors = getErrors(index);
   if (errors.general.length > 0) {
     const item = errors.general[0].split('.').pop();
-    return `${arrayFields.value[item].label} field has an issue`;
+    if (item) {
+      return `${arrayFields.value[item].label} field has an issue`;
+    }
   } else if (errors.currentI18n.length > 0) {
     const items = errors.currentI18n[0].split('.');
     return `${arrayFields.value[items[items.length - 2]].label} field has an issue`;
@@ -223,7 +228,9 @@ const getErrorMsg = (index: number): string | null => {
     const items = errors.i18n[0].split('.');
     const key = items.pop();
     const field = items.pop();
-    return `${arrayFields.value[field].label} field has an issue in ${locales[key]}`
+    if (field && key) {
+      return `${arrayFields.value[field].label} field has an issue in ${locales[key]}`
+    }
   }
   return null;
 }
@@ -251,10 +258,10 @@ const onWysiwygContentChange = (content: any) => {
 
   <!-- I18N / URL / STRING / PASSWORD -->
   <v-text-field
-    v-if="['i18n', 'url', 'i18n:url', 'string', 'i18n:string', 'password', 'i18n:password'].includes(field.type)"
+    v-if="['i18n', 'url', 'i18n:url', 'string', 'i18n:string', 'password', 'i18n:password'].includes(fieldType)"
     v-model="value"
     :label="field.label"
-    :type="field.type.includes('password') ? 'password' : 'text'"
+    :type="fieldType.includes('password') ? 'password' : 'text'"
     :prepend-inner-icon="field.icon"
     :hint="field.hint"
     :persistent-hint="!!field.hint"
@@ -274,7 +281,7 @@ const onWysiwygContentChange = (content: any) => {
     <template v-if="showAppendInner" #append-inner>
       <span v-if="field['append-inner']" class="text-no-wrap">{{ field['append-inner'] }}</span>
       <v-tooltip
-        v-if="field.type.includes('i18n')"
+        v-if="fieldType.includes('i18n')"
         text="Translatable"
         location="bottom"
       >
@@ -287,7 +294,7 @@ const onWysiwygContentChange = (content: any) => {
 
   <!-- NUMBER -->
   <v-number-input
-    v-else-if="['i18n:number', 'number'].includes(field.type)"
+    v-else-if="['i18n:number', 'number'].includes(fieldType)"
     v-model.number="value"
     :label="field.label"
     :prepend-inner-icon="field.icon"
@@ -309,7 +316,7 @@ const onWysiwygContentChange = (content: any) => {
     <template v-if="showAppendInner" #append-inner>
       <span v-if="field['append-inner']" class="text-no-wrap mr-6">{{ field['append-inner'] }}</span>
       <v-tooltip
-        v-if="field.type.includes('i18n')"
+        v-if="fieldType.includes('i18n')"
         text="Translatable"
         location="bottom"
       >
@@ -321,7 +328,7 @@ const onWysiwygContentChange = (content: any) => {
   </v-number-input>
 
   <!-- WYSIWYG -->
-  <div v-else-if="['wysiwyg', 'i18n:wysiwyg'].includes(field.type)">
+  <div v-else-if="['wysiwyg', 'i18n:wysiwyg'].includes(fieldType)">
     <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
     <v-input
       v-if="value !== null"
@@ -347,7 +354,7 @@ const onWysiwygContentChange = (content: any) => {
   </div>
 
   <!-- MARKDOWN -->
-  <div v-else-if="['markdown', 'i18n:markdown'].includes(field.type)">
+  <div v-else-if="['markdown', 'i18n:markdown'].includes(fieldType)">
     <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
     <v-input
       v-model="value"
@@ -379,7 +386,7 @@ const onWysiwygContentChange = (content: any) => {
 
   <!-- TEXTAREA -->
   <v-textarea
-    v-else-if="['textarea', 'i18n:textarea'].includes(field.type)"
+    v-else-if="['textarea', 'i18n:textarea'].includes(fieldType)"
     v-model="value"
     :label="field.label"
     :required="field.required"
@@ -398,7 +405,7 @@ const onWysiwygContentChange = (content: any) => {
     <template v-if="showAppendInner" #append-inner>
       <span v-if="field['append-inner']" class="text-no-wrap">{{ field['append-inner'] }}</span>
       <v-tooltip
-        v-if="field.type.includes('i18n')"
+        v-if="fieldType.includes('i18n')"
         text="Translatable"
         location="bottom"
       >
@@ -411,7 +418,7 @@ const onWysiwygContentChange = (content: any) => {
 
   <!-- SELECT -->
   <v-autocomplete
-    v-else-if="['select', 'i18n:select'].includes(field.type)"
+    v-else-if="['select', 'i18n:select'].includes(fieldType)"
     v-model="value"
     :label="field.label"
     :required="field.required"
@@ -432,7 +439,7 @@ const onWysiwygContentChange = (content: any) => {
     <template v-if="showAppendInner" #append-inner>
       <span v-if="field['append-inner']" class="text-no-wrap">{{ field['append-inner'] }}</span>
       <v-tooltip
-        v-if="field.type.includes('i18n')"
+        v-if="fieldType.includes('i18n')"
         text="Translatable"
         location="bottom"
       >
@@ -445,7 +452,7 @@ const onWysiwygContentChange = (content: any) => {
 
   <!-- SWITCH -->
   <v-switch
-    v-else-if="['switch', 'i18n:switch'].includes(field.type)"
+    v-else-if="['switch', 'i18n:switch'].includes(fieldType)"
     v-model="value"
     :label="field.label"
     :required="field.required"
@@ -461,7 +468,7 @@ const onWysiwygContentChange = (content: any) => {
     <template #label>
       <span v-if="field.required" class="mr-2 text-error">*</span>{{ field.label }}
       <v-tooltip
-        v-if="field.type.includes('i18n')"
+        v-if="fieldType.includes('i18n')"
         text="Translatable"
         location="bottom"
       >
@@ -473,7 +480,7 @@ const onWysiwygContentChange = (content: any) => {
   </v-switch>
 
   <!-- RATING -->
-  <div v-else-if="['rating', 'i18n:rating'].includes(field.type)">
+  <div v-else-if="['rating', 'i18n:rating'].includes(fieldType)">
     <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
     <v-rating
       v-model="value"
@@ -491,7 +498,7 @@ const onWysiwygContentChange = (content: any) => {
   </div>
 
   <!-- CHECKBOX -->
-  <div v-else-if="['checkbox', 'i18n:checkbox'].includes(field.type)">
+  <div v-else-if="['checkbox', 'i18n:checkbox'].includes(fieldType)">
     <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
     <v-checkbox
       v-for="item in optionItems"
@@ -508,7 +515,7 @@ const onWysiwygContentChange = (content: any) => {
   </div>
 
   <!-- RADIO -->
-  <div v-else-if="['radio', 'i18n:radio'].includes(field.type)">
+  <div v-else-if="['radio', 'i18n:radio'].includes(fieldType)">
     <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
     <v-radio-group
       v-model="value"
@@ -534,7 +541,7 @@ const onWysiwygContentChange = (content: any) => {
 
   <!-- DATE -->
   <v-menu
-    v-else-if="['date', 'i18n:date'].includes(field.type)"
+    v-else-if="['date', 'i18n:date'].includes(fieldType)"
     v-model="showDatePicker"
     :close-on-content-click="false"
     :disabled="disabled"
@@ -567,7 +574,7 @@ const onWysiwygContentChange = (content: any) => {
         <template v-if="showAppendInner" #append-inner>
           <span v-if="field['append-inner']" class="text-no-wrap">{{ field['append-inner'] }}</span>
           <v-tooltip
-            v-if="field.type.includes('i18n')"
+            v-if="fieldType.includes('i18n')"
             text="Translatable"
             location="bottom"
           >
@@ -589,7 +596,7 @@ const onWysiwygContentChange = (content: any) => {
 
   <!-- FILE -->
   <v-input
-    v-else-if="['file', 'i18n:file', 'image', 'i18n:image', 'video', 'i18n:video'].includes(field.type)"
+    v-else-if="['file', 'i18n:file', 'image', 'i18n:image', 'video', 'i18n:video'].includes(fieldType)"
     v-model="value"
     :hint="field.hint"
     :persistent-hint="!!field.hint"
@@ -617,7 +624,7 @@ const onWysiwygContentChange = (content: any) => {
               </v-img>
             </v-avatar>
             <video v-else-if="isVideo" :src="filePath" :style="{ height: smAndDown ? '96px' : '128px', float: 'left' }" controls />
-            <v-icon v-else-if="['file', 'i18n:file'].includes(field.type)" :icon="fileIcons[field.type]" :size="smAndDown ? 96 : 128" />
+            <v-icon v-else-if="['file', 'i18n:file'].includes(fieldType)" :icon="fileIcons[fieldType]" :size="smAndDown ? 96 : 128" />
           </div>
           <div class="pa-3 pl-0 w-100">
             <v-card-title
@@ -707,7 +714,7 @@ const onWysiwygContentChange = (content: any) => {
   </v-input>
 
   <!-- ARRAY -->
-  <div v-else-if="field.type.includes('array')">
+  <div v-else-if="fieldType.includes('array')">
     <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
     <ListBuilder
       v-model="value"
@@ -752,11 +759,10 @@ const onWysiwygContentChange = (content: any) => {
           :class="{ 'mt-4': keyIdx > 0 }"
         >
           <FieldItem
-            v-if="arrayFields[key].type.includes('i18n')"
+            v-if="isFieldType(arrayFields[key], 'i18n')"
             v-model="item[key][locale]"
             :field="arrayFields[key]"
             :field-key="fieldKey + '[' + index + '].' + key"
-            :user-data="userData"
             :locale="locale"
             :locales="locales"
             :structure="structure"
@@ -770,7 +776,6 @@ const onWysiwygContentChange = (content: any) => {
             v-model="item[key]"
             :field="arrayFields[key]"
             :field-key="fieldKey + '.' + '[' + index + '].' + key"
-            :user-data="userData"
             :locale="locale"
             :locales="locales"
             :structure="structure"
@@ -784,6 +789,47 @@ const onWysiwygContentChange = (content: any) => {
     </ListBuilder>
   </div>
 
+  <!-- NODE -->
+  <fieldset v-else-if="fieldType.includes('node')" class="pa-3">
+    <legend class="font-weight-bold">
+      {{ field.label }}
+    </legend>
+    <div
+      class="d-flex flex-column"
+      style="gap: 1rem"
+    >
+      <template
+        v-for="(field, key) in fields"
+        :key="key"
+      >
+        <FieldItem
+          v-if="isFieldType(field, 'i18n')"
+          v-model="value[key][locale]"
+          :field="field"
+          :field-key="fieldKey + '.' + key"
+          :locale="locale"
+          :locales="locales"
+          :structure="structure"
+          :interface="interfaceModel"
+          :server-settings="serverSettings"
+          :loading="loading"
+        />
+        <FieldItem
+          v-else
+          v-model="value[key]"
+          :field="field"
+          :field-key="fieldKey + '.' + key"
+          :locale="locale"
+          :locales="locales"
+          :structure="structure"
+          :interface="interfaceModel"
+          :server-settings="serverSettings"
+          :loading="loading"
+        />
+      </template>
+    </div>
+  </fieldset>
+
   <!-- FALLBACK: FIELD NOT EXISTING -->
   <v-alert
     v-else
@@ -793,7 +839,7 @@ const onWysiwygContentChange = (content: any) => {
   >
     This field type
     <v-chip size="x-small" label>
-      {{ field.type }}
+      {{ fieldType }}
     </v-chip>
     is not supported. Check and adjust your YAML interface accordingly.
   </v-alert>

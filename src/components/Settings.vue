@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref} from 'vue';
+import {ref, watch} from 'vue';
 import { useDisplay } from 'vuetify';
 import Rules from '@/rules';
 import type {IInterface} from '@/interfaces';
@@ -8,7 +8,7 @@ import {useInterface} from '@/composables/interface';
 // Definitions
 const formIsValid = ref(false);
 const interfaceModel = defineModel<IInterface>({ required: true });
-const { adminUrl, canOpenAdminUrl, computedServerSecretKey, secretKey, cypherKey, computedCypherKey, interfaceStates, getInterfaceRules, interfaceHasError, getSecretKey, getCypherKey } = useInterface(interfaceModel);
+const { secretKey, cypherKey, adminUrl, canOpenAdminUrl, computedServerSecretKey, computedCypherKey, interfaceStates, getInterfaceRules, getSecretKey, getCypherKey } = useInterface();
 const copied = ref(false);
 const { smAndDown } = useDisplay()
 
@@ -38,13 +38,12 @@ const select = () => {
   }
 }
 
-const getServerSecretKey = () => {
-  getSecretKey().then(response => secretKey.value = response);
-}
-
-const getCyperKey = () => {
-  getCypherKey().then(response => cypherKey.value = response);
-}
+watch(() => interfaceModel.value.hash, () => {
+  secretKey.value = '';
+  cypherKey.value = '';
+  interfaceStates.value.secretKeyLoaded = false;
+  interfaceStates.value.cypherKeyLoaded = false;
+})
 </script>
 
 <template>
@@ -155,7 +154,7 @@ const getCyperKey = () => {
               :loading="interfaceStates.loadingSecretKey"
               variant="outlined"
               size="small"
-              @click="getServerSecretKey()"
+              @click="getSecretKey"
             >
               Get
             </v-btn>
@@ -182,7 +181,7 @@ const getCyperKey = () => {
               :loading="interfaceStates.loadingCypherKey"
               variant="outlined"
               size="small"
-              @click="getCyperKey()"
+              @click="getCypherKey"
             >
               Get
             </v-btn>

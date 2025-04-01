@@ -23,6 +23,8 @@ import NewInterfaceModal from '@/components/NewInterfaceModal.vue';
 import type {VForm} from 'vuetify/components';
 import Settings from '@/components/Settings.vue';
 import Docs from '@/components/Docs.vue';
+import FileManager from '@/components/FileManager.vue';
+import {useModelStore} from '@/stores/model';
 
 // Model & Props
 const interfaceModel = defineModel<IInterface>({ required: true });
@@ -33,6 +35,7 @@ const { interfaces = [], autoload = false } = defineProps<{
 
 const currentRoute = useRoute();
 const globalStore = useGlobalStore();
+const modelStore = useModelStore();
 const { layoutSize, init: initLayout, windowWidth, mobileFrameWidth } = useLayout();
 const showEditJson = ref(false);
 const showTypings = ref(false);
@@ -41,11 +44,10 @@ const showNewInterfaceModal = ref(false);
 const interfaceEditor = ref<InstanceType<typeof InterfaceEditor> | null>();
 const sitePreview = ref<InstanceType<typeof SitePreview> | null>();
 const dataEditor = ref<InstanceType<typeof DataEditor> | null>();
-const { serverSettings, interfaceParsedData, getParsedInterfaceData, interfaceHasSettingsError, setInterfaceModel, getAvailableSection, deleteInterface, getAvailableLocale, interfaceHasSection, interfaceHasLocale, setInterfaceOriginalData, setInterfaceData, saveInterface, canSaveInterface, canDeleteInterface } = useInterface(interfaceModel);
-const userData = ref({});
-const { fetchUserData, applyUserData, canSave, saveUserData, downloading, userDataLoaded, userDataLoading } = useUserData(interfaceModel, userData);
-const { sendMessageToIframe } = useIframe(interfaceModel, userData);
-const { syncTypings } = useTypings(interfaceModel, userData);
+const { serverSettings, interfaceParsedData, interfaceStates, interfaceHasSettingsError, getAvailableSection, deleteInterface, getAvailableLocale, interfaceHasSection, interfaceHasLocale, saveInterface, canSaveInterface, canDeleteInterface } = useInterface();
+const { fetchUserData, canSave, saveUserData, downloading, userDataLoaded, userDataLoading } = useUserData();
+const { sendMessageToIframe } = useIframe();
+const { syncTypings } = useTypings();
 
 const tab = computed({
   get: () => {
@@ -69,12 +71,19 @@ const showActionBar = computed((): boolean => {
   return ['data'].includes((tab.value || '').toString());
 });
 
-const bottomSheetMsg = ref('');
-const showBottomSheet = computed((): boolean => {
-  return downloading.value || userDataLoading.value;
+const bottomSheetData = ref<{
+  text: string,
+  icon?: string,
+  color?: string,
+  loading?: boolean,
+}>({
+  text: '',
 });
-watch(() => downloading.value, () => bottomSheetMsg.value = 'Downloading files and generating ZIP file. Please wait...');
-watch(() => userDataLoading.value, () => bottomSheetMsg.value = 'Fetching user data. Please wait...');
+const showBottomSheet = computed((): boolean => {
+  return downloading.value || userDataLoading.value || interfaceStates.value.saved;
+});
+watch(() => downloading.value, () => bottomSheetData.value = { text: 'Downloading files and generating ZIP file. Please wait...', loading: true });
+watch(() => userDataLoading.value, () => bottomSheetData.value = { text: 'Fetching user data. Please wait...', loading: true });
 
 const showEditor = computed({
   get(): boolean {
@@ -97,36 +106,32 @@ const onCreateInterface = () => {
 
 const onApplyNewInterface = (template: string) => {
   const newInterface = getInterface(template);
-  const oldInterface = getInterface(template);
-  setInterfaceModel(ref(getInterface(template)));
+  modelStore.setInterface(getInterface(template))
+  modelStore.setUserData({});
+
+  newInterface.label = '';
+  showNewInterfaceModal.value = false;
+
+  // If template is blank
+  if (template === '') {
+    tab.value = 'docs';
+    globalStore.admin.previewMode = null;
+  }
+  // If template has content
+  else if (tab.value === 'docs') {
+    tab.value = 'data';
+  }
+
+  globalStore.admin.interface = true;
   nextTick(() => {
-    newInterface.label = '';
-    setInterfaceData(newInterface);
-    setInterfaceOriginalData(oldInterface);
-    showNewInterfaceModal.value = false;
-    applyUserData({})
-
-    // If template is blank
-    if (template === '') {
-      tab.value = 'docs';
-      globalStore.admin.previewMode = null;
+    if (interfaceEditor.value) {
+      interfaceEditor.value.setFocus();
+      sitePreview.value?.interfaceEditor?.setFocus();
     }
-    // If template has content
-    else if (tab.value === 'docs') {
-      tab.value = 'data';
-    }
-
-    globalStore.admin.interface = true;
-    nextTick(() => {
-      if (interfaceEditor.value) {
-        interfaceEditor.value.setFocus();
-        sitePreview.value?.interfaceEditor?.setFocus();
-      }
-      dataEditor.value?.resetValidation()
-    })
-
-    updateRoute('new', getAvailableSection(), getAvailableLocale());
+    dataEditor.value?.resetValidation()
   })
+
+  updateRoute('new', getAvailableSection(), getAvailableLocale());
 }
 
 const onSaveInterfaceContent = () => {
@@ -136,6 +141,7 @@ const onSaveInterfaceContent = () => {
 const onSaveInterface = (model: IInterface = interfaceModel.value) => {
   if (canSaveInterface.value) {
     saveInterface().then(() => {
+      bottomSheetData.value = { text: 'Interface saved!', color: 'success', icon: 'mdi-check' };
       syncTypings();
       globalStore.addInterface(model);
       updateRoute(model.hash, getAvailableSection(), getAvailableLocale());
@@ -164,9 +170,24 @@ const onLocaleChange = (locale: string) => {
   sendMessageToIframe('locale', locale)
 }
 
+const onLogout = (response: any) => {
+  modelStore.setInterface(response.interfaces[0], {});
+  userDataLoaded.value = false;
+  if (autoload) {
+    updateRoute('demo', 'home', 'en-US');
+    refreshUserData();
+    dataEditor.value?.resetValidation()
+  }
+
+  // debugger;
+  // modelStore.setInterface(response.interfaces[0]);
+  // modelStore.setUserData({})
+  // router.push('/');
+}
+
 const onEditJson = () => {
   showEditJson.value = true;
-  editJsonContent.value = JSON.stringify(deepToRaw(userData.value), null, 2);
+  editJsonContent.value = JSON.stringify(deepToRaw(modelStore.userData), null, 2);
 }
 
 const onShowTypings = () => {
@@ -174,23 +195,22 @@ const onShowTypings = () => {
 }
 
 const onApplyJsonContent = (json: any) => {
-  applyUserData(json);
+  modelStore.setUserData(json);
 }
 
 const onInterfaceModelChange = (model: IInterface) => {
+  modelStore.setInterface(model, {});
   userDataLoaded.value = false;
-  const parsedData = getParsedInterfaceData(model);
-  updateRoute(model.hash, getAvailableSection(parsedData), getAvailableLocale(parsedData));
-  applyUserData(userData.value)
-  dataEditor.value?.resetValidation()
   if (autoload) {
-    setTimeout(refreshUserData)
+    updateRoute(model.hash, getAvailableSection(), getAvailableLocale());
+    refreshUserData();
+    dataEditor.value?.resetValidation()
   }
 }
 
 const onInterfaceContentChange = (content: string) => {
   interfaceModel.value.content = content;
-  applyUserData(userData.value)
+  modelStore.setUserData(modelStore.userData)
 }
 
 watch(() => globalStore.admin.interface, () => {
@@ -201,7 +221,7 @@ watch(() => globalStore.admin.interface, () => {
 
 const refreshUserData = (): Promise<any> => {
   return fetchUserData().then((response: any) => {
-    applyUserData(response.data);
+    modelStore.setUserData(response.data);
     serverSettings.value = response.settings;
     return response;
   }).then(() => {
@@ -249,9 +269,8 @@ if (autoload) {
   <!-- TOOLBAR -->
   <Toolbar
     v-model="interfaceModel"
-    :interface-data="interfaceParsedData"
-    :user-data="userData"
     :interfaces="interfaces"
+    :interface-data="interfaceParsedData"
     :default-locale="getAvailableLocale()"
     @refresh="onRefreshPreview"
     @create="onCreateInterface"
@@ -261,6 +280,7 @@ if (autoload) {
     @edit-json="onEditJson"
     @show-typings="onShowTypings"
     @update:model-value="onInterfaceModelChange"
+    @logout="onLogout"
   />
 
   <!-- NEW INTERFACE MODAL -->
@@ -273,7 +293,7 @@ if (autoload) {
   <Sidebar
     v-model="interfaceModel"
     :interface-data="interfaceParsedData"
-    :user-data="userData"
+    :user-data="modelStore.userData"
   />
 
   <!-- EDITOR -->
@@ -306,7 +326,7 @@ if (autoload) {
     ref="sitePreview"
     v-model="interfaceModel"
     :interface-data="interfaceParsedData"
-    :user-data="userData"
+    :user-data="modelStore.userData"
     @save="onSaveInterfaceContent"
     @create="onCreateInterface"
     @change="onInterfaceContentChange"
@@ -345,7 +365,7 @@ if (autoload) {
             ref="dataEditor"
             v-model="interfaceModel"
             :interface-data="interfaceParsedData"
-            :user-data="userData"
+            :user-data="modelStore.userData"
             :server-settings="serverSettings"
             :loading="userDataLoading"
           />
@@ -368,8 +388,6 @@ if (autoload) {
   <v-expand-transition>
     <ActionBar
       v-if="showActionBar"
-      v-model="interfaceModel"
-      :user-data="userData"
       :tab="tab"
     />
   </v-expand-transition>
@@ -385,7 +403,7 @@ if (autoload) {
   <TypingsModal
     v-model="interfaceModel"
     v-model:visible="showTypings"
-    :user-data="userData"
+    :user-data="modelStore.userData"
   />
 
   <!-- DOWNLOAD DATA BOTTOM SHEET -->
@@ -400,13 +418,24 @@ if (autoload) {
   >
     <v-card theme="dark" style="margin: 0 auto">
       <template #prepend>
-        <v-progress-circular color="primary" indeterminate class="mr-4" />
+        <v-progress-circular v-if="bottomSheetData.loading" color="primary" indeterminate class="mr-4" />
+        <v-icon v-else-if="bottomSheetData.icon" :color="bottomSheetData.color" :icon="bottomSheetData.icon" />
       </template>
       <template #item>
-        {{ bottomSheetMsg }}
+        {{ bottomSheetData.text }}
       </template>
     </v-card>
   </v-bottom-sheet>
+
+  <!-- FILE MANAGER -->
+  <FileManager
+    v-model="interfaceModel"
+    :server-settings="serverSettings"
+    :can-select="globalStore.fileManager.canSelect"
+    :can-upload="globalStore.session.loggedIn"
+    :can-delete="globalStore.session.loggedIn"
+    :can-download="globalStore.session.loggedIn"
+  />
 </template>
 
 <style lang="scss">

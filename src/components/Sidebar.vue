@@ -9,15 +9,14 @@ import {useLayout} from '@/composables/layout';
 import {useInterface} from '@/composables/interface';
 
 const interfaceModel = defineModel<IInterface>({ required: true });
-const { interfaceData, userData } = defineProps<{
+const { interfaceData } = defineProps<{
   interfaceData: IInterfaceData,
-  userData: any,
 }>();
 const { layoutSize } = useLayout();
 const globalStore = useGlobalStore();
 const currentRoute = useRoute();
-const { getUserDataErrors, userDataLoading } = useUserData(interfaceModel, userData);
-const { interfaceParsedData } = useInterface(interfaceModel);
+const { getUserDataErrors, userDataLoading } = useUserData();
+const { interfaceParsedData } = useInterface();
 
 const selectedSectionKey = computed((): string => {
   return currentRoute.params.section.toString();
@@ -34,7 +33,7 @@ const goToSection = (section: string = '') => {
 const getErrors = (section: ISection, sectionKey: string | number): { i18n: string[], currentI18n: string[], general: string[] } => {
   const locale = currentRoute.params.locale.toString();
   const locales = interfaceParsedData.value.locales;
-  const allErrors = Object.keys(getUserDataErrors(section.fields, sectionKey));
+  const allErrors = Object.keys(getUserDataErrors(section.fields, sectionKey.toString()));
   const i18n = allErrors.filter(item => Object.keys(locales).find(subLocale => item.endsWith(subLocale)));
   return {
     i18n,
@@ -63,6 +62,10 @@ const getErrorMsg = (section: ISection, sectionKey: string | number): string | n
     }
   }
   return null;
+}
+
+const onFileManagerClick = () => {
+  globalStore.showFileManager(false)
 }
 
 // @ts-expect-error Need to declare typings for process.env
@@ -123,6 +126,15 @@ const version = JSON.parse(process.env.APP_VERSION);
           </template>
         </v-list-item>
       </template>
+
+      <v-divider class="my-2" />
+      <v-list-subheader>Tools</v-list-subheader>
+      <v-list-item
+        title="File Manager"
+        prepend-icon="mdi-file-multiple"
+        color="primary"
+        @click="onFileManagerClick"
+      />
     </v-list>
     <template #append>
       <v-divider />

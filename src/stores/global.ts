@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import type {ISession, IPrompt, IError, ISnack, IAdmin, IInterface} from '@/interfaces';
+import type {ISession, IPrompt, IError, ISnack, IAdmin, IInterface, IFileManager, IFile} from '@/interfaces';
 
 export const mimeTypes = {
   images: [
@@ -33,7 +33,7 @@ export const mimeTypes = {
   ]
 };
 
-export const useGlobalStore = defineStore('example', {
+export const useGlobalStore = defineStore('global', {
   state: (): {
     theme: 'dark' | 'light',
     admin: IAdmin,
@@ -41,6 +41,7 @@ export const useGlobalStore = defineStore('example', {
     error: IError,
     prompt: IPrompt,
     session: ISession,
+    fileManager: IFileManager,
   } => ({
     theme: 'light',
     prompt: {
@@ -76,6 +77,11 @@ export const useGlobalStore = defineStore('example', {
       googleOAuthSignInUrl: '',
       interfaces: [],
     },
+    fileManager: {
+      visible: false,
+      canSelect: false,
+      callback: () => new Promise(resolve => resolve(true)),
+    }
   }),
   actions: {
     catchError(error: Error) {
@@ -113,9 +119,11 @@ export const useGlobalStore = defineStore('example', {
     },
     setSession(session: ISession) {
       this.session = session;
-      if (!this.session.interfaces) {
-        this.session.interfaces = session.interfaces;
-      }
+    },
+    showFileManager(canSelect = false, callback?: (files?: IFile[]) => Promise<boolean> ) {
+      this.fileManager.visible = true;
+      this.fileManager.canSelect = canSelect;
+      this.fileManager.callback = callback;
     },
     addInterface(item: IInterface) {
       if (!this.session.interfaces.find(inter => inter.uuid === item.uuid)) {
@@ -126,6 +134,14 @@ export const useGlobalStore = defineStore('example', {
       const filteredItems = this.session.interfaces.filter(child => child.uuid !== item.uuid);
       this.session.interfaces.length = 0;
       Array.prototype.push.apply(this.session.interfaces, filteredItems);
+    },
+    updateInterface(item: IInterface) {
+      const index = this.session.interfaces.findIndex(child => child.uuid === item.uuid);
+      if (index >= 0) {
+        this.session.interfaces[index] = item;
+      } else {
+        this.addInterface(item);
+      }
     },
   },
 });

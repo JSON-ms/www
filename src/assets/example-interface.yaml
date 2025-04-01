@@ -1,0 +1,169 @@
+# This YAML file serves as a blueprint for your admin panel, defining
+# all the fields and sections that will be displayed to users. It
+# outlines the structure and layout of the interface, specifying what
+# data can be entered and how it will be organized.
+
+
+# Global Configuration:
+#   Set the foundational parameters for your admin panel, including
+#   title, logo, and other essential settings that govern
+#   the overall appearance and functionality.
+global:
+  title: Dynamic Admin Panel Example
+  logo: [INTERFACE_EDITOR_URL]/favicon.ico
+
+
+# Supported Languages:
+#   Specify the languages your content will support, allowing users
+#   to interact with your content in their preferred language
+#   and enhancing accessibility for a diverse audience.
+locales:
+  en-US: English (US)
+  es-MX: Spanish (Mexico)
+
+
+# Reusable Enumerations:
+#   This feature allows you to define a schema of enums that can
+#   be reused throughout the document, promoting consistency and
+#   reducing redundancy in your data definitions.
+enums:
+  countries:
+    ca: Canada
+    us: United-States
+    mx: Mexico
+
+
+# App Sections and Fields:
+#   Outline the various sections of your data, detailing the
+#   specific fields within each section. This allows for a structured
+#   approach to content management, ensuring that all necessary
+#   information is captured and organized effectively.
+sections:
+  home:
+    label: Home page
+    icon: mdi-account
+    fields:
+      title:
+        type: i18n
+        label: Title
+        required: true
+      body:
+        type: i18n:markdown
+        label: Body
+        required: true
+      cta:
+        type: i18n
+        label: Call-to-action
+        required: true
+      image:
+        type: image
+        label: Image
+  services:
+    label: Services
+    icon: mdi-room-service-outline
+    fields:
+      title:
+        type: i18n
+        label: Title
+        required: true
+      body:
+        type: i18n:markdown
+        label: Body
+        required: true
+      rate:
+        type: number
+        label: Rate
+        icon: mdi-cash
+        required: true
+      cta:
+        type: i18n
+        label: Call-to-action
+        icon: mdi-button-pointer
+        required: true
+  testimonials:
+    label: Testimonials
+    icon: mdi-comment-check-outline
+    fields:
+      title:
+        type: i18n
+        label: Title
+        required: true
+      body:
+        type: i18n:markdown
+        label: Body
+        required: true
+      items:
+        type: array
+        label: Comments
+        fields:
+          thumbnail:
+            type: url
+            label: Thumbnail
+          name:
+            type: i18n
+            label: Name
+            required: true
+          country:
+            type: select
+            label: Countri(es)
+            multiple: true
+            items: enums.countries
+          body:
+            type: i18n:markdown
+            label: Body
+            required: true
+  faq:
+    label: FAQ
+    icon: mdi-frequently-asked-questions
+    fields:
+      title:
+        type: i18n
+        label: Title
+        required: true
+      questions:
+        type: array
+        label: Questions
+        fields:
+          icon:
+            type: string
+            label: Icon
+          title:
+            type: i18n
+            label: Title
+            required: true
+          body:
+            type: string
+            label: Body
+            required: true
+  contact:
+    label: Contact
+    icon: mdi-email-outline
+    fields:
+      title:
+        type: i18n
+        label: Title
+        required: true
+      body:
+        type: i18n:markdown
+        label: Body
+        required: true
+  settings:
+    label: Settings
+    icon: mdi-cog
+    fields:
+      googleFont:
+        type: url
+        label: Google Font
+        icon: mdi-format-font
+      facebook:
+        type: url
+        label: Facebook
+        icon: mdi-facebook
+      instagram:
+        type: url
+        label: Instagram
+        icon: mdi-instagram
+      youtube:
+        type: url
+        label: Youtube
+        icon: mdi-youtube

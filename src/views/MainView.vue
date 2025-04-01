@@ -1,26 +1,24 @@
 <script setup lang="ts">
 import JSONms from '@/components/JSONms.vue';
 import {useGlobalStore} from '@/stores/global';
-import {getDefaultInterfaceContent, getInterface} from '@/utils';
-import {ref} from 'vue';
 import {useRoute} from 'vue-router';
+import {useModelStore} from '@/stores/model';
 
 const currentRoute = useRoute();
 const globalStore = useGlobalStore();
-const defaultInterfaceContent = getDefaultInterfaceContent();
-const defaultInterface = getInterface(defaultInterfaceContent);
-const interfaceModel = ref(defaultInterface);
+const modelStore = useModelStore();
+
 if (currentRoute.params.hash) {
   const foundInterface = globalStore.session.interfaces.find(item => item.hash === currentRoute.params.hash);
   if (foundInterface) {
-    interfaceModel.value = foundInterface;
+    modelStore.setInterface(foundInterface);
   }
 }
 </script>
 
 <template>
   <JSONms
-    v-model="interfaceModel"
+    v-model="modelStore.interface"
     :interfaces="globalStore.session.interfaces"
     autoload
   />

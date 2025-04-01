@@ -5,20 +5,29 @@ let initialized = false
 export function useLayout() {
 
   const globalStore = useGlobalStore();
-  const getPxFromHtmlFontSizeRatio = (pixels: number): number => {
-    const ratio = window.screen.availWidth / 1440;
-    return pixels * ratio;
+  const layoutPx = (pixels: number): number => {
+    return pixels;
+    // const screenWidth = window.innerWidth;
+    // if (screenWidth >= 1800) {
+    //   const ratio = screenWidth / 1800;
+    //   return pixels * ratio;
+    // }
+    // return pixels;
+  }
+
+  const pxToRem = (pixels: number): string => {
+    return (pixels / 16) + 'rem';
   }
 
   const windowWidth = ref(window.innerWidth);
   const windowHeight = ref(window.innerHeight);
-  const mobileFrameHeight = computed((): number => windowHeight.value - getPxFromHtmlFontSizeRatio(64));
+  const mobileFrameHeight = computed((): number => windowHeight.value - layoutPx(64));
   const mobileFrameWidth = computed((): number => mobileFrameHeight.value / 1.777);
 
   // Drawer
   const drawer = {
     temporary: false,
-    width: getPxFromHtmlFontSizeRatio(261),
+    width: layoutPx(261),
     memory: globalStore.admin.drawer,
   };
 
@@ -48,7 +57,7 @@ export function useLayout() {
     // If preview mode is desktop, let some space for the editor if opened
     let _mobileFrameWidth = mobileFrameWidth.value;
     let _mobileFrameHeight = mobileFrameHeight.value;
-    if (globalStore.admin.previewMode === 'desktop') {
+    if (globalStore.admin.previewMode === 'desktop' && globalStore.admin.interface) {
       _mobileFrameHeight -= (_mobileFrameHeight) / 3;
       _mobileFrameWidth = _mobileFrameHeight / 1.777;
     }
@@ -58,6 +67,7 @@ export function useLayout() {
     preview.height = _mobileFrameHeight;
     drawer.temporary = false;
     editor.temporary = false;
+    drawer.width = layoutPx(261);
     editor.width = _mobileFrameWidth;
     preview.active = globalStore.admin.previewMode !== null;
 
@@ -73,7 +83,7 @@ export function useLayout() {
         const remainingWidth = windowWidth.value - total;
         const maxWidth = remainingWidth - windowHeight.value / 1.777;
         if (windowHeight.value * 1.777 > maxWidth) {
-          preview.width = maxWidth > getPxFromHtmlFontSizeRatio(600) ? maxWidth : getPxFromHtmlFontSizeRatio(600);
+          preview.width = maxWidth > layoutPx(600) ? maxWidth : layoutPx(600);
         } else {
           preview.width = windowHeight.value * 1.777;
         }
@@ -86,13 +96,13 @@ export function useLayout() {
       let width = windowWidth.value - total;
       if (width < _mobileFrameWidth) {
         width = _mobileFrameWidth;
-        if (!drawer.temporary) {
-          drawer.temporary = true;
-          drawer.memory = globalStore.admin.drawer;
-          return getDataWidth();
-        } else if (!editor.temporary) {
+        if (!editor.temporary) {
           editor.temporary = true;
           editor.memory = globalStore.admin.interface;
+          return getDataWidth();
+        } else if (!drawer.temporary) {
+          drawer.temporary = true;
+          drawer.memory = globalStore.admin.drawer;
           return getDataWidth();
         } else if (preview.active) {
           preview.active = false;
@@ -100,7 +110,6 @@ export function useLayout() {
           return getDataWidth();
         }
       }
-
       return width;
     }
 
@@ -111,9 +120,9 @@ export function useLayout() {
     if (globalStore.admin.previewMode === 'desktop') {
       preview.height = preview.width / 1.777;
     } else {
-      preview.height = windowHeight.value - getPxFromHtmlFontSizeRatio(96);
+      preview.height = windowHeight.value - layoutPx(96);
     }
-    const maxHeight = _mobileFrameHeight - getPxFromHtmlFontSizeRatio(32);
+    const maxHeight = _mobileFrameHeight - layoutPx(32);
     if (preview.height > maxHeight) {
       const ratio = preview.height / maxHeight;
       preview.height = maxHeight;
@@ -122,8 +131,8 @@ export function useLayout() {
 
     // Preview: Zoom
     preview.zoom = globalStore.admin.previewMode === 'desktop'
-      ? (preview.width / getPxFromHtmlFontSizeRatio(1500))
-      : (_mobileFrameWidth / getPxFromHtmlFontSizeRatio(420))
+      ? (preview.width / layoutPx(1500))
+      : (_mobileFrameWidth / layoutPx(420))
 
     return {
       drawer,
@@ -169,6 +178,8 @@ export function useLayout() {
 
   return {
     init,
+    layoutPx,
+    pxToRem,
     layoutSize,
     windowWidth,
     windowHeight,

@@ -17,6 +17,7 @@ declare module 'vue' {
     ErrorPage: typeof import('./src/components/ErrorPage.vue')['default']
     FieldHeader: typeof import('./src/components/FieldHeader.vue')['default']
     FieldItem: typeof import('./src/components/FieldItem.vue')['default']
+    FileManager: typeof import('./src/components/FileManager.vue')['default']
     GlobalComponents: typeof import('./src/components/GlobalComponents.vue')['default']
     GoogleSignInButton: typeof import('./src/components/GoogleSignInButton.vue')['default']
     InterfaceEditor: typeof import('./src/components/InterfaceEditor.vue')['default']

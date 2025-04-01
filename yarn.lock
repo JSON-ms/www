@@ -705,6 +705,31 @@
     quill "^1.3.7"
     quill-delta "^4.2.2"
 
+"@yeger/debounce@2.0.12":
+  version "2.0.12"
+  resolved "https://registry.yarnpkg.com/@yeger/debounce/-/debounce-2.0.12.tgz#fd0027aa0dbe23d626ee9d94c79e4053de2ffd12"
+  integrity sha512-codFun59TrOW9a9g80VDCOlRsP77+hb/DT4aXXxROpCbz2OrdMZAemkzM69c4RhwUG3pTkztiqNEbsSRqSuxBg==
+
+"@yeger/vue-lib-adapter@2.0.12":
+  version "2.0.12"
+  resolved "https://registry.yarnpkg.com/@yeger/vue-lib-adapter/-/vue-lib-adapter-2.0.12.tgz#ce0f98bd299167816c3485bdd77c673c81ac234b"
+  integrity sha512-bz0j+pdpSH4oo8dVw+Hoxdy/485hDVz2CtYw5k7cCp1pukeF7lyWu/f4zJW0Z4CVF2XnIm07Yw5KjGgbR7QY6g==
+
+"@yeger/vue-masonry-wall-core@5.0.15":
+  version "5.0.15"
+  resolved "https://registry.yarnpkg.com/@yeger/vue-masonry-wall-core/-/vue-masonry-wall-core-5.0.15.tgz#1b4ec3847c63a192927e03ad46653e876bb41b12"
+  integrity sha512-w3jS1ckI+7FPgY47BI4Lsj46rOx7wE+WeXdZjPV68Sp6AUtI4Za9Fhu1aLkZLMjP3uh98BIEluhlxRngnCMtiQ==
+  dependencies:
+    "@yeger/debounce" "2.0.12"
+    "@yeger/vue-lib-adapter" "2.0.12"
+
+"@yeger/vue-masonry-wall@^5.0.18":
+  version "5.0.18"
+  resolved "https://registry.yarnpkg.com/@yeger/vue-masonry-wall/-/vue-masonry-wall-5.0.18.tgz#5932ce7f3b918101186248237243b376118f3cde"
+  integrity sha512-ofrisCxScdiknDU+Kvt79BLSI/z0v9m4tqJ7Am+tocpkeNHml7zIo9yHRZZg/m+uAVhRP2xlYw/kVsdh7m0Q9A==
+  dependencies:
+    "@yeger/vue-masonry-wall-core" "5.0.15"
+
 ace-builds@^1.39.0:
   version "1.39.0"
   resolved "https://registry.yarnpkg.com/ace-builds/-/ace-builds-1.39.0.tgz#c191ce9168ba60e51a0de3c51950066809e3c7ce"

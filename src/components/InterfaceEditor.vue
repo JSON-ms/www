@@ -9,7 +9,7 @@ import {useGlobalStore} from '@/stores/global';
 
 const emit = defineEmits(['save', 'create', 'change'])
 const interfaceModel = defineModel<IInterface>({ required: true });
-const { canSaveInterface, yamlException } = useInterface(interfaceModel);
+const { canSaveInterface, yamlException } = useInterface();
 const globalStore = useGlobalStore();
 const editor: Ref<VAceEditorInstance | null> = ref(null);
 const value = computed({

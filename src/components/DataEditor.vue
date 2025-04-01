@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import type {VForm} from 'vuetify/components';
+import type {IField, IInterface, IInterfaceData, IServerSettings} from '@/interfaces';
 import FieldItem from '@/components/FieldItem.vue';
 import {computed, defineExpose, ref} from 'vue';
 import {useRoute} from 'vue-router';
-import type {IField, IInterface, IInterfaceData, IServerSettings} from '@/interfaces';
+import {isFieldType} from '@/utils';
+import {useModelStore} from '@/stores/model';
 
+const modelStore = useModelStore();
 const interfaceModel = defineModel<IInterface>({ required: true });
-const { interfaceData, userData, serverSettings, loading = false } = defineProps<{
+const { interfaceData, serverSettings, loading = false } = defineProps<{
   interfaceData: IInterfaceData,
-  userData: any,
   serverSettings: IServerSettings,
   loading?: boolean,
 }>();
@@ -16,7 +18,7 @@ const { interfaceData, userData, serverSettings, loading = false } = defineProps
 const currentRoute = useRoute();
 
 const userDataSection = computed(() => {
-  return userData[currentRoute.params.section.toString()];
+  return modelStore.userData[currentRoute.params.section.toString()];
 })
 
 const selectedSection = computed(() => {
@@ -50,7 +52,9 @@ defineExpose({
   />
   <div v-else class="d-flex flex-column pa-4" style="gap: 1rem">
     <div>
-      <h1 class="mb-2">{{ selectedSection.label }}</h1>
+      <h1 class="mb-2">
+        {{ selectedSection.label }}
+      </h1>
       <v-divider />
     </div>
     <p v-if="selectedSection.prepend">
@@ -61,11 +65,10 @@ defineExpose({
       :key="key"
     >
       <FieldItem
-        v-if="field.type.includes('i18n') && userDataSection"
+        v-if="isFieldType(field, 'i18n') && userDataSection"
         v-model="userDataSection[key][currentRoute.params.locale.toString()]"
         :field="field"
         :field-key="currentRoute.params.section + '.' + key"
-        :user-data="userData"
         :locale="currentRoute.params.locale.toString()"
         :locales="interfaceData.locales"
         :structure="interfaceData"
@@ -78,7 +81,6 @@ defineExpose({
         v-model="userDataSection[key]"
         :field="field"
         :field-key="currentRoute.params.section.toString() + '.' + key"
-        :user-data="userData"
         :locale="currentRoute.params.locale.toString()"
         :locales="interfaceData.locales"
         :structure="interfaceData"

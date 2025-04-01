@@ -1,32 +1,27 @@
 <script setup lang="ts">
 import {useUserData} from '@/composables/user-data';
-import type {IInterface} from '@/interfaces';
 import {useInterface} from '@/composables/interface';
 import {useLayout} from '@/composables/layout';
+import {useGlobalStore} from '@/stores/global';
 
-const interfaceModel = defineModel<IInterface>({ required: true });
-const { userData, tab = 'data' } = defineProps<{
-  userData: any,
+const { tab = 'data' } = defineProps<{
   tab: 'data' | 'settings' | 'docs',
 }>();
 
-const { interfaceHasError, interfaceIsPristine, resetInterface } = useInterface(interfaceModel);
+const globalStore = useGlobalStore();
+const { interfaceHasError, interfaceIsPristine } = useInterface();
 const { windowWidth, layoutSize } = useLayout();
-const { saveUserData, resetUserData, userDataHasChanged, canInteractWithServer, userDataSaving, saveInterface, userDataSaved, userDataLoaded, canSave, userDataHasError } = useUserData(interfaceModel, userData);
+const { saveUserData, resetUserData, userDataHasChanged, canInteractWithServer, userDataSaving, userDataSaved, userDataLoaded, canSave, userDataHasError } = useUserData();
 
 const save = () => {
   if (tab === 'data') {
     saveUserData();
-  } else if (tab === 'settings') {
-    saveInterface();
   }
 }
 
 const reset = () => {
   if (tab === 'data') {
     resetUserData();
-  } else if (tab === 'settings') {
-    resetInterface();
   }
 }
 </script>
@@ -34,6 +29,7 @@ const reset = () => {
 <template>
   <v-app-bar flat location="bottom" style="border-top: rgba(0, 0, 0, 0.1) solid 1px" class="pl-3">
     <div
+      v-if="globalStore.session.loggedIn"
       :class="{
         'pr-3': !interfaceIsPristine || interfaceHasError() || userDataHasError
       }"
@@ -75,7 +71,7 @@ const reset = () => {
             icon="mdi-alert"
           >
             <div class="d-flex">
-              <span class="text-truncate">Please save your interface before continuing.</span>
+              <span class="text-truncate">Please correct the errors in the form before submitting.</span>
             </div>
           </v-alert>
         </div>

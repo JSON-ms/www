@@ -1,22 +1,20 @@
 import {deepToRaw} from '@/utils';
 import router from '@/router';
-import {ref, type Ref} from 'vue';
-import type {IInterface} from '@/interfaces';
+import {ref} from 'vue';
 import {useRoute} from 'vue-router';
 import {useInterface} from '@/composables/interface';
+import {useModelStore} from '@/stores/model';
 
 const siteCompatible = ref(false);
 const reloading = ref(false);
 
-export function useIframe(
-  interfaceModel: Ref<IInterface>,
-  userData: Ref<any>,
-) {
+export function useIframe() {
 
   let iframeRouteTimeout: any;
 
   const currentRoute = useRoute();
-  const { serverSettings, interfaceParsedData, getAvailableSection, getAvailableLocale } = useInterface(interfaceModel);
+  const modelStore = useModelStore();
+  const { serverSettings, interfaceParsedData, getAvailableSection, getAvailableLocale } = useInterface();
 
   const getIframe = (): HTMLIFrameElement | null => {
     return document.getElementById('iframe') as HTMLIFrameElement | null;
@@ -24,7 +22,7 @@ export function useIframe(
 
   const sendMessageToIframe = (type: string, data?: string) => {
     const iframe = getIframe();
-    if (iframe?.contentWindow && interfaceModel.value.server_url) {
+    if (iframe?.contentWindow) {
       iframe.contentWindow.postMessage({
         name: 'jsonms',
         type,
@@ -35,7 +33,7 @@ export function useIframe(
 
   const sendUserDataToIframe = () => {
     sendMessageToIframe('data', JSON.stringify({
-      data: deepToRaw(userData.value),
+      data: deepToRaw(modelStore.userData),
       settings: deepToRaw(serverSettings.value),
       locale: currentRoute.params.locale.toString(),
     }));
@@ -56,14 +54,14 @@ export function useIframe(
           if (interfaceParsedData.value.sections[event.data.data]) {
             clearTimeout(iframeRouteTimeout);
             iframeRouteTimeout = setTimeout(() => {
-              router.push('/admin/' + interfaceModel.value.hash + '/' + event.data.data + '/' + getAvailableLocale());
+              router.push('/admin/' + modelStore.interface.hash + '/' + event.data.data + '/' + getAvailableLocale());
             }, 100);
           }
           break;
         case 'locale':
           clearTimeout(iframeRouteTimeout);
           iframeRouteTimeout = setTimeout(() => {
-            router.push('/admin/' + interfaceModel.value.hash + '/' + getAvailableSection() + '/' + event.data.data);
+            router.push('/admin/' + modelStore.interface.hash + '/' + getAvailableSection() + '/' + event.data.data);
           }, 100);
           break;
       }

@@ -6,10 +6,9 @@ import GoogleSignInButton from '@/components/GoogleSignInButton.vue';
 import InterfaceSelector from '@/components/InterfaceSelector.vue';
 import {useDisplay} from 'vuetify';
 import {useGlobalStore} from '@/stores/global';
-import {getDefaultInterfaceContent, getInterface} from '@/utils';
 import router from '@/router';
 import {computed, ref, watch} from 'vue';
-import type {IInterface, IInterfaceData} from '@/interfaces';
+import type {IField, IInterface, IInterfaceData} from '@/interfaces';
 import {useUserData} from '@/composables/user-data';
 import {useRoute} from 'vue-router';
 import {useInterface} from '@/composables/interface';
@@ -17,11 +16,11 @@ import type {VAppBar} from 'vuetify/components';
 import {useLayout} from '@/composables/layout';
 import {useTypings} from '@/composables/typings';
 import {useIframe} from '@/composables/iframe';
+import {useModelStore} from '@/stores/model';
 
 const interfaceModel = defineModel<IInterface>({ required: true });
-const { interfaceData, userData, interfaces = [], defaultLocale = 'en-US' } = defineProps<{
+const { interfaceData, interfaces = [], defaultLocale = 'en-US' } = defineProps<{
   interfaceData: IInterfaceData,
-  userData: any,
   interfaces: IInterface[],
   defaultLocale?: string,
 }>();
@@ -29,13 +28,14 @@ const { interfaceData, userData, interfaces = [], defaultLocale = 'en-US' } = de
 const currentRoute = useRoute();
 const selectedLocale = ref(defaultLocale);
 const globalStore = useGlobalStore();
+const modelStore = useModelStore();
 const { smAndDown } = useDisplay();
 const { windowWidth } = useLayout();
-const { setInterfaceData, serverSettings, createInterface } = useInterface(interfaceModel)
-const { downloadUserData, downloading, userDataLoading, fetchUserData, canFetchUserData, applyUserData, canInteractWithServer, getUserDataErrors } = useUserData(interfaceModel, userData);
-const { hasSyncEnabled } = useTypings(interfaceModel, userData)
-const { reloading } = useIframe(interfaceModel, userData)
-const emit = defineEmits(['locale', 'preview', 'refresh', 'update:model-value', 'create', 'save', 'delete', 'edit-json', 'show-typings'])
+const { serverSettings, createInterface } = useInterface()
+const { downloadUserData, downloading, userDataLoading, fetchUserData, canFetchUserData, canInteractWithServer, getUserDataErrors } = useUserData();
+const { hasSyncEnabled } = useTypings()
+const { reloading } = useIframe()
+const emit = defineEmits(['locale', 'preview', 'refresh', 'update:model-value', 'create', 'save', 'delete', 'edit-json', 'show-typings', 'logout'])
 
 const locales = computed(() => {
   return Object.entries(interfaceData.locales).map(item => ({ value: item[0], title: item[1] }));
@@ -54,7 +54,7 @@ const sitePreviewUrl = computed((): string | null => {
 })
 
 const userDataErrorList = computed((): {[key: string]: string} => {
-  return getUserDataErrors(interfaceData.sections);
+  return getUserDataErrors(interfaceData.sections as unknown as { [key: string]: IField; });
 })
 
 const onEditJson = () => {
@@ -94,14 +94,29 @@ const onLocaleChange = (locale: string) => {
 
 const onFetchUserData = () => {
   fetchUserData().then((response: any) => {
-    applyUserData(response.data);
+    modelStore.setUserData(response.data);
     serverSettings.value = response.settings;
   })
 }
 
-const onLogout = () => {
-  router.push('/admin/' + interfaceModel.value.hash + '/' + currentRoute.params.section + '/' + currentRoute.params.locale);
-  setInterfaceData(getInterface(getDefaultInterfaceContent()));
+const onClearUserData = () => {
+  globalStore.setPrompt({
+    ...globalStore.prompt,
+    visible: true,
+    title: 'Clear data',
+    body: 'Are you sure you want to clear all data? Your JSON won\'t be updated until you save.',
+    btnText: 'Clear data',
+    btnIcon: 'mdi-close-box-outline',
+    btnColor: 'warning',
+    callback: () => new Promise(resolve => {
+      modelStore.setUserData({})
+      resolve();
+    })
+  })
+}
+
+const onLogout = (response: any) => {
+  emit('logout', response);
 }
 
 const toggleDrawer = () => {
@@ -135,14 +150,12 @@ watch(() => currentRoute.params.locale, () => {
     </template>
     <div v-else class="mr-4"></div>
 
-    <div v-if="!smAndDown && !globalStore.session.loggedIn" style="flex: 75">
-      <span class="text-left">Generate an admin panel from a YAML interface that communicates with a remote server using JSON.</span>
-    </div>
-    <div v-else-if="globalStore.session.loggedIn" class="d-flex align-center" style="gap: 1rem; flex: 75">
+    <div class="d-flex align-center" style="gap: 1rem; flex: 75">
       <InterfaceSelector
         v-model="interfaceModel"
         :interfaces="interfaces"
-        :actions="windowWidth > 900"
+        :actions="globalStore.session.loggedIn && windowWidth > 900"
+        :readonly="!globalStore.session.loggedIn"
         :show-icon="windowWidth > 450"
         :style="{
           width: 'min-content',
@@ -179,76 +192,82 @@ watch(() => currentRoute.params.locale, () => {
     </div>
 
     <div class="d-flex align-center mx-3" :style="{ gap: smAndDown ? 0 : '1rem'}">
-      <template v-if="globalStore.session.loggedIn">
+      <v-tooltip
+        v-if="windowWidth > 1000"
+        text="Refresh Preview (CTRL+R)"
+        location="bottom"
+      >
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            :disabled="!showSitePreview || reloading"
+            icon
+            @click="onRefreshPreview"
+          >
+            <v-icon icon="mdi-refresh" />
+          </v-btn>
+        </template>
+      </v-tooltip>
+      <v-btn-toggle
+        v-if="windowWidth > 1000"
+        v-model="globalStore.admin.previewMode"
+        group
+        variant="text"
+        color="primary"
+        @update:model-value="onPreviewModeChange"
+      >
         <v-tooltip
-          v-if="windowWidth > 1000"
-          text="Refresh Preview (CTRL+R)"
+          text="Mobile (CTRL+M)"
           location="bottom"
         >
           <template #activator="{ props }">
-            <v-btn
-              v-bind="props"
-              :disabled="!showSitePreview || reloading"
-              icon
-              @click="onRefreshPreview"
-            >
-              <v-icon icon="mdi-refresh" />
+            <v-btn v-bind="props" value="mobile">
+              <v-icon icon="mdi-cellphone" />
             </v-btn>
           </template>
         </v-tooltip>
-        <v-btn-toggle
-          v-if="windowWidth > 1000"
-          v-model="globalStore.admin.previewMode"
-          group
-          variant="text"
-          color="primary"
-          @update:model-value="onPreviewModeChange"
+
+        <v-tooltip
+          text="Desktop (CTRL+D)"
+          location="bottom"
         >
-          <v-tooltip
-            text="Mobile (CTRL+M)"
-            location="bottom"
-          >
-            <template #activator="{ props }">
-              <v-btn v-bind="props" value="mobile">
-                <v-icon icon="mdi-cellphone" />
-              </v-btn>
-            </template>
-          </v-tooltip>
-
-          <v-tooltip
-            text="Desktop (CTRL+D)"
-            location="bottom"
-          >
-            <template #activator="{ props }">
-              <v-btn v-bind="props" value="desktop">
-                <v-icon icon="mdi-monitor" />
-              </v-btn>
-            </template>
-          </v-tooltip>
-        </v-btn-toggle>
-
-        <LocaleSwitcher
-          v-if="showLocaleSwitcher"
-          v-model="selectedLocale"
-          :locales="locales"
-          :dense="windowWidth < 1300"
-          :disabled="userDataLoading"
-          style="width: 14rem"
-          @update:model-value="onLocaleChange"
-        >
-          <template v-if="!userDataLoading" #prepend-inner-selection>
-            <v-icon v-if="Object.keys(userDataErrorList).find(key => key.endsWith(selectedLocale))" icon="mdi-alert" color="warning"></v-icon>
-            <v-icon v-else-if="Object.keys(userDataErrorList).find(key => locales.find(locale => key.endsWith(locale.value)))" icon="mdi-alert-outline" color="warning" />
+          <template #activator="{ props }">
+            <v-btn v-bind="props" value="desktop">
+              <v-icon icon="mdi-monitor" />
+            </v-btn>
           </template>
-          <template v-if="!userDataLoading" #prepend-inner-item="{ item }">
-            <v-icon v-if="Object.keys(userDataErrorList).find(key => key.endsWith(item.value))" icon="mdi-alert" color="warning" class="mr-n4" />
-          </template>
-        </LocaleSwitcher>
+        </v-tooltip>
+      </v-btn-toggle>
 
+      <LocaleSwitcher
+        v-if="showLocaleSwitcher"
+        v-model="selectedLocale"
+        :locales="locales"
+        :dense="windowWidth < 1300"
+        :disabled="userDataLoading"
+        style="width: 14rem"
+        @update:model-value="onLocaleChange"
+      >
+        <template v-if="!userDataLoading" #prepend-inner-selection>
+          <v-icon v-if="Object.keys(userDataErrorList).find(key => key.endsWith(selectedLocale))" icon="mdi-alert" color="warning"></v-icon>
+          <v-icon v-else-if="Object.keys(userDataErrorList).find(key => locales.find(locale => key.endsWith(locale.value)))" icon="mdi-alert-outline" color="warning" />
+        </template>
+        <template v-if="!userDataLoading" #prepend-inner-item="{ item }">
+          <v-icon v-if="Object.keys(userDataErrorList).find(key => key.endsWith(item.value))" icon="mdi-alert" color="warning" class="mr-n4" />
+        </template>
+      </LocaleSwitcher>
+
+      <template v-if="globalStore.session.loggedIn">
         <SessionPanel
           :show-username="windowWidth > 1500"
           @logout="onLogout"
         >
+          <v-list-item
+            title="Edit JSON"
+            prepend-icon="mdi-code-json"
+            @click="onEditJson"
+          />
+          <v-divider class="my-1" />
           <v-list-item
             :disabled="userDataLoading || !canFetchUserData"
             prepend-icon="mdi-monitor-arrow-down"
@@ -262,9 +281,10 @@ watch(() => currentRoute.params.locale, () => {
             @click="downloadUserData"
           />
           <v-list-item
-            title="Edit JSON"
-            prepend-icon="mdi-code-json"
-            @click="onEditJson"
+            :disabled="userDataLoading"
+            prepend-icon="mdi-close-box-outline"
+            title="Clear data"
+            @click="onClearUserData"
           />
           <v-divider class="my-1" />
           <v-list-item
@@ -286,7 +306,7 @@ watch(() => currentRoute.params.locale, () => {
         </SessionPanel>
       </template>
       <template v-else>
-        <GoogleSignInButton block />
+        <GoogleSignInButton />
       </template>
     </div>
   </v-app-bar>
