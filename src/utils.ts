@@ -247,6 +247,7 @@ export async function downloadFilesAsZip(urls: string[], jsonData: object | fals
   return new Promise(async (resolve, reject) => {
 
     const zip = new JSZip();
+    const modelStore = useModelStore();
 
     // Add JSON data as a file
     if (jsonData) {
@@ -256,7 +257,13 @@ export async function downloadFilesAsZip(urls: string[], jsonData: object | fals
     // Fetch each URL and add it as a blob to the zip
     for (const url of urls) {
       try {
-        const response = await fetch(url);
+        const params = {
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'X-Jms-Api-Key': modelStore.interface.server_secret,
+          },
+        };
+        const response = await fetch(url, params);
         if (!response.ok) {
           console.error(`Failed to fetch ${url}: ${response.statusText}`);
           continue;
