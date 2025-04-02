@@ -217,10 +217,10 @@ export function useUserData() {
         if (isFieldType(field, 'number')) {
           return parent[key] = typeof overrideValue === 'number' ? overrideValue : field.required ? 0 : null;
         }
-        if (isFieldType(field, 'number')) {
+        if (isFieldType(field, 'boolean')) {
           return parent[key] = typeof overrideValue === 'boolean' ? overrideValue : field.required ? false : null;
         }
-        return parent[key] = field.required && !overrideValue ? "" : overrideValue;
+        return parent[key] = field.required && !overrideValue ? "" : overrideValue ?? null;
       }
     };
     processObject(result, processCallback);

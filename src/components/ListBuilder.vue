@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import draggable from 'vuedraggable'
-import { generateHash } from '@/utils';
+import {generateHash, isFieldType, isNativeObject} from '@/utils';
 import { useGlobalStore } from '@/stores/global';
 import { computed, ref } from 'vue';
 import type { IField, IServerSettings } from '@/interfaces';
@@ -54,10 +54,14 @@ const formattedList = computed({
         const keys = Object.keys(fields);
         if (keys.length > 0) {
           const fieldItem = fields[keys[0]];
-          if (fieldItem.type.includes('i18n')) {
-            title = item[keys[0]][locale].substring(0, 64);
+          if (isFieldType(fieldItem, 'i18n')) {
+            if (item[keys[0]][locale]) {
+              title = item[keys[0]][locale].toString().substring(0, 64);
+            }
           } else {
-            title = item[keys[0]].substring(0, 64);
+            if (!isNativeObject(item[keys[0]])) {
+              title = item[keys[0]].toString().substring(0, 64);
+            }
           }
         }
       }

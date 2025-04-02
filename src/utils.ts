@@ -1,8 +1,9 @@
 import exampleInterface from '@/assets/example-interface.yaml'
-import type {IInterface, IField} from '@/interfaces';
+import type {IInterface, IField, IFile} from '@/interfaces';
 import type {Ref} from 'vue';
 import {isRef, toRaw} from 'vue';
 import JSZip from 'jszip';
+import {useModelStore} from '@/stores/model';
 
 export const allNonI18nFields: string[] = [
   'string',
@@ -75,7 +76,15 @@ export const parseFields = (fields: any = {}, locales = {}) => {
     if (multipleTypes.includes(type) || (mayBeMultipleTypes.includes(type) && multiple)) {
       value = [];
     } else if (fileTypes.includes(type)) {
-      value = required ? { path: '', meta: {} } : null;
+      value = required ? { path: '', meta: {
+        type: '',
+        size: 0,
+        originalFileName: '',
+      } } as IFile : null;
+      if (value && (isFieldType(field, 'image') || isFieldType(field, 'image'))) {
+        value.meta.width = 0;
+        value.meta.height = 0;
+      }
     } else {
       value = required ? isFieldType(field, 'number') ? 0 : '' : null;
     }
