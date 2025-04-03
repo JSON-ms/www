@@ -58,9 +58,11 @@ export function useLayout() {
     let _mobileFrameWidth = mobileFrameWidth.value;
     let _mobileFrameHeight = mobileFrameHeight.value;
     if (globalStore.admin.previewMode === 'desktop' && globalStore.admin.interface) {
-      _mobileFrameHeight -= (_mobileFrameHeight) / 3;
+      _mobileFrameHeight -= (_mobileFrameHeight) / 3.5;
       _mobileFrameWidth = _mobileFrameHeight / 1.777;
     }
+
+    console.log(_mobileFrameWidth)
 
     // Reset
     preview.width = _mobileFrameWidth;
@@ -79,7 +81,8 @@ export function useLayout() {
 
       // Preview: Width
       if (globalStore.admin.previewMode === 'desktop') {
-        // total -= editorWidth;
+        editor.width = 0;
+        total -= editorWidth;
         const remainingWidth = windowWidth.value - total;
         const maxWidth = remainingWidth - windowHeight.value / 1.777;
         if (windowHeight.value * 1.777 > maxWidth) {

@@ -193,7 +193,7 @@ export function useUserData() {
       }
 
       // Files
-      if (['file', 'i18n:file'].includes(field.type)) {
+      if (isFieldType(field, 'file')) {
         if (typeof overrideValue === 'object' && overrideValue !== null && typeof overrideValue.path === 'string' && typeof overrideValue.meta === 'object') {
           return parent[key] = overrideValue;
         } else if (Array.isArray(overrideValue)) {

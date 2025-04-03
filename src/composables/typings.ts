@@ -178,38 +178,9 @@ export function useTypings() {
         { key: 'meta', type: 'JmsFileMeta' },
       ]
     });
-
-    // Generate base JmsImage
-    items.push({
-      name: 'Image',
-      fields: [
-        { key: 'path', type: 'string' },
-        { key: 'meta', type: 'JmsImageMeta' },
-      ]
-    });
-
-    // Generate base JmsVideo
-    items.push({
-      name: 'Video',
-      fields: [
-        { key: 'path', type: 'string' },
-        { key: 'meta', type: 'JmsFileMeta' },
-      ]
-    });
-
     // Generate base JmsMeta
     items.push({
       name: 'FileMeta',
-      fields: [
-        { key: 'size', type: 'number' },
-        { key: 'type', type: 'string' },
-        { key: 'originalFileName', type: 'string' },
-      ]
-    });
-
-    // Generate base JmsImageMeta
-    items.push({
-      name: 'ImageMeta',
       fields: [
         { key: 'size', type: 'number' },
         { key: 'type', type: 'string' },

@@ -62,7 +62,6 @@ export const parseFields = (fields: any = {}, locales = {}) => {
   fields = fields ? fields : {}; // Make sure it's an object
 
   const multipleTypes = ['array', 'i18n:array'];
-  const fileTypes = ['file', 'i18n:file', 'image', 'i18n:image', 'video', 'i18n:video'];
   const mayBeMultipleTypes = ['select', 'i18n:select', 'checkbox', 'i18n:checkbox', 'radio', 'i18n:radio', 'file', 'i18n:file'];
   const applyValues = (key: string) => {
     const field = fields[key];
@@ -75,7 +74,7 @@ export const parseFields = (fields: any = {}, locales = {}) => {
     let value;
     if (multipleTypes.includes(type) || (mayBeMultipleTypes.includes(type) && multiple)) {
       value = [];
-    } else if (fileTypes.includes(type)) {
+    } else if (isFieldType(field, 'file')) {
       value = required ? { path: '', meta: {
         type: '',
         size: 0,
