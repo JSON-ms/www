@@ -83,6 +83,17 @@ onBeforeUnmount(() => {
   // editor.value?.destroy();
 })
 
+const canEditContent = computed((): boolean => {
+  const types = interfaceModel.value.type.split(',');
+  for (let i = 0; i < types.length; i++) {
+    const type = types[i];
+    if (['owner', 'interface'].includes(type)) {
+      return true;
+    }
+  }
+  return false;
+})
+
 watch(() => yamlException.value, () => {
   const instance = editor.value?.getAceInstance();
   if (instance) {
@@ -120,7 +131,14 @@ const options = {
 </script>
 
 <template>
+  <v-empty-state
+    v-if="!canEditContent"
+    icon="mdi-pencil-off-outline"
+    title="Unauthorized"
+    text="Access to this template has not been granted by the owner."
+  />
   <v-ace-editor
+    v-else
     ref="editor"
     v-model:value="value"
     :options="options"

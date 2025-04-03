@@ -192,6 +192,22 @@ export function useUserData() {
         return parent[key] = getParsedFields(field.fields, locales, overrideValue);
       }
 
+      // Files
+      if (['file', 'i18n:file'].includes(field.type)) {
+        if (typeof overrideValue === 'object' && overrideValue !== null && typeof overrideValue.path === 'string' && typeof overrideValue.meta === 'object') {
+          return parent[key] = overrideValue;
+        } else if (Array.isArray(overrideValue)) {
+          parent[key] = [];
+          overrideValue.forEach(value => {
+            if (typeof value === 'object' && value !== null && typeof value.path === 'string' && typeof value.meta === 'object') {
+              parent[key].push(value);
+            }
+          })
+          return parent[key];
+        }
+        return parent[key];
+      }
+
       // Array
       const isArray = isFieldType(field, 'array');
       if (isArray || field.multiple) {
@@ -204,14 +220,6 @@ export function useUserData() {
             parent[key].push(getParsedFields(field.fields, locales, overrideItem));
           })
         } else if (field.items && Array.isArray(overrideValue)) {
-          return parent[key] = overrideValue;
-        }
-        return parent[key];
-      }
-
-      // Files
-      if (['file', 'i18n:file', 'image', 'i18n:image', 'video', 'i18n:video'].includes(field.type)) {
-        if (typeof overrideValue === 'object' && overrideValue !== null && typeof overrideValue.path === 'string' && typeof overrideValue.meta === 'object') {
           return parent[key] = overrideValue;
         }
         return parent[key];

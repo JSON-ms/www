@@ -19,9 +19,11 @@ const getValidInterfaceRoute = (route:  RouteLocationGeneric): string => {
   if (foundInterface) {
     const modelStore = useModelStore();
     modelStore.setInterface(foundInterface);
-    const { interfaceParsedData, getAvailableSection, getAvailableLocale } = useInterface();
-    return `/admin/${route.params.hash}/${getAvailableSection(undefined, Object.keys(interfaceParsedData.value.sections)[0])}/${getAvailableLocale(undefined, Object.keys(interfaceParsedData.value.locales)[0])}`;
+    const { getAvailableSection, getAvailableLocale } = useInterface();
+    const splitPath = window.location.pathname.split('/');
+    return `/admin/${route.params.hash}/${getAvailableSection(undefined, splitPath[3])}/${getAvailableLocale(undefined, splitPath[4])}`;
   }
+  debugger;
   return `/admin/${route.params.hash}/home/en-US`;
 }
 const router = createRouter({

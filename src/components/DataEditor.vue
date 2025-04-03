@@ -41,6 +41,17 @@ const resetValidation = () => {
 defineExpose({
   resetValidation,
 });
+
+const canEditData = computed((): boolean => {
+  const types = interfaceModel.value.type.split(',');
+  for (let i = 0; i < types.length; i++) {
+    const type = types[i];
+    if (['owner', 'admin'].includes(type)) {
+      return true;
+    }
+  }
+  return false;
+})
 </script>
 
 <template>
@@ -49,6 +60,12 @@ defineExpose({
     icon="mdi-beaker-question-outline"
     title="No field available"
     text="It appears that you have not created a section containing fields in your YAML template yet. Please ensure to define the necessary sections to avoid errors in your configuration."
+  />
+  <v-empty-state
+    v-else-if="!canEditData"
+    icon="mdi-pencil-off-outline"
+    title="Unauthorized"
+    text="Access to this form has not been granted by the owner."
   />
   <div v-else class="d-flex flex-column pa-4" style="gap: 1rem">
     <div>

@@ -79,8 +79,10 @@ export const useGlobalStore = defineStore('global', {
     },
     fileManager: {
       visible: false,
+      multiple: false,
       canSelect: false,
       callback: () => new Promise(resolve => resolve(true)),
+      accept: null,
     }
   }),
   actions: {
@@ -120,9 +122,11 @@ export const useGlobalStore = defineStore('global', {
     setSession(session: ISession) {
       this.session = session;
     },
-    showFileManager(canSelect = false, callback?: (files?: IFile[]) => Promise<boolean> ) {
+    showFileManager(canSelect = false, multiple = false, callback?: (files?: IFile[]) => Promise<boolean>, accept = null) {
       this.fileManager.visible = true;
+      this.fileManager.multiple = multiple;
       this.fileManager.canSelect = canSelect;
+      this.fileManager.accept = accept;
       this.fileManager.callback = callback;
     },
     addInterface(item: IInterface) {

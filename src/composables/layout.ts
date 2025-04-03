@@ -79,7 +79,7 @@ export function useLayout() {
 
       // Preview: Width
       if (globalStore.admin.previewMode === 'desktop') {
-        total -= editorWidth;
+        // total -= editorWidth;
         const remainingWidth = windowWidth.value - total;
         const maxWidth = remainingWidth - windowHeight.value / 1.777;
         if (windowHeight.value * 1.777 > maxWidth) {

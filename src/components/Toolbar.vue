@@ -29,7 +29,7 @@ const selectedLocale = ref(defaultLocale);
 const globalStore = useGlobalStore();
 const modelStore = useModelStore();
 const { smAndDown } = useDisplay();
-const { windowWidth } = useLayout();
+const { windowWidth, layoutSize } = useLayout();
 const { serverSettings, createInterface } = useInterface()
 const { downloadUserData, downloading, userDataLoading, setUserData, fetchUserData, canFetchUserData, canInteractWithServer, getUserDataErrors } = useUserData();
 const { hasSyncEnabled } = useTypings()
@@ -83,6 +83,10 @@ const onRefreshPreview = () => {
 }
 
 const onPreviewModeChange = (mode: null | 'mobile' | 'desktop') => {
+  if (layoutSize.value.editor.temporary && globalStore.admin.interface && mode === 'mobile') {
+    globalStore.admin.interface = false;
+  }
+
   globalStore.admin.previewMode = mode === undefined ? null : mode;
   emit('preview', globalStore.admin.previewMode);
 }

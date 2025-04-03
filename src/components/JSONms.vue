@@ -304,6 +304,7 @@ if (autoload) {
     tile
     disable-resize-watcher
     disable-route-watcher
+    persistent
   >
     <v-card class="w-100 fill-height d-flex flex-column pa-2 pl-0" theme="dark">
       <InterfaceEditor

@@ -86,7 +86,7 @@ For instance:
 #### All Field Properties:
 - `type`: Specifies a supported field type as defined earlier.
 - `label`: The title that will be displayed within the field.
-- `multiple`: A boolean value that indicates whether the field can accept multiple values (e.g., for `select` or `checkbox` types).
+- `multiple`: A boolean value that indicates whether the field can accept multiple values (e.g., for `select`, `checkbox` or `file` types).
 - `accept`: For `file` field only. It takes as its value a comma-separated list of one or more file types. You can add file extensions `*.jpg,*.gif` or even mime types `application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document`.
 - `prepend`: An optional string that will be displayed before the input field.
 - `append`: An optional string that will be displayed after the input field.

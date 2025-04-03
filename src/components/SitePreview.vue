@@ -85,8 +85,8 @@ let sitePreviewUrlTimeout: any;
 const sitePreviewUrl = ref(props.interfaceData.global.preview);
 watch(() => globalStore.admin.previewMode, () => {
   if (globalStore.admin.previewMode !== null) {
+    sitePreviewUrl.value = props.interfaceData.global.preview;
     if (!loaded.value) {
-      sitePreviewUrl.value = props.interfaceData.global.preview;
       onIframeLoad();
     }
     loaded.value = true;

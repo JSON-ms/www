@@ -63,7 +63,7 @@ export const parseFields = (fields: any = {}, locales = {}) => {
 
   const multipleTypes = ['array', 'i18n:array'];
   const fileTypes = ['file', 'i18n:file', 'image', 'i18n:image', 'video', 'i18n:video'];
-  const mayBeMultipleTypes = ['select', 'i18n:select', 'checkbox', 'i18n:checkbox', 'radio', 'i18n:radio'];
+  const mayBeMultipleTypes = ['select', 'i18n:select', 'checkbox', 'i18n:checkbox', 'radio', 'i18n:radio', 'file', 'i18n:file'];
   const applyValues = (key: string) => {
     const field = fields[key];
     if (!field) {
@@ -80,11 +80,9 @@ export const parseFields = (fields: any = {}, locales = {}) => {
         type: '',
         size: 0,
         originalFileName: '',
+        width: 0,
+        height: 0,
       } } as IFile : null;
-      if (value && (isFieldType(field, 'image') || isFieldType(field, 'image'))) {
-        value.meta.width = 0;
-        value.meta.height = 0;
-      }
     } else {
       value = required ? isFieldType(field, 'number') ? 0 : '' : null;
     }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {useGlobalStore} from '@/stores/global';
 import type {IInterface, IInterfaceData, ISection} from '@/interfaces';
-import {computed} from 'vue';
+import {computed, watch} from 'vue';
 import {useRoute} from 'vue-router';
 import router from '@/router';
 import {useUserData} from '@/composables/user-data';
@@ -28,6 +28,10 @@ const hasSections = computed((): boolean => {
 
 const goToSection = (section: string = '') => {
   router.push('/admin/' + currentRoute.params.hash + '/' + section + '/' + currentRoute.params.locale);
+
+  if (layoutSize.value.drawer.temporary) {
+    globalStore.admin.drawer = false;
+  }
 }
 
 const getErrors = (section: ISection, sectionKey: string | number): { i18n: string[], currentI18n: string[], general: string[] } => {
@@ -65,7 +69,7 @@ const getErrorMsg = (section: ISection, sectionKey: string | number): string | n
 }
 
 const onFileManagerClick = () => {
-  globalStore.showFileManager(false)
+  globalStore.showFileManager()
 }
 
 // @ts-expect-error Need to declare typings for process.env
@@ -80,6 +84,7 @@ const version = JSON.parse(process.env.APP_VERSION);
     :width="layoutSize.drawer.width"
     disable-resize-watcher
     disable-route-watcher
+    persistent
   >
     <v-empty-state
       v-if="!hasSections"

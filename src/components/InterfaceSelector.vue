@@ -10,13 +10,11 @@ import {useModelStore} from '@/stores/model';
 const interfaceModel = defineModel<IInterface>({ required: true });
 const {
   interfaces = [],
-  type = null,
   actions = false,
   largeText = false,
   showIcon = true,
 } = defineProps<{
   interfaces: IInterface[],
-  type: 'admin' | 'interface' | null,
   actions?: boolean,
   largeText?: boolean,
   showIcon?: boolean,
@@ -37,7 +35,7 @@ const remove = (item: IInterface) =>  emit('delete', item);
 const computedInterfaces = computed((): (IInterface | { header: string })[] => {
   const results: (IInterface | { header: string })[] = [];
   const ownerInterfaces = interfaces.filter(item => item.created_by === globalStore.session.user?.id);
-  const sharedInterfaces = interfaces.filter(item => item.created_by !== globalStore.session.user?.id && item.type === type);
+  const sharedInterfaces = interfaces.filter(item => item.created_by !== globalStore.session.user?.id && item.type !== 'owner');
   const hasBoth = ownerInterfaces.length > 0 && sharedInterfaces.length > 0;
   if (hasBoth && ownerInterfaces.length > 0) {
     if (ownerInterfaces.length > 0) {

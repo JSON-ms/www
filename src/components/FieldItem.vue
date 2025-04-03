@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import ListBuilder from '@/components/ListBuilder.vue';
 import FieldHeader from '@/components/FieldHeader.vue';
-import type {IInterfaceData, IField, IServerSettings, IInterface} from '@/interfaces';
+import type {IInterfaceData, IField, IServerSettings, IInterface, IFile} from '@/interfaces';
 import Rules from '@/rules';
-import {deepToRaw, parseFields, phpStringSizeToBytes, getFieldType, isFieldType} from '@/utils';
+import {deepToRaw, parseFields, getFieldType, isFieldType} from '@/utils';
 import { computed, ref } from 'vue';
-import { Services } from '@/services';
 import { mimeTypes, useGlobalStore } from '@/stores/global';
 import { useDisplay } from 'vuetify';
 import type { VFileUpload } from 'vuetify/labs/VFileUpload';
@@ -106,17 +105,14 @@ const getDefaultItem = () => {
 }
 
 const downloading = ref(false);
-const onDownloadFile = () => {
+const onDownloadFile = (file: IFile) => {
   downloading.value = true;
-  fetch(filePath.value)
+  fetch(filePath(file))
     .then(response => response.blob())
     .then(blob => {
-      const parsedUrl = new URL(filePath.value);
-      const pathSegments = parsedUrl.pathname.split('/');
-      const filename = pathSegments[pathSegments.length - 1];
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = filename;
+      link.download = file.meta.originalFileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -125,7 +121,7 @@ const onDownloadFile = () => {
     .catch(globalStore.catchError)
     .finally(() => downloading.value = false);
 }
-const onRemoveFile = () => {
+const onRemoveFile = (file: IFile) => {
   globalStore.setPrompt({
     ...globalStore.prompt,
     visible: true,
@@ -135,67 +131,39 @@ const onRemoveFile = () => {
     btnIcon: 'mdi-close',
     btnColor: 'warning',
     callback: () => new Promise(resolve => {
-      value.value = null;
+      if (field.multiple) {
+        value.value = value.value.filter((val: IFile) => val.path !== file.path);
+      } else {
+        value.value = null;
+      }
       resolve();
     })
   });
 }
 
-const uploading = ref(false);
-const uploadProgress = ref(0);
-const onFileChange = (file: File | File[] | null) => {
-  if (file && interfaceModel.server_url && Rules.isUrl(interfaceModel.server_url) && !Array.isArray(file)) {
-    if (file.size > phpStringSizeToBytes(serverSettings.uploadMaxSize)) {
-      globalStore.catchError(new Error(
-        'This file is exceeding the maximum size of ' + serverSettings.uploadMaxSize + ' defined by the server.'
-      ));
-    } else {
-      uploading.value = true;
-      uploadProgress.value = 0;
-      Services.upload(interfaceModel.server_url, file, progress => uploadProgress.value = progress, {
-        'X-Jms-Interface-Hash': interfaceModel.hash,
-        'X-Jms-Api-Key': interfaceModel.server_secret,
-      })
-        .then(response => value.value = {
-          'path': response.internalPath,
-          'meta': response.meta,
-        })
-        .catch(globalStore.catchError)
-        .finally(() => uploading.value = false);
-    }
-  }
-}
 const fields = computed((): {[key: string]: IField } => {
   return field.fields ?? {};
 })
 const fieldType = computed((): string => {
   return getFieldType(field);
 })
-const fileValue = computed({
-  get: ():  File | File[] | undefined => {
-    const file = new File([], value.value);
-    return value.value instanceof File ? value.value : file;
-  },
-  set: (file: File | undefined) => {
-    value.value = file;
-  }
-})
-const isImage = computed((): string => {
-  return ['image', 'i18n:image'].includes(fieldType.value)
-    || value.value?.meta.type.includes('image');
-})
-const isVideo = computed((): string => {
-  return ['video', 'i18n:video'].includes(fieldType.value)
-    || value.value?.meta.type.includes('video');
-})
-const filePath = computed((): string => {
-  return serverSettings.publicUrl + value.value?.path;
-})
+const isImage = (file: IFile): boolean => {
+  return file.meta.type.startsWith('image/');
+}
+const isVideo = (file: IFile): boolean => {
+  return file.meta.type.startsWith('video/');
+}
+const filePath = (file: IFile): string => {
+  return serverSettings.publicUrl + file.path;
+}
 const showPrependInner = computed((): boolean => {
   return !!(field['prepend-inner']);
 })
 const showAppendInner = computed((): boolean => {
   return fieldType.value.includes('i18n') || !!(field['append-inner']);
+})
+const files = computed((): IFile[] => {
+  return field.multiple ? value.value : value.value ? [value.value] : [];
 })
 const fileIcons: {[key: string]: string} = {
   'i18n:file': 'mdi-file-outline',
@@ -233,6 +201,33 @@ const getErrorMsg = (index: number): string | null => {
     }
   }
   return null;
+}
+
+const markdownToolbar = [
+  'bold', 'italic', 'heading', '|', 'unordered-list', 'ordered-list', 'link', {
+    name: "image",
+    action: (editor) => {
+      globalStore.showFileManager(true, false, file => {
+        return new Promise((resolve) => {
+          const text = `![${file.meta.originalFileName}](${serverSettings.publicUrl + file.path})`;
+          const cursor = editor.codemirror.getCursor();
+          editor.codemirror.replaceRange(text, cursor);
+          resolve(true);
+        })
+      }, 'image/*')
+    },
+    className: "fa fa-image",
+    title: "Images",
+  }
+];
+
+const openFileManager = () => {
+  globalStore.showFileManager(true, field.multiple === true, files => {
+    return new Promise((resolve) => {
+      value.value = files;
+      resolve(true);
+    })
+  }, field.accept)
 }
 
 const computedStringValue = computed({
@@ -377,7 +372,7 @@ const onWysiwygContentChange = (content: any) => {
           syncSideBySidePreviewScroll: false,
           status: false,
           lineNumbers: false,
-          hideIcons: ['guide', 'fullscreen', 'side-by-side', 'preview'],
+          toolbar: markdownToolbar,
         }"
         class="w-100"
       />
@@ -595,123 +590,99 @@ const onWysiwygContentChange = (content: any) => {
   </v-menu>
 
   <!-- FILE -->
-  <v-input
-    v-else-if="['file', 'i18n:file', 'image', 'i18n:image', 'video', 'i18n:video'].includes(fieldType)"
-    v-model="value"
-    :hint="field.hint"
-    :persistent-hint="!!field.hint"
-    :required="field.required"
-    :rules="getRules(field)"
-    :disabled="disabled"
-    hide-details="auto"
-  >
-    <div class="w-100">
-      <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
-      <v-card v-if="typeof value === 'object' && value !== null && value.path" variant="tonal" class="w-100">
-        <div class="d-flex align-center">
-          <div class="pa-3 pr-0">
-            <v-avatar v-if="isImage" :size="smAndDown ? 96 : 128" rounded="0">
-              <v-img :src="filePath">
-                <template #placeholder>
-                  <v-overlay>
-                    <v-progress-circular
-                      indeterminate
-                      size="32"
-                      width="2"
-                    />
-                  </v-overlay>
-                </template>
-              </v-img>
-            </v-avatar>
-            <video v-else-if="isVideo" :src="filePath" :style="{ height: smAndDown ? '96px' : '128px', float: 'left' }" controls />
-            <v-icon v-else-if="['file', 'i18n:file'].includes(fieldType)" :icon="fileIcons[fieldType]" :size="smAndDown ? 96 : 128" />
-          </div>
-          <div class="pa-3 pl-0 w-100">
-            <v-card-title
-              :class="{
-                'py-0 d-flex': true,
-                'text-body-1': smAndDown,
-              }"
-            >
-              <div class="d-flex" style="flex: 1; width: 0">
-                <span class="text-truncate">{{ value.path }}</span>
-              </div>
-            </v-card-title>
-            <v-card-subtitle class="py-0" style="font-size: 0.66rem">
-              Size: {{ $formatBytes(value.meta.size) }}
-              <br>Type: <span class="text-uppercase">{{ value.meta.type }}</span>
-            </v-card-subtitle>
-            <v-card-actions class="pb-0 flex-wrap" style="min-height: 0">
-              <v-tooltip
-                text="Download"
-                location="bottom"
-              >
-                <template #activator="{ props }">
-                  <v-btn
-                    v-bind="props"
-                    :loading="downloading"
-                    :disabled="disabled || downloading"
-                    :size="smAndDown ? 'small' : 'default'"
-                    color="primary"
-                    icon
-                    @click="onDownloadFile"
-                  >
-                    <v-icon icon="mdi-download" />
-                  </v-btn>
-                </template>
-              </v-tooltip>
-              <v-tooltip
-                text="Remove"
-                location="bottom"
-              >
-                <template #activator="{ props }">
-                  <v-btn
-                    v-bind="props"
-                    :disabled="disabled"
-                    :size="smAndDown ? 'small' : 'default'"
-                    color="error"
-                    variant="text"
-                    icon
-                    @click="onRemoveFile"
-                  >
-                    <v-icon icon="mdi-trash-can-outline" />
-                  </v-btn>
-                </template>
-              </v-tooltip>
-            </v-card-actions>
-          </div>
+  <div v-else-if="isFieldType(field, 'file')">
+    <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
+    <v-card
+      v-if="files.length > 0"
+      v-for="file in files"
+      :key="file.path"
+      variant="tonal"
+      class="w-100 mb-1"
+    >
+      <div class="d-flex align-center">
+        <div class="pa-3 text-center bg-surface align-center justify-center" style="min-width: 128px">
+          <v-avatar v-if="isImage(file)" size="100%" rounded="0">
+            <v-img :src="filePath(file)" :cover="false">
+              <template #placeholder>
+                <v-overlay>
+                  <v-progress-circular
+                    indeterminate
+                    size="32"
+                    width="2"
+                  />
+                </v-overlay>
+              </template>
+            </v-img>
+          </v-avatar>
+          <video v-else-if="isVideo(file)" :src="filePath(file)" :style="{ height: smAndDown ? '96px' : '128px', float: 'left' }" controls />
+          <v-icon v-else :icon="fileIcons[fieldType]" :size="smAndDown ? 48 : 64" />
         </div>
-      </v-card>
-      <div v-else class="position-relative">
-        <v-overlay :model-value="uploading" contained absolute class="align-center justify-center" persistent>
-          <v-progress-circular color="primary" indeterminate />
-        </v-overlay>
-        <v-file-upload
-          ref="fileUpload"
-          v-model="fileValue"
-          :label="field.label"
-          :prepend-inner-icon="field.icon"
-          :hint="field.hint"
-          :persistent-hint="!!field.hint"
-          :required="field.required"
-          :rules="getRules(field)"
-          :icon="uploading ? 'mdi-' :smAndDown ? 'mdi-gesture-tap-button' : undefined"
-          :title="uploading ? '' : smAndDown ? 'Touch to upload' : undefined"
-          :disabled="disabled"
-          :loading="loading"
-          :accept="acceptMimeTypes"
-          hide-details="auto"
-          density="compact"
-          variant="compact"
-          scrim="primary"
-          clearable
-          @update:model-value="onFileChange"
-        >
-          <template #item />
-        </v-file-upload>
+        <div class="pa-3 pl-0 w-100">
+          <v-card-title
+            :class="{
+              'py-0 d-flex': true,
+              'text-body-1': smAndDown,
+            }"
+          >
+            <div class="d-flex" style="flex: 1; width: 0">
+              <span class="text-truncate">{{ file.meta.originalFileName }}</span>
+            </div>
+          </v-card-title>
+          <v-card-subtitle class="py-0">
+            Size: {{ $formatBytes(file.meta.size) }}
+            <br>Type: <span>{{ file.meta.type }}</span>
+          </v-card-subtitle>
+          <v-card-actions class="pb-0 flex-wrap" style="min-height: 0">
+            <v-tooltip
+              text="Download"
+              location="bottom"
+            >
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  :loading="downloading"
+                  :disabled="disabled || downloading"
+                  :size="smAndDown ? 'small' : 'default'"
+                  color="primary"
+                  icon
+                  @click="() => onDownloadFile(file)"
+                >
+                  <v-icon icon="mdi-download" />
+                </v-btn>
+              </template>
+            </v-tooltip>
+            <v-tooltip
+              text="Remove"
+              location="bottom"
+            >
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  :disabled="disabled"
+                  :size="smAndDown ? 'small' : 'default'"
+                  color="error"
+                  variant="text"
+                  icon
+                  @click="() => onRemoveFile(file)"
+                >
+                  <v-icon icon="mdi-trash-can-outline" />
+                </v-btn>
+              </template>
+            </v-tooltip>
+          </v-card-actions>
+        </div>
       </div>
-    </div>
-  </v-input>
+    </v-card>
+
+    <v-btn
+      color="primary"
+      block
+      variant="tonal"
+      @click="openFileManager"
+    >
+      File Manager
+    </v-btn>
+  </div>
 
   <!-- ARRAY -->
   <div v-else-if="fieldType.includes('array')">

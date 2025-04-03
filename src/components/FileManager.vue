@@ -26,16 +26,45 @@ const uploadProgress = ref(0);
 const files = ref<IFile[]>([]);
 const getFilesByType = (type: string): IFile[] => {
   if (type === 'all') {
-    return files.value;
+    return acceptedFiles.value;
   } else if (type === 'image') {
-    return files.value.filter((file: IFile) => file.meta.type.startsWith('image'));
+    return acceptedFiles.value.filter((file: IFile) => file.meta.type.startsWith('image'));
   } else if (type === 'video') {
-    return files.value.filter((file: IFile) => file.meta.type.startsWith('video'));
+    return acceptedFiles.value.filter((file: IFile) => file.meta.type.startsWith('video'));
   } else if (type === 'document') {
-    return files.value.filter((file: IFile) => !file.meta.type.startsWith('image') && !file.meta.type.startsWith('video'));
+    return acceptedFiles.value.filter((file: IFile) => !file.meta.type.startsWith('image') && !file.meta.type.startsWith('video'));
   }
   return [];
 }
+const acceptedFiles = computed((): IFile[] => {
+  if (globalStore.fileManager.accept === null) {
+    return files.value;
+  }
+
+  const acceptTypes = globalStore.fileManager.accept.split(',').map(type => type.trim());
+  const validPatterns: any[] = [];
+  acceptTypes.forEach(type => {
+    if (type.startsWith('.')) {
+      validPatterns.push(new RegExp(`\\${type}$`, 'i'));
+    } else if (type.includes('/')) {
+      const [typeBase, subtype] = type.split('/');
+      if (typeBase === '*') {
+        validPatterns.push(/.+/);
+      } else if (subtype === '*') {
+        validPatterns.push(new RegExp(`^${typeBase}/.+`, 'i'));
+      } else {
+        const extension = `.${subtype}`;
+        validPatterns.push(new RegExp(`\\${extension}$`, 'i'));
+      }
+    } else if (type === '*') {
+      validPatterns.push(/.+/); // Match any file
+    }
+  });
+
+  return files.value.filter(file => {
+    return validPatterns.some(pattern => pattern.test(file.meta.originalFileName) || pattern.test(file.meta.type));
+  });
+})
 const filteredFiles = computed((): IFile[] => {
   const words = (search.value || '').toLowerCase().split(/\s+/);
   return getFilesByType(filter.value).filter(item => !search.value || words.every(word => item.meta.originalFileName.toLowerCase().includes(word)));
@@ -46,11 +75,15 @@ const fileIsSelected = (file: IFile): boolean => {
 }
 
 const onFileClick = (file: IFile) => {
-  const index = selectedFiles.value.findIndex(item => item === file);
-  if (index === -1) {
-    selectedFiles.value.push(file);
+  if (!canSelect || globalStore.fileManager.multiple) {
+    const index = selectedFiles.value.findIndex(item => item === file);
+    if (index === -1) {
+      selectedFiles.value.push(file);
+    } else {
+      selectedFiles.value.splice(index, 1);
+    }
   } else {
-    selectedFiles.value.splice(index, 1);
+    selectedFiles.value = [file];
   }
 }
 
@@ -69,6 +102,9 @@ const promptUpload = () => {
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
   fileInput.multiple = true;
+  if (globalStore.fileManager.accept) {
+    fileInput.accept = globalStore.fileManager.accept;
+  }
   fileInput.addEventListener('change', function() {
     if (fileInput.files && fileInput.files.length > 0) {
       upload(fileInput.files);
@@ -141,8 +177,9 @@ const remove = () => {
   });
 }
 
-const select = (files: IFile[]) => {
-  if (globalStore.fileManager.callback) {
+const select = () => {
+  if (globalStore.fileManager.callback && selectedFiles.value.length > 0) {
+    const files = globalStore.fileManager.multiple ? selectedFiles.value : selectedFiles.value[0];
     globalStore.fileManager.callback(files).then(() => {
       globalStore.fileManager.visible = false;
     });
@@ -277,28 +314,34 @@ watch(() => globalStore.fileManager.visible, () => {
                 :color="fileIsSelected(item) ? 'primary' : undefined"
                 @click="onFileClick(item)"
               >
-                <div v-if="canSelect" class="position-absolute" style="top: 0; left: 0; z-index: 10">
+                <div v-if="!canSelect || globalStore.fileManager.multiple" class="position-absolute" style="top: 0; left: 0; z-index: 10">
                   <v-checkbox :model-value="fileIsSelected(item)" color="primary" base-color="surface" hide-details @click.stop.prevent="onFileClick(item)" />
                 </div>
-                <v-img v-if="item.meta.type.startsWith('image')" :src="serverSettings.publicUrl + item.path" :aspect-ratio="(item.meta.width || 1) / (item.meta.height || 1)">
-                  <template #placeholder>
-                    <v-overlay>
-                      <v-progress-circular
-                        indeterminate
-                        size="16"
-                        width="2"
-                      />
-                    </v-overlay>
-                  </template>
-                </v-img>
-                <v-responsive v-else-if="item.meta.type.startsWith('video')" :aspect-ratio="(item.meta.width || 1) / (item.meta.height || 1)">
-                  <video :src="serverSettings.publicUrl + item.path" width="100%" disablePictureInPicture />
-                </v-responsive>
-                <v-sheet v-else>
-                  <v-responsive :aspect-ratio="16 / 9" class="d-flex align-center justify-center text-center">
-                    <v-icon icon="mdi-file" size="96" />
+                <div class="bg-surface">
+                  <v-img
+                    v-if="item.meta.type.startsWith('image')"
+                    :src="serverSettings.publicUrl + item.path"
+                    :aspect-ratio="(item.meta.width || 1) / (item.meta.height || 1)"
+                  >
+                    <template #placeholder>
+                      <v-overlay>
+                        <v-progress-circular
+                          indeterminate
+                          size="16"
+                          width="2"
+                        />
+                      </v-overlay>
+                    </template>
+                  </v-img>
+                  <v-responsive v-else-if="item.meta.type.startsWith('video')" :aspect-ratio="(item.meta.width || 1) / (item.meta.height || 1)">
+                    <video :src="serverSettings.publicUrl + item.path" width="100%" disablePictureInPicture />
                   </v-responsive>
-                </v-sheet>
+                  <v-sheet v-else>
+                    <v-responsive :aspect-ratio="16 / 9" class="d-flex align-center justify-center text-center">
+                      <v-icon icon="mdi-file" size="96" />
+                    </v-responsive>
+                  </v-sheet>
+                </div>
                 <v-card-title class="pb-0">
                   {{ item.meta.originalFileName }}
                 </v-card-title>
@@ -311,12 +354,24 @@ watch(() => globalStore.fileManager.visible, () => {
         </div>
       </v-card-text>
       <template #actions>
+        <v-btn
+          v-if="canUpload"
+          :loading="uploading"
+          :disabled="uploading"
+          :color="uploading ? undefined : 'secondary'"
+          prepend-icon="mdi-upload"
+          text="Upload"
+          variant="outlined"
+          class="px-3"
+          @click="promptUpload"
+        />
         <v-menu location="top">
           <template #activator="{ props }">
             <v-btn
+              v-if="!canSelect || globalStore.fileManager.multiple"
               v-bind="props"
               :disabled="loading || selectedFiles.length === 0"
-              variant="text"
+              variant="outlined"
             >
               Bulk Actions
               <v-icon icon="mdi-chevron-up" end />
@@ -343,17 +398,6 @@ watch(() => globalStore.fileManager.visible, () => {
           </v-list>
         </v-menu>
         <v-spacer />
-        <v-btn
-          v-if="canUpload"
-          :loading="uploading"
-          :disabled="uploading"
-          :color="uploading ? undefined : 'secondary'"
-          prepend-icon="mdi-upload"
-          text="Upload"
-          variant="flat"
-          class="px-3"
-          @click="promptUpload"
-        />
         <v-btn
           v-if="canSelect"
           :disabled="loading || selectedFiles.length === 0"
