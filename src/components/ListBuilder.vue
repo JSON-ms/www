@@ -56,11 +56,11 @@ const formattedList = computed({
           const fieldItem = fields[keys[0]];
           if (isFieldType(fieldItem, 'i18n')) {
             if (item[keys[0]][locale]) {
-              title = item[keys[0]][locale].toString().substring(0, 64);
+              title = (item[keys[0]][locale] || '').toString().substring(0, 64);
             }
           } else {
             if (!isNativeObject(item[keys[0]])) {
-              title = item[keys[0]].toString().substring(0, 64);
+              title = (item[keys[0]] || '').toString().substring(0, 64);
             }
           }
         }

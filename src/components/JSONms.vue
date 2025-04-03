@@ -45,7 +45,7 @@ const interfaceEditor = ref<InstanceType<typeof InterfaceEditor> | null>();
 const sitePreview = ref<InstanceType<typeof SitePreview> | null>();
 const dataEditor = ref<InstanceType<typeof DataEditor> | null>();
 const { serverSettings, interfaceParsedData, interfaceStates, interfaceHasSettingsError, getAvailableSection, deleteInterface, getAvailableLocale, interfaceHasSection, interfaceHasLocale, saveInterface, canSaveInterface, canDeleteInterface } = useInterface();
-const { fetchUserData, canSave, saveUserData, downloading, userDataLoaded, userDataLoading } = useUserData();
+const { fetchUserData, canSave, saveUserData, downloading, userDataLoaded, userDataLoading, setUserData } = useUserData();
 const { sendMessageToIframe } = useIframe();
 const { syncTypings } = useTypings();
 
@@ -107,7 +107,7 @@ const onCreateInterface = () => {
 const onApplyNewInterface = (template: string) => {
   const newInterface = getInterface(template);
   modelStore.setInterface(getInterface(template))
-  modelStore.setUserData({});
+  setUserData({});
 
   newInterface.label = '';
   showNewInterfaceModal.value = false;
@@ -178,11 +178,6 @@ const onLogout = (response: any) => {
     refreshUserData();
     dataEditor.value?.resetValidation()
   }
-
-  // debugger;
-  // modelStore.setInterface(response.interfaces[0]);
-  // modelStore.setUserData({})
-  // router.push('/');
 }
 
 const onEditJson = () => {
@@ -195,7 +190,7 @@ const onShowTypings = () => {
 }
 
 const onApplyJsonContent = (json: any) => {
-  modelStore.setUserData(json);
+  setUserData(json);
 }
 
 const onInterfaceModelChange = (model: IInterface) => {
@@ -210,7 +205,7 @@ const onInterfaceModelChange = (model: IInterface) => {
 
 const onInterfaceContentChange = (content: string) => {
   interfaceModel.value.content = content;
-  modelStore.setUserData(modelStore.userData)
+  setUserData(modelStore.userData)
 }
 
 watch(() => globalStore.admin.interface, () => {
@@ -221,7 +216,7 @@ watch(() => globalStore.admin.interface, () => {
 
 const refreshUserData = (): Promise<any> => {
   return fetchUserData().then((response: any) => {
-    modelStore.setUserData(response.data);
+    setUserData(response.data);
     serverSettings.value = response.settings;
     return response;
   }).then(() => {
@@ -308,6 +303,7 @@ if (autoload) {
     flat
     tile
     disable-resize-watcher
+    disable-route-watcher
   >
     <v-card class="w-100 fill-height d-flex flex-column pa-2 pl-0" theme="dark">
       <InterfaceEditor

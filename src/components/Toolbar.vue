@@ -6,7 +6,6 @@ import GoogleSignInButton from '@/components/GoogleSignInButton.vue';
 import InterfaceSelector from '@/components/InterfaceSelector.vue';
 import {useDisplay} from 'vuetify';
 import {useGlobalStore} from '@/stores/global';
-import router from '@/router';
 import {computed, ref, watch} from 'vue';
 import type {IField, IInterface, IInterfaceData} from '@/interfaces';
 import {useUserData} from '@/composables/user-data';
@@ -32,7 +31,7 @@ const modelStore = useModelStore();
 const { smAndDown } = useDisplay();
 const { windowWidth } = useLayout();
 const { serverSettings, createInterface } = useInterface()
-const { downloadUserData, downloading, userDataLoading, fetchUserData, canFetchUserData, canInteractWithServer, getUserDataErrors } = useUserData();
+const { downloadUserData, downloading, userDataLoading, setUserData, fetchUserData, canFetchUserData, canInteractWithServer, getUserDataErrors } = useUserData();
 const { hasSyncEnabled } = useTypings()
 const { reloading } = useIframe()
 const emit = defineEmits(['locale', 'preview', 'refresh', 'update:model-value', 'create', 'save', 'delete', 'edit-json', 'show-typings', 'logout'])
@@ -94,7 +93,7 @@ const onLocaleChange = (locale: string) => {
 
 const onFetchUserData = () => {
   fetchUserData().then((response: any) => {
-    modelStore.setUserData(response.data);
+    setUserData(response.data);
     serverSettings.value = response.settings;
   })
 }
@@ -109,7 +108,7 @@ const onClearUserData = () => {
     btnIcon: 'mdi-close-box-outline',
     btnColor: 'warning',
     callback: () => new Promise(resolve => {
-      modelStore.setUserData({})
+      setUserData({})
       resolve();
     })
   })

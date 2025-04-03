@@ -94,7 +94,12 @@ export const parseFields = (fields: any = {}, locales = {}) => {
   const result: any = {};
   Object.entries(fields).forEach(([key, field]: any) => {
     result[key] = {};
-    if (isFieldType(field, 'i18n')) {
+    if (isFieldType(field, 'node')) {
+      if (isNativeObject(fields[key].fields)) {
+        result[key] = parseFields(fields[key].fields, locales);
+      }
+    }
+    else if (isFieldType(field, 'i18n')) {
       Object.entries(locales).forEach(([locale]) => {
         result[key][locale] = applyValues(key);
         if (result[key][locale] === undefined) {
@@ -275,6 +280,7 @@ export async function downloadFilesAsZip(urls: string[], jsonData: object | fals
         const response = await fetch(url, params);
         if (!response.ok) {
           console.error(`Failed to fetch ${url}: ${response.statusText}`);
+          reject(`Failed to fetch ${url}: ${response.statusText}`)
           continue;
         }
         const blob = await response.blob();
@@ -282,6 +288,7 @@ export async function downloadFilesAsZip(urls: string[], jsonData: object | fals
         zip.file(fileName, blob);
       } catch (error) {
         console.error(`Error fetching ${url}:`, error);
+        reject(`Error fetching ${url}:` + error)
       }
     }
 

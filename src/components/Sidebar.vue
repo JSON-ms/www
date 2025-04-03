@@ -79,6 +79,7 @@ const version = JSON.parse(process.env.APP_VERSION);
     :temporary="layoutSize.drawer.temporary"
     :width="layoutSize.drawer.width"
     disable-resize-watcher
+    disable-route-watcher
   >
     <v-empty-state
       v-if="!hasSections"

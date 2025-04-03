@@ -31,11 +31,8 @@ export const useModelStore = defineStore('model', {
       this.originalInterface = structuredClone(deepToRaw(model));
     },
     setUserData(data: any) {
-      const { interfaceParsedData } = useInterface();
-      const { getParsedUserData } = useUserData();
-      const parsedData = getParsedUserData(interfaceParsedData.value, deepToRaw(data));
-      this.userData = parsedData;
-      this.setOriginalUserData(parsedData);
+      this.userData = data;
+      this.setOriginalUserData(data);
     },
     setOriginalUserData(data: any) {
       this.originalUserData = structuredClone(deepToRaw(data));
