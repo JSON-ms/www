@@ -62,8 +62,6 @@ export function useLayout() {
       _mobileFrameWidth = _mobileFrameHeight / 1.777;
     }
 
-    console.log(_mobileFrameWidth)
-
     // Reset
     preview.width = _mobileFrameWidth;
     preview.height = _mobileFrameHeight;

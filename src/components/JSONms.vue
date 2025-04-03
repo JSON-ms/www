@@ -254,6 +254,7 @@ useShortcut({
 }).listen();
 initLayout();
 
+setUserData({});
 if (autoload) {
   refreshUserData();
 }
