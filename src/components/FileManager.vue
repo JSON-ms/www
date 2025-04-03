@@ -163,17 +163,23 @@ const close = () => {
 
 const dragOver = ref(false);
 const onDrop = (event: DragEvent) => {
-  dragOver.value = false;
-  const droppedFiles = event.dataTransfer?.files;
-  if (droppedFiles) {
-    upload(droppedFiles);
+  if (canUpload) {
+    dragOver.value = false;
+    const droppedFiles = event.dataTransfer?.files;
+    if (droppedFiles) {
+      upload(droppedFiles);
+    }
   }
 }
 const onDragEnter = () => {
-  dragOver.value = true;
+  if (canUpload) {
+    dragOver.value = true;
+  }
 }
 const onDragLeave = () => {
-  dragOver.value = false;
+  if (canUpload) {
+    dragOver.value = false;
+  }
 }
 
 watch(() => globalStore.fileManager.visible, () => {
@@ -237,7 +243,7 @@ watch(() => globalStore.fileManager.visible, () => {
             indeterminate
           />
           <v-card
-            v-else-if="filteredFiles.length === 0"
+            v-else-if="filteredFiles.length === 0 && canUpload"
             color="transparent"
             class="w-100 fill-height"
             tile
@@ -248,6 +254,19 @@ watch(() => globalStore.fileManager.visible, () => {
               icon="mdi-gesture-tap-button"
               title="Touch to upload"
               text="Or drag and drop files here"
+            />
+          </v-card>
+          <v-card
+            v-else-if="filteredFiles.length === 0"
+            color="transparent"
+            class="w-100 fill-height"
+            tile
+            flat
+          >
+            <v-empty-state
+              icon="mdi-file-hidden"
+              title="Empty"
+              text="No files available yet."
             />
           </v-card>
         </div>
@@ -292,28 +311,37 @@ watch(() => globalStore.fileManager.visible, () => {
         </div>
       </v-card-text>
       <template #actions>
-        <v-btn
-          v-if="canDownload"
-          :loading="downloading"
-          :disabled="loading || downloading || selectedFiles.length === 0"
-          :color="downloading ? undefined : 'secondary'"
-          prepend-icon="mdi-download"
-          :text="'Download (' + selectedFiles.length + ')'"
-          variant="outlined"
-          class="px-3"
-          @click="download"
-        />
-        <v-btn
-          v-if="canDelete"
-          :disabled="loading || deleting || selectedFiles.length === 0"
-          :loading="loading || deleting"
-          :color="selectedFiles.length === 0 || deleting ? undefined : 'error'"
-          :text="'Delete (' + selectedFiles.length + ')'"
-          prepend-icon="mdi-delete"
-          variant="outlined"
-          class="px-3"
-          @click="remove"
-        />
+        <v-menu location="top">
+          <template #activator="{ props }">
+            <v-btn
+              v-bind="props"
+              :disabled="loading || selectedFiles.length === 0"
+              variant="text"
+            >
+              Bulk Actions
+              <v-icon icon="mdi-chevron-up" end />
+            </v-btn>
+          </template>
+          <v-list>
+            <v-list-item
+              :loading="downloading"
+              :disabled="!canDownload || loading || downloading || selectedFiles.length === 0"
+              prepend-icon="mdi-download"
+              @click="download"
+            >
+              <v-list-item-title>Download</v-list-item-title>
+            </v-list-item>
+            <v-list-item
+              :loading="downloading"
+              :disabled="!canDelete || loading || deleting || selectedFiles.length === 0"
+              prepend-icon="mdi-delete"
+              base-color="error"
+              @click="remove"
+            >
+              <v-list-item-title>Delete</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
         <v-spacer />
         <v-btn
           v-if="canUpload"
