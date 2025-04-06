@@ -80,8 +80,9 @@ export function useIframe() {
       } else if (isNativeObject(json) && json.name && json.path) {
         return getSection(json.path) ?? getSection(json.name);
       }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
-      console.error(e);
+      return getSection(route);
     }
     return null;
   }
