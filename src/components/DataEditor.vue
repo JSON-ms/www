@@ -33,7 +33,7 @@ const showContent = computed((): boolean => {
 
 const fields = computed((): {[key: string]: IField } => {
   return Object.fromEntries(
-    Object.entries(selectedSection.value.fields).filter(item => isFieldVisible(item[1], currentRoute.params.section.toString()))
+    Object.entries(selectedSection.value.fields || {}).filter(item => isFieldVisible(item[1], currentRoute.params.section.toString()))
   ) ?? {};
 })
 
