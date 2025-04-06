@@ -28,6 +28,14 @@ const setFocus = () => {
   editor.value?.getAceInstance().renderer.scrollToLine(0, false, true);
 }
 
+const setCaretToOriginalPosition = () => {
+  if (lastPosition) {
+    editor.value?.focus();
+    editor.value?.getAceInstance().selection.moveTo(lastPosition.row, lastPosition.column)
+    lastPosition = null;
+  }
+}
+
 const findNeedleInString = (haystack: string, needle: string) => {
   const lines = haystack.split('\n');
   for (let i = 0; i < lines.length; i++) {
@@ -56,6 +64,7 @@ const scrollToSection = (section: string) => {
   }
 }
 
+let lastPosition;
 onMounted(() => {
   const instance = editor.value?.getAceInstance();
   if (instance) {
@@ -64,6 +73,10 @@ onMounted(() => {
       bindKey: { win: "Ctrl-S", mac: "Command-S" },
       exec: function() {
         if (canSaveInterface.value) {
+          lastPosition = {
+            column: instance.selection.anchor.column,
+            row: instance.selection.anchor.row,
+          };
           emit('save', instance.getValue());
         }
       },
@@ -104,6 +117,7 @@ watch(() => yamlException.value, () => {
 defineExpose({
   scrollToSection,
   setFocus,
+  setCaretToOriginalPosition,
 });
 
 // const yamlStructure = {

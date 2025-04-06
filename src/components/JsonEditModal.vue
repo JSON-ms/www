@@ -5,7 +5,10 @@ import {useGlobalStore} from '@/stores/global';
 const emit = defineEmits(['apply']);
 const content = defineModel<string>({ required: true });
 const visible = defineModel<boolean>('visible');
-const options = { fontSize: 14 };
+const options = {
+  fontSize: 14,
+  showPrintMargin: false,
+};
 const globalStore = useGlobalStore();
 
 const apply = () => {
@@ -31,7 +34,7 @@ const close = () => {
 <template>
   <v-dialog
     v-model="visible"
-    max-width="1200"
+    max-width="800"
     persistent
     scrollable
   >

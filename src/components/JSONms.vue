@@ -9,7 +9,7 @@ import ActionBar from '@/components/ActionBar.vue';
 import TypingsModal from '@/components/TypingsModal.vue';
 import type {IInterface} from '@/interfaces';
 import {useIframe} from '@/composables/iframe';
-import {computed, nextTick, ref, watch} from 'vue';
+import {computed, nextTick, onMounted, ref, watch} from 'vue';
 import {useGlobalStore} from '@/stores/global';
 import {useUserData} from '@/composables/user-data';
 import {type RouteLocationNormalizedGeneric, useRoute} from 'vue-router';
@@ -60,11 +60,15 @@ const tab = computed({
   },
 })
 
-const updateRoute = (hash = currentRoute.params.hash, section = currentRoute.params.section, locale = currentRoute.params.locale) => {
-  const toRoute = '/admin/' + hash + '/' + section + '/' + locale;
-  if (toRoute !== currentRoute.fullPath) {
-    router.replace(toRoute);
-  }
+const updateRoute = (hash = currentRoute.params.hash, section = currentRoute.params.section, locale = currentRoute.params.locale): Promise<void> => {
+  return new Promise(resolve => {
+    const toRoute = '/admin/' + hash + '/' + section + '/' + locale;
+    if (toRoute !== currentRoute.fullPath) {
+      router.replace(toRoute).then(() => resolve());
+    } else {
+      resolve();
+    }
+  });
 }
 
 const showActionBar = computed((): boolean => {
@@ -135,16 +139,24 @@ const onApplyNewInterface = (template: string) => {
 }
 
 const onSaveInterfaceContent = () => {
-  onSaveInterface(interfaceModel.value);
+  onSaveInterface();
 }
 
-const onSaveInterface = (model: IInterface = interfaceModel.value) => {
+const onSaveInterface = () => {
   if (canSaveInterface.value) {
     saveInterface().then(() => {
       bottomSheetData.value = { text: 'Interface saved!', color: 'success', icon: 'mdi-check' };
       syncTypings();
-      globalStore.addInterface(model);
-      updateRoute(model.hash, getAvailableSection(), getAvailableLocale());
+      const newModel = modelStore.interface;
+      globalStore.addInterface(newModel);
+      updateRoute(newModel.hash, getAvailableSection(), getAvailableLocale()).then(() => {
+        // Set cursor to original position
+        setTimeout(() => {
+          if (interfaceEditor.value) {
+            interfaceEditor.value.setCaretToOriginalPosition();
+          }
+        }, 300)
+      });
     })
   }
 }
@@ -198,6 +210,7 @@ const onInterfaceModelChange = (model: IInterface) => {
   userDataLoaded.value = false;
   if (autoload) {
     updateRoute(model.hash, getAvailableSection(), getAvailableLocale());
+    setUserData({});
     refreshUserData();
     dataEditor.value?.resetValidation()
   }
@@ -255,6 +268,10 @@ useShortcut({
 initLayout();
 
 setUserData({});
+onMounted(() => {
+  sitePreview.value?.interfaceEditor?.scrollToSection(getAvailableSection());
+  interfaceEditor.value?.scrollToSection(getAvailableSection());
+})
 if (autoload) {
   refreshUserData();
 }
@@ -432,7 +449,7 @@ if (autoload) {
     :can-select="globalStore.fileManager.canSelect"
     :can-upload="globalStore.session.loggedIn"
     :can-delete="globalStore.session.loggedIn"
-    :can-download="globalStore.session.loggedIn"
+    can-download
   />
 </template>
 

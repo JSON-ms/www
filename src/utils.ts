@@ -7,9 +7,13 @@ import {useModelStore} from '@/stores/model';
 
 export const allNonI18nFields: string[] = [
   'string',
+  'textarea',
+  'password',
+  'url',
   'markdown',
   'wysiwyg',
   'number',
+  'slider',
   'rating',
   'select',
   'checkbox',
@@ -24,14 +28,27 @@ export const allFields: string[] = [
   ...allNonI18nFields.map(item => 'i18n:' + item),
   'i18n',
 ]
-export const isFieldType = (field: IField, type: string): boolean => {
+export const isFieldType = (field: IField, types: string | string[]): boolean => {
   if (!field) {
     return false;
   }
-  if (field.type === type) {
-    return true;
+  types = Array.isArray(types) ? types : [types];
+  for (let i = 0; i < types.length; i++) {
+    const type = types[i];
+    if (
+      field.type === type
+      || (
+        allNonI18nFields.find(item => item === type)
+        && field.type === ('i18n:' + type)
+      )
+    ) {
+      return true;
+    }
   }
-  return (type === 'i18n' && ['i18n', ...allNonI18nFields.map(item => 'i18n:' + item)].includes(field.type));
+  return false;
+}
+export const isFieldI18n = (field: IField): boolean => {
+  return field && typeof field.type === 'string' && field.type.startsWith('i18n');
 }
 export const getFieldType = (field: IField): string => {
   return typeof field?.type === 'string' ? field.type : 'unknown'
@@ -42,7 +59,7 @@ export const getInterface = (content: string = getDefaultInterfaceContent()): II
     label: 'Untitled',
     hash: 'new',
     content,
-    server_url: '',
+    webhook: null,
     permission_interface: [],
     permission_admin: [],
     type: 'owner',
@@ -51,6 +68,16 @@ export const getInterface = (content: string = getDefaultInterfaceContent()): II
 
 export const isNativeObject = (obj: any) => {
   return obj && !Array.isArray(obj) && typeof obj === 'object';
+}
+
+export const valueToString = (value: any) => {
+  if (value === null) {
+    return "null";
+  } else if (value === undefined) {
+    return "undefined";
+  } else {
+    return String(value);
+  }
 }
 
 export const getDefaultInterfaceContent = (): string => {
@@ -75,7 +102,7 @@ export const parseFields = (fields: any = {}, locales = {}) => {
     if (multipleTypes.includes(type) || (mayBeMultipleTypes.includes(type) && multiple)) {
       value = [];
     } else if (isFieldType(field, 'file')) {
-      value = required ? { path: '', meta: {
+      value = required ? { path: null, meta: {
         type: '',
         size: 0,
         originalFileName: '',
@@ -83,7 +110,11 @@ export const parseFields = (fields: any = {}, locales = {}) => {
         height: 0,
       } } as IFile : null;
     } else {
-      value = required ? isFieldType(field, 'number') ? 0 : '' : null;
+      value = required
+        ? isFieldType(field, ['number', 'slider', 'rating'])
+          ? 0
+          : ''
+        : null;
     }
     return value;
   }
@@ -96,7 +127,7 @@ export const parseFields = (fields: any = {}, locales = {}) => {
         result[key] = parseFields(fields[key].fields, locales);
       }
     }
-    else if (isFieldType(field, 'i18n')) {
+    else if (isFieldI18n(field)) {
       Object.entries(locales).forEach(([locale]) => {
         result[key][locale] = applyValues(key);
         if (result[key][locale] === undefined) {
@@ -274,6 +305,7 @@ export async function downloadFilesAsZip(urls: string[], jsonData: object | fals
             'X-Jms-Api-Key': modelStore.interface.server_secret,
           },
         };
+        // @ts-expect-error No idea why it complains...
         const response = await fetch(url, params);
         if (!response.ok) {
           console.error(`Failed to fetch ${url}: ${response.statusText}`);
@@ -339,4 +371,40 @@ export function loopThroughFields(
   };
 
   loop(fields);
+}
+
+export function getFileIcon(file: IFile): string {
+  const iconMapping: {[key: string]: string} = {
+    pdf: 'mdi-file-pdf-box',
+    doc: 'mdi-file-word',
+    docx: 'mdi-file-word',
+    xls: 'mdi-file-excel',
+    xlsx: 'mdi-file-excel',
+    ppt: 'mdi-file-powerpoint',
+    pptx: 'mdi-file-powerpoint',
+    txt: 'mdi-file-document-outline',
+    rtf: 'mdi-file-document-outline',
+    jpg: 'mdi-file-image',
+    jpeg: 'mdi-file-image',
+    png: 'mdi-file-image',
+    gif: 'mdi-file-image',
+    svg: 'mdi-file-image',
+    zip: 'mdi-folder-zip',
+    rar: 'mdi-folder-zip',
+    mp3: 'mdi-music',
+    wav: 'mdi-music',
+    mp4: 'mdi-file-video',
+    avi: 'mdi-file-video',
+    mov: 'mdi-file-video',
+    html: 'mdi-file-code',
+    css: 'mdi-file-code',
+    js: 'mdi-file-code',
+    json: 'mdi-file-code',
+    xml: 'mdi-file-code'
+  };
+  const extension = file.meta.originalFileName.split('.').pop() || '';
+  if (iconMapping[extension]) {
+    return iconMapping[extension];
+  }
+  return 'mdi-file';
 }

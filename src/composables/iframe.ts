@@ -1,9 +1,10 @@
-import {deepToRaw} from '@/utils';
+import {deepToRaw, isNativeObject} from '@/utils';
 import router from '@/router';
 import {ref} from 'vue';
 import {useRoute} from 'vue-router';
 import {useInterface} from '@/composables/interface';
 import {useModelStore} from '@/stores/model';
+import {useGlobalStore} from '@/stores/global';
 
 const siteCompatible = ref(false);
 const reloading = ref(false);
@@ -14,6 +15,7 @@ export function useIframe() {
 
   const currentRoute = useRoute();
   const modelStore = useModelStore();
+  const globalStore = useGlobalStore();
   const { serverSettings, interfaceParsedData, getAvailableSection, getAvailableLocale } = useInterface();
 
   const getIframe = (): HTMLIFrameElement | null => {
@@ -32,11 +34,68 @@ export function useIframe() {
   }
 
   const sendUserDataToIframe = () => {
+    const sectionKey = currentRoute.params.section.toString();
+    const section = interfaceParsedData.value.sections[sectionKey];
     sendMessageToIframe('data', JSON.stringify({
       data: deepToRaw(modelStore.userData),
+      section: {
+        name: sectionKey,
+        paths: section && section.path ? Array.isArray(section.path) ? section.path : [section.path] : [],
+      },
       settings: deepToRaw(serverSettings.value),
       locale: currentRoute.params.locale.toString(),
     }));
+  }
+
+  const getSectionFromRoute = (route: string): string | null => {
+    const getSection = (value: string): string | null => {
+      for(const sectionKey in interfaceParsedData.value.sections) {
+        const section = interfaceParsedData.value.sections[sectionKey];
+        if (section.path) {
+          const paths = Array.isArray(section.path) ? section.path : [section.path];
+          for (let i = 0; i < paths.length; i++) {
+            const path = paths[i];
+
+            const simplifiedWildcardRegExp = '^' + path.replace('{{locale}}', '.*') + '$'
+              .replace(/\//g, '\\/') // Escape forward slashes
+              .replace(/\*/g, '.*'); // Replace wildcards with regex
+
+            if (
+              path === value
+              || path.replace('{{locale}}', currentRoute.params.locale.toString()) === value
+              || new RegExp(simplifiedWildcardRegExp).test(value)
+              || new RegExp(path).test(value)
+            ) {
+              return sectionKey;
+            }
+          }
+        }
+      }
+      return null;
+    }
+    try {
+      const json = JSON.parse(route);
+      if (typeof json === 'string') {
+        return getSection(json);
+      } else if (isNativeObject(json) && json.name && json.path) {
+        return getSection(json.path) ?? getSection(json.name);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return null;
+  }
+
+  const getPathsFromSectionKey = (key: string): string[] => {
+    const section = interfaceParsedData.value.sections[key];
+    if (section) {
+      if (Array.isArray(section.path)) {
+        return section.path;
+      } else if (typeof section.path === 'string') {
+        return [section.path];
+      }
+    }
+    return [];
   }
 
   const listenIframeMessage = (event: MessageEvent) => {
@@ -45,16 +104,22 @@ export function useIframe() {
         case 'init':
           setTimeout(() => {
             sendUserDataToIframe();
-            sendMessageToIframe('section', (currentRoute.params.section || '').toString());
+            const sectionKey = (currentRoute.params.section || '').toString();
+            const paths = getPathsFromSectionKey(sectionKey);
+            sendMessageToIframe('section', JSON.stringify({
+              name: sectionKey,
+              paths,
+            }));
             siteCompatible.value = true;
             reloading.value = false;
           }, 500)
           break;
         case 'route':
-          if (interfaceParsedData.value.sections[event.data.data]) {
+          const section = getSectionFromRoute(event.data.data);
+          if (section) {
             clearTimeout(iframeRouteTimeout);
             iframeRouteTimeout = setTimeout(() => {
-              router.push('/admin/' + modelStore.interface.hash + '/' + event.data.data + '/' + getAvailableLocale());
+              router.push('/admin/' + modelStore.interface.hash + '/' + section + '/' + getAvailableLocale());
             }, 100);
           }
           break;
@@ -63,6 +128,47 @@ export function useIframe() {
           iframeRouteTimeout = setTimeout(() => {
             router.push('/admin/' + modelStore.interface.hash + '/' + getAvailableSection() + '/' + event.data.data);
           }, 100);
+          break;
+        case 'commands':
+          try {
+            const commands = JSON.parse(event.data.data);
+            commands.forEach((command: string) => {
+              switch (command) {
+                case 'openDrawer':
+                  globalStore.setAdmin({ drawer: true });
+                  break;
+                case 'closeDrawer':
+                  globalStore.setAdmin({ drawer: true });
+                  break;
+                case 'openAdvanced':
+                  globalStore.setAdmin({ interface: true });
+                  break;
+                case 'closeAdvanced':
+                  globalStore.setAdmin({ interface: false });
+                  break;
+                case 'showData':
+                  globalStore.setAdmin({ tab: 'data' });
+                  break;
+                case 'showSettings':
+                  globalStore.setAdmin({ tab: 'settings' });
+                  break;
+                case 'showDocs':
+                  globalStore.setAdmin({ tab: 'docs' });
+                  break;
+                case 'setMobile':
+                  globalStore.setAdmin({ previewMode: 'mobile' });
+                  break;
+                case 'setDesktop':
+                  globalStore.setAdmin({ previewMode: 'desktop' });
+                  break;
+                case 'hideDevice':
+                  globalStore.setAdmin({ previewMode: null });
+                  break;
+              }
+            })
+          } catch (e) {
+            console.error(e);
+          }
           break;
       }
     }
@@ -74,5 +180,6 @@ export function useIframe() {
     sendMessageToIframe,
     sendUserDataToIframe,
     listenIframeMessage,
+    getPathsFromSectionKey,
   }
 }

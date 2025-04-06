@@ -48,12 +48,86 @@ sections:
         label: Body
 ```
 
-### Explanation:
+#### Explanation:
 
 - `sections`: This is the top-level key that groups all the different sections of your admin panel.
 - `home`: This **customizable key** represents a specific section for your app. It will be used as the identifier in the payload when saving the field data in the admin panel.
 - `label`: The value associated with this key is the label that will be displayed in the sidebar of the admin panel.
 - `fields`: This key contains all the fields that will be displayed and editable by the user within this section.
+
+### Paths
+
+If you want to synchronize your sections with your website or app pages, you need to define paths. By default, if you do not set this parameter, JSON.ms will still try to find a route name matching the section key (in this case, "about"). 
+
+```yaml
+section:
+  about:
+    label: About page
+    path: /about-us
+```
+
+Here's a simple way to map a path to a section. Obviously routes are not always as simple so there are different approaches you can take. Paths support arrays, variables, wildcards and regexes.
+
+Here's a more advanced approach:
+
+```yaml
+section:
+  about:
+    label: About page
+    path:
+      - /{{locale}}/about-us
+      - about___{{locale}}
+      - about___*
+      - about___.{2} 
+```
+
+The {{locale}} variable will be replaced with the current locale of the website. In this scenario, all paths will be analysed. The first one has been defined as a full path, the second as a path name (in this case, the way Nuxt handles route names), the third one includes a wildcard and the last one is a regex.
+
+### Conditional fields
+
+You can show or hide fields based on a set of conditions. Let's adjust the same example as above and try to show the body field if the title has a specific value.
+
+```yaml
+section:
+  about:
+    label: About page
+    fields:
+      title:
+        type: string
+        label: Title
+      body:
+        type: markdown
+        label: Body
+        conditional: about.title == "potato"
+```
+
+If you look closely at the body field, there's a new conditional attribute. This can be a string or an array if you need multiple conditions. In this scenario, `body` will only appear if the value of `title` is `potato`.
+
+The format for the conditional attribute is the following: `path`, `operator`, `expected value`, seperated by an empty space, just like if you were writing Javascript. If your expected value is a string that contains spaces, wrap your expected value in double-quotes.
+
+**Available operators**: `==`, `===`, `!=`, `!==`, `>`, `>=`, `<`, `<=`
+
+Now let's look at a more advanced example using an array.
+
+```yaml
+section:
+  about:
+    label: About page
+    fields:
+      items:
+        type: array
+        label: Items
+        fields:
+          title:
+            type: string
+            label: Title
+          body:
+            type: markdown
+            label: Body
+            conditional: this.title == "potato"
+```
+
+So this is a similar structure, however the `about` section now contains a field named `items` which is an array that contains a `title` and a `body`. Now what if we want the condition to be based on the value of an item that is within of the same index of the array we're in? That's where `this` becomes handy! Now we're telling the conditional field to check for a field named `title` at the same level of `body`.  
 
 ### Fields
 
@@ -72,6 +146,7 @@ For instance:
 - `markdown`: A fully-featured Markdown editor that allows for easy formatting of text using simple syntax.
 - `number`: A numeric input field for entering numbers.
 - `rating`: A component that allows users to provide feedback or evaluate an item using a star or point system, typically ranging from 1 to 5, visually represented through icons or bars.
+- `slider`: A slider component that allows you to select a number. 
 - `select`: A dropdown menu that allows users to choose one or multiple items from a predefined list.
 - `checkbox`: A binary input that allows users to select one or more items from a set of choices.
 - `radio`: A set of options where only one can be selected at a time, typically displayed as buttons.
@@ -99,6 +174,11 @@ For instance:
 - `required`: (Optional) It ensures that the user must provide a value, preventing the form from being submitted until the field is completed.
 - `fields`: This is applicable only for `array` and `node` types. You can use any supported type here, and you can nest sub-arrays as needed to create complex data structures and hierarchies.
 - `items`: This is applicable only for `select`, `checkbox` and `radio` types. You can list all available values or even use an enum.
+- `min`: An optional minimum number. Works with `number` and `slider` fields.
+- `max`: An optional maximum number. Works with `number` and `slider` fields.
+- `length`: An optional length amount of stars in `rating` field.
+- `step`: An optional incremental amount when using `number` and `slider` fields.
+- `half-increments`: (Optional) Allows half-increments of stars when using the `rating` field.
 
 ## Enums
 

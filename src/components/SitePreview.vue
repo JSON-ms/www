@@ -24,7 +24,7 @@ const loading = ref(false);
 const killIframe = ref(false);
 const siteNotCompatibleSnack = ref(false);
 const { layoutSize, windowHeight, layoutPx } = useLayout();
-const { reloading, siteCompatible, sendMessageToIframe, listenIframeMessage, sendUserDataToIframe } = useIframe();
+const { reloading, siteCompatible, sendMessageToIframe, getPathsFromSectionKey, listenIframeMessage, sendUserDataToIframe } = useIframe();
 const { userDataLoading } = useUserData();
 const iframeErrorMsg = ref('This site is not JSONms compatible');
 
@@ -112,7 +112,12 @@ watch(() => modelStore.userData, () => {
 
 router.afterEach((to, from) => {
   if (to.params.section.toString() !== from.params.section.toString()) {
-    sendMessageToIframe('section', to.params.section.toString());
+    const sectionKey = to.params.section.toString();
+    const paths = getPathsFromSectionKey(sectionKey);
+    sendMessageToIframe('section', JSON.stringify({
+      name: sectionKey,
+      paths: paths,
+    }));
   }
 })
 onMounted(() => {

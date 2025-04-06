@@ -9,6 +9,7 @@ const visible = defineModel<boolean>('visible');
 
 const language = ref<'typescript' | 'php'>('typescript')
 const content = ref('')
+const defaultObjOnly = ref(false)
 const options = {
   fontSize: 14,
   showPrintMargin: false,
@@ -35,9 +36,9 @@ const close = () => {
 
 const updateContent = () => {
   if (language.value === 'typescript') {
-    content.value = getTypescriptTypings();
+    content.value = getTypescriptTypings(defaultObjOnly.value);
   } else if (language.value === 'php') {
-    content.value = getPhpTypings();
+    content.value = getPhpTypings(defaultObjOnly.value);
   }
 }
 
@@ -52,6 +53,7 @@ const handle = computed((): FileSystemFileHandle | null => {
 })
 
 watch(language, updateContent)
+watch(defaultObjOnly, updateContent)
 watch(visible, () => {
   if (visible.value) {
     updateContent();
@@ -69,7 +71,12 @@ watch(visible, () => {
       title="Typings"
       prepend-icon="mdi-language-typescript"
     >
-<!--      <template #append>-->
+      <template #append>
+        <v-checkbox
+          v-model="defaultObjOnly"
+          label="Default objects only"
+          hide-details
+        />
 <!--        <v-tabs v-model="language" class="my-n8">-->
 <!--          <v-tab value="typescript">-->
 <!--            <v-icon icon="mdi-language-typescript" start />-->
@@ -80,7 +87,7 @@ watch(visible, () => {
 <!--            PHP-->
 <!--          </v-tab>-->
 <!--        </v-tabs>-->
-<!--      </template>-->
+      </template>
       <v-card theme="dark" class="pa-1 pl-0" tile elevation="0">
         <v-ace-editor
           v-model:value="content"
@@ -98,7 +105,7 @@ watch(visible, () => {
         </strong></span>
         <v-spacer />
         <v-btn
-          v-if="!typingFileHandle[language]"
+          v-if="!handle"
           prepend-icon="mdi-file-sync"
           variant="flat"
           color="primary"

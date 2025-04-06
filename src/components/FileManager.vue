@@ -3,7 +3,7 @@ import { useGlobalStore } from '@/stores/global';
 import type { IFile, IInterface, IServerSettings} from '@/interfaces';
 import {computed, nextTick, ref, watch} from 'vue';
 import {Services} from '@/services';
-import {downloadFilesAsZip, phpStringSizeToBytes} from '@/utils';
+import {downloadFilesAsZip, getFileIcon, phpStringSizeToBytes} from '@/utils';
 
 const globalStore = useGlobalStore();
 const interfaceModel = defineModel<IInterface>({ required: true });
@@ -166,12 +166,12 @@ const remove = () => {
             .then(() => {
               selectedFiles.value = selectedFiles.value.filter(item => item.path !== file.path);
               files.value = files.value.filter(item => item.path !== file.path);
-              resolve();
             })
         );
       }
       return Promise.all(promises)
         .catch(globalStore.catchError)
+        .finally(resolve)
         .finally(() => deleting.value = false);
     })
   });
@@ -338,7 +338,7 @@ watch(() => globalStore.fileManager.visible, () => {
                   </v-responsive>
                   <v-sheet v-else>
                     <v-responsive :aspect-ratio="16 / 9" class="d-flex align-center justify-center text-center">
-                      <v-icon icon="mdi-file" size="96" />
+                      <v-icon :icon="getFileIcon(item)" size="96" />
                     </v-responsive>
                   </v-sheet>
                 </div>
@@ -387,8 +387,9 @@ watch(() => globalStore.fileManager.visible, () => {
               <v-list-item-title>Download</v-list-item-title>
             </v-list-item>
             <v-list-item
+              v-if="canDelete"
               :loading="downloading"
-              :disabled="!canDelete || loading || deleting || selectedFiles.length === 0"
+              :disabled="loading || deleting || selectedFiles.length === 0"
               prepend-icon="mdi-delete"
               base-color="error"
               @click="remove"

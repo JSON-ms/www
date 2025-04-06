@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import {ref, watch} from 'vue';
+import {computed, ref, watch} from 'vue';
 import { useDisplay } from 'vuetify';
-import Rules from '@/rules';
 import type {IInterface} from '@/interfaces';
 import {useInterface} from '@/composables/interface';
+import {useGlobalStore} from '@/stores/global';
+import WebhookManagerModal from '@/components/WebhookManagerModal.vue';
 
 // Definitions
+const globalStore = useGlobalStore();
 const formIsValid = ref(false);
 const interfaceModel = defineModel<IInterface>({ required: true });
 const { secretKey, cypherKey, adminUrl, canOpenAdminUrl, computedServerSecretKey, computedCypherKey, interfaceStates, getInterfaceRules, getSecretKey, getCypherKey } = useInterface();
@@ -38,6 +40,27 @@ const select = () => {
   }
 }
 
+const server = computed({
+  get(): string | null {
+    return interfaceModel.value.webhook ?? null;
+  },
+  set(value: string) {
+    interfaceModel.value.webhook = value;
+  }
+})
+
+const showWebhookManager = ref(false);
+
+const manageWebhooks = () => {
+  showWebhookManager.value = true;
+}
+
+watch(() => interfaceModel.value.webhook, () => {
+  secretKey.value = '';
+  cypherKey.value = '';
+  interfaceStates.value.secretKeyLoaded = false;
+  interfaceStates.value.cypherKeyLoaded = false;
+})
 watch(() => interfaceModel.value.hash, () => {
   secretKey.value = '';
   cypherKey.value = '';
@@ -71,7 +94,7 @@ watch(() => interfaceModel.value.hash, () => {
         <hr>
       </v-card-text>
       <v-card-title>
-        Admin
+        Public URL
       </v-card-title>
       <v-card-text class="d-flex flex-column" style="gap: 1rem">
 
@@ -113,11 +136,17 @@ watch(() => interfaceModel.value.hash, () => {
       <v-card-title>Server</v-card-title>
       <v-card-text class="d-flex flex-column" style="gap: 1rem">
 
+        <WebhookManagerModal
+          v-model="showWebhookManager"
+        />
+
         <!-- SERVER URL -->
-        <v-text-field
-          v-model="interfaceModel.server_url"
+        <v-select
+          v-model="server"
+          :items="globalStore.session.webhooks"
           :disabled="demo || disabled"
-          :rules="getInterfaceRules('server_url')"
+          item-title="url"
+          item-value="uuid"
           prepend-inner-icon="mdi-webhook"
           hide-details="auto"
           hint="This feature allows you to specify a URL that will be triggered whenever data is read from or saved to the admin panel. By integrating a webhook, you can synchronize data with a remote server and perform various transformations."
@@ -126,19 +155,27 @@ watch(() => interfaceModel.value.hash, () => {
           clearable
           autocomplete="webhook"
         >
-          <template v-if="interfaceModel.server_url && Rules.isUrl(interfaceModel.server_url) && !interfaceModel.server_url.startsWith('https://')" #message>
-            <span class="text-error">It is not safe to use an unsecured protocol (HTTP) to communicate your data. Please be aware that your information may be vulnerable to interception by unauthorized parties. For your safety, we enforce using a secure connection (HTTPS) to protect your sensitive data during transmission.</span>
-          </template>
           <template #label>
             <span class="mr-2 text-error">*</span>Webhook Endpoint
           </template>
-        </v-text-field>
+
+          <template #append-inner>
+            <v-btn
+              variant="outlined"
+              size="small"
+              @mousedown.stop
+              @click="manageWebhooks"
+            >
+              Manage
+            </v-btn>
+          </template>
+        </v-select>
 
         <!-- SERVER SECRET -->
         <v-text-field
           v-model="computedServerSecretKey"
           :type="interfaceStates.secretKeyLoaded ? 'text' : 'password'"
-          :disabled="demo || disabled || !interfaceModel.uuid"
+          :disabled="!server || demo || disabled || !interfaceModel.uuid"
           prepend-inner-icon="mdi-key-chain"
           hide-details="auto"
           label="API Server Secret"
@@ -165,7 +202,7 @@ watch(() => interfaceModel.value.hash, () => {
         <v-text-field
           v-model="computedCypherKey"
           :type="interfaceStates.cypherKeyLoaded ? 'text' : 'password'"
-          :disabled="demo || disabled || !interfaceModel.uuid"
+          :disabled="!server || demo || disabled || !interfaceModel.uuid"
           prepend-inner-icon="mdi-script-text-key-outline"
           hide-details="auto"
           label="API Cypher Key"

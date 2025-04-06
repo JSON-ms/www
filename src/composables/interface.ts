@@ -1,6 +1,6 @@
 import {computed, ref} from 'vue';
-import {getInterface, isNativeObject, objectsAreDifferent, isFieldType} from '@/utils';
-import type {IField, IInterface, IInterfaceData, IServerSettings} from '@/interfaces';
+import {getInterface, isNativeObject, objectsAreDifferent, isFieldType, getDataByPath, valueToString} from '@/utils';
+import type {IField, IInterface, IInterfaceData, IServerSettings, IWebhook} from '@/interfaces';
 import Rules from '@/rules';
 import {useGlobalStore} from '@/stores/global';
 import {Services} from '@/services';
@@ -25,7 +25,7 @@ export function useInterface() {
   const currentRoute = useRoute();
   const siteCompatible = ref(false);
   const siteNotCompatibleSnack = ref(false);
-  const yamlException = ref<(EditorAnnotation | null)[]>([]);
+  const yamlException = ref<(EditorAnnotation)[]>([]);
 
   const interfaceStates = ref({
     saving: false,
@@ -55,15 +55,18 @@ export function useInterface() {
   const adminUrl = computed((): string => {
     return adminBaseUrl.value + '/admin/' + (modelStore.interface.hash || 'demo');
   })
+  const webhook = computed((): IWebhook | null => {
+    return globalStore.session.webhooks.find(webhook => webhook.uuid === modelStore.interface.webhook) ?? null;
+  })
   const computedServerSecretKey = computed((): string => {
     return interfaceStates.value.secretKeyLoaded
       ? secretKey.value
-      : modelStore.interface.server_secret || '';
+      : webhook.value?.secret || '';
   })
   const computedCypherKey = computed((): string => {
     return interfaceStates.value.cypherKeyLoaded
       ? cypherKey.value
-      : modelStore.interface.cypher_key || '';
+      : webhook.value?.cypher || '';
   })
 
   const interfaceIsPristine = computed((): boolean => {
@@ -144,6 +147,39 @@ export function useInterface() {
     return errors;
   }
 
+  const isFieldVisible = (field: IField, currentPath?: string): boolean => {
+    if (field.conditional) {
+      const authorizedOperators = ['==', '===', '!=', '!==', '>', '>=', '<', '<='];
+      const conditions = Array.isArray(field.conditional) ? field.conditional : [field.conditional];
+      for (let i = 0; i < conditions.length; i++) {
+        const subConditions = conditions[i].split('&');
+        for (let j = 0; j < subConditions.length; j++) {
+          const subCondition = subConditions[j];
+          const [ path, operator, ...expectedValue ] = subCondition.split(' ').map((item: string) => item.trim());
+          let adjustedPath = path;
+          let adjustedExpectedValue = expectedValue.join(' ');
+          if (adjustedExpectedValue.startsWith('"') && adjustedExpectedValue.endsWith('"')) {
+            adjustedExpectedValue = adjustedExpectedValue.slice(1, -1);
+          }
+          adjustedExpectedValue = adjustedExpectedValue.replace(/\\"/g, '"')
+          if (path.startsWith('this.')) {
+            adjustedPath = (currentPath ? currentPath + '.' : '') + path.substring(5);
+          }
+          const value = getDataByPath(modelStore.userData, adjustedPath);
+          if (
+            authorizedOperators.includes(operator)
+            && valueToString(value) === valueToString(adjustedExpectedValue)
+          ) {
+            return true;
+          }
+        }
+      }
+    } else {
+      return true;
+    }
+    return false;
+  }
+
   const getParsedInterface = (data: IInterface = getInterface()): IInterfaceData | null => {
     let parseData: any = {};
     try {
@@ -222,7 +258,7 @@ export function useInterface() {
 
   const interfaceHasSection = (section: string, data: IInterfaceData = interfaceParsedData.value) => {
     const keys = Object.keys(data.sections);
-    return !!(keys.find(section => section === currentRoute.params.section));
+    return !!(keys.find(key => key === section));
   }
 
   const getAvailableSection = (data: IInterfaceData = interfaceParsedData.value, section = currentRoute.params.section): string => {
@@ -240,7 +276,7 @@ export function useInterface() {
 
   const interfaceHasLocale = (locale: string, data: IInterfaceData = interfaceParsedData.value) => {
     const keys = Object.keys(data.locales);
-    return !!(keys.find(locale => locale === currentRoute.params.locale));
+    return !!(keys.find(key => key === locale));
   }
 
   const interfaceParsedData = computed((): IInterfaceData => {
@@ -279,7 +315,6 @@ export function useInterface() {
   const resetInterface = () => {
     siteCompatible.value = false;
     siteNotCompatibleSnack.value = false;
-
     modelStore.setOriginalInterface(modelStore.interface);
   }
 
@@ -325,11 +360,11 @@ export function useInterface() {
     return getInterfaceErrors(keys).length > 0;
   }
 
-  const getSecretKey = (): Promise<string> => {
+  const getSecretKey = async (): Promise<string> => {
     const globalStore = useGlobalStore();
     interfaceStates.value.loadingSecretKey = true;
     interfaceStates.value.secretKeyLoaded = false;
-    return Services.get(import.meta.env.VITE_SERVER_URL + '/interface/secret-key/' + modelStore.interface.uuid)
+    return Services.get(import.meta.env.VITE_SERVER_URL + '/webhook/secret-key/' + webhook.value?.uuid)
       .then(response => secretKey.value = response)
       .catch(error => globalStore.catchError(error))
       .finally(() => {
@@ -338,11 +373,11 @@ export function useInterface() {
       })
   }
 
-  const getCypherKey = (): Promise<string> => {
+  const getCypherKey = async (): Promise<string> => {
     const globalStore = useGlobalStore();
     interfaceStates.value.loadingCypherKey = true;
     interfaceStates.value.cypherKeyLoaded = false;
-    return Services.get(import.meta.env.VITE_SERVER_URL + '/interface/cypher-key/' + modelStore.interface.uuid)
+    return Services.get(import.meta.env.VITE_SERVER_URL + '/webhook/cypher-key/' + webhook.value?.uuid)
       .then(response => cypherKey.value = response)
       .catch(error => globalStore.catchError(error))
       .finally(() => {
@@ -451,8 +486,6 @@ export function useInterface() {
     return !!(modelStore.interface.uuid);
   })
 
-  modelStore.setOriginalInterface(modelStore.interface);
-
   return {
     adminBaseUrl,
     canOpenAdminUrl,
@@ -485,5 +518,6 @@ export function useInterface() {
     resetInterfaceSettings,
     secretKey,
     cypherKey,
+    isFieldVisible,
   };
 }

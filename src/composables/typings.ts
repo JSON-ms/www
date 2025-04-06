@@ -1,7 +1,7 @@
 import type {IField} from '@/interfaces';
 import {computed, ref} from 'vue';
 import {useInterface} from '@/composables/interface';
-import {loopThroughFields} from '@/utils';
+import {isFieldI18n, loopThroughFields} from '@/utils';
 import {useUserData} from '@/composables/user-data';
 import {useModelStore} from '@/stores/model';
 
@@ -89,6 +89,7 @@ export function useTypings() {
       wysiwyg: 'string',
       markdown: 'string',
       number: 'number',
+      slider: 'number',
       rating: 'number',
       select: field.multiple ? '[]' : 'string',
       checkbox: field.multiple ? '[]' : 'string',
@@ -108,17 +109,11 @@ export function useTypings() {
     if (field?.items && typeof field.items === 'string' && field.items.startsWith('enums.')) {
       const name = field.items.split('enums.');
       type = 'JmsEnum' + getInterfaceName(name[1]);
-      if (field?.multiple) {
-        type = `(${type})[]`;
-      }
     } else if (field?.items) {
       type = '\'' + Object.keys(field.items).join('\' | \'') + '\'';
-      if (field?.multiple) {
-        type = `(${type})[]`;
-      }
     }
 
-    if (field?.type.includes('i18n')) {
+    if (isFieldI18n(field)) {
       let i18nType = type;
       if (!field.required && !field?.multiple) {
         i18nType += ' | null';
@@ -126,6 +121,8 @@ export function useTypings() {
       type = `JmsLocaleSet<${i18nType}>`;
     } else if (!field.required && !field?.multiple) {
       type += ' | null';
+    } else if (field?.multiple) {
+      type = type.includes(' | ') ? `(${type})[]` : `${type}[]`;
     }
     return type;
   }
@@ -193,72 +190,77 @@ export function useTypings() {
     return items;
   }
 
-  const getTypescriptTypings = (): string => {
+  const getTypescriptTypings = (defaultObjOnly = false): string => {
     const defaultObject = getParsedUserData();
     const locales = interfaceParsedData.value.locales;
     const typescript: JmsInterface[] = [];
-    let result = `export type JmsLocale = '${Object.keys(locales).join('\' | \'')}'`;
-    result += '\n\n';
-    result += `export type JmsSection = '${Object.keys(interfaceParsedData.value.sections).join('\' | \'')}'`;
+    let result = '';
+      if (!defaultObjOnly) {
+        result += `export type JmsLocale = '${Object.keys(locales).join('\' | \'')}'`;
+        result += '\n\n';
+        result += `export type JmsSection = '${Object.keys(interfaceParsedData.value.sections).join('\' | \'')}'`;
 
-    // Add enums if any...
-    if (Object.keys(interfaceParsedData.value.enums).length > 0) {
+      // Add enums if any...
+      if (Object.keys(interfaceParsedData.value.enums).length > 0) {
+        result += '\n\n';
+        Object.keys(interfaceParsedData.value.enums).forEach((enumKey, enumIndex) => {
+          if (enumIndex > 0) {
+            result += '\n\n';
+          }
+          const enumItem = interfaceParsedData.value.enums[enumKey];
+          result += `export type JmsEnum${getInterfaceName(enumKey)} = '${Object.keys(enumItem).join('\' | \'')}'`;
+        })
+      }
       result += '\n\n';
-      Object.keys(interfaceParsedData.value.enums).forEach((enumKey, enumIndex) => {
-        if (enumIndex > 0) {
-          result += '\n\n';
+      result += `export type JmsLocaleSet<T> = {
+    '${Object.keys(locales).join('\': T\n  \'')}': T
+  }`
+      result += '\n\n';
+
+      // Prepare interfaces
+      typescript.push(...getTemplateInterfaces());
+      typescript.reverse();
+      typescript.push(...getFileInterfaces());
+      typescript.reverse();
+
+      // Generate base JmsObject
+      const jmsObject: { name: string, fields: { key: string, type: string }[] } = { name: 'Object', fields: [] };
+      Object.keys(interfaceParsedData.value.sections).forEach((key) => {
+        if (interfaceParsedData.value.sections[key]) {
+          jmsObject.fields.push({ key, type: 'Jms' + getInterfaceName(key) })
         }
-        const enumItem = interfaceParsedData.value.enums[enumKey];
-        result += `export type JmsEnum${getInterfaceName(enumKey)} = '${Object.keys(enumItem).join('\' | \'')}'`;
+      })
+      typescript.push(jmsObject);
+
+      // Generate interfaces
+      typescript.forEach((ts, tsIdx) => {
+        if (ts.fields.length > 0) {
+          if (tsIdx > 0) {
+            result += '\n\n';
+          }
+          result += `export interface Jms${ts.name} {\n`;
+          ts.fields.forEach((field, fieldIdx) => {
+            if (fieldIdx > 0) {
+              result += '\n';
+            }
+            result += `  ${field.key}: ${field.type}`;
+          });
+          result += `\n}`;
+        }
       })
     }
-    result += '\n\n';
-    result += `export type JmsLocaleSet<T> = {
-  '${Object.keys(locales).join('\': T\n  \'')}': T
-}`
-    result += '\n\n';
-
-    // Prepare interfaces
-    typescript.push(...getTemplateInterfaces());
-    typescript.reverse();
-    typescript.push(...getFileInterfaces());
-    typescript.reverse();
-
-    // Generate base JmsObject
-    const jmsObject: { name: string, fields: { key: string, type: string }[] } = { name: 'Object', fields: [] };
-    Object.keys(interfaceParsedData.value.sections).forEach((key) => {
-      if (interfaceParsedData.value.sections[key]) {
-        jmsObject.fields.push({ key, type: 'Jms' + getInterfaceName(key) })
-      }
-    })
-    typescript.push(jmsObject);
-
-    // Generate interfaces
-    typescript.forEach((ts, tsIdx) => {
-      if (ts.fields.length > 0) {
-        if (tsIdx > 0) {
-          result += '\n\n';
-        }
-        result += `export interface Jms${ts.name} {\n`;
-        ts.fields.forEach((field, fieldIdx) => {
-          if (fieldIdx > 0) {
-            result += '\n';
-          }
-          result += `  ${field.key}: ${field.type}`;
-        });
-        result += `\n}`;
-      }
-    })
-
     // Prepare default Jms object
     const defaultObjectStr = 'const defaultJmsObject: JmsObject = ' + JSON.stringify(defaultObject, null, 2);
+    const localesStr = 'const locales: { [key: string]: string } = ' + JSON.stringify(interfaceParsedData.value.locales, null, 2);
 
-    return result
+    return (result
+      + '\n\n' + localesStr
+      + '\n\nexport { locales }'
       + '\n\n' + defaultObjectStr
-      + '\n\nexport default defaultJmsObject';
+      + '\n\nexport default defaultJmsObject').trim();
   }
 
-  const getPhpTypings = (): string => {
+  const getPhpTypings = (defaultObjOnly = false): string => {
     const defaultObject = getParsedUserData();
     const locales = interfaceParsedData.value.locales;
     const typescript: JmsInterface[] = [];

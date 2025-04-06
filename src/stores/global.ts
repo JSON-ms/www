@@ -76,6 +76,7 @@ export const useGlobalStore = defineStore('global', {
       },
       googleOAuthSignInUrl: '',
       interfaces: [],
+      webhooks: [],
     },
     fileManager: {
       visible: false,
@@ -106,6 +107,7 @@ export const useGlobalStore = defineStore('global', {
           body: serverError ? 'Please check your webhook URL or check your server settings.' : error.message,
         };
       }
+      throw error;
     },
     setAdmin(admin: Partial<IAdmin>) {
       Object.assign(this.admin, admin);
@@ -122,7 +124,7 @@ export const useGlobalStore = defineStore('global', {
     setSession(session: ISession) {
       this.session = session;
     },
-    showFileManager(canSelect = false, multiple = false, callback?: (files?: IFile[]) => Promise<boolean>, accept = null) {
+    showFileManager(canSelect = false, multiple = false, callback?: (files?: IFile | IFile[]) => Promise<boolean>, accept: null | string = null) {
       this.fileManager.visible = true;
       this.fileManager.multiple = multiple;
       this.fileManager.canSelect = canSelect;

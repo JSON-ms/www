@@ -4,8 +4,9 @@ import type {IField, IInterface, IInterfaceData, IServerSettings} from '@/interf
 import FieldItem from '@/components/FieldItem.vue';
 import {computed, defineExpose, ref} from 'vue';
 import {useRoute} from 'vue-router';
-import {isFieldType} from '@/utils';
 import {useModelStore} from '@/stores/model';
+import {useInterface} from "@/composables/interface";
+import {isFieldI18n} from "@/utils";
 
 const modelStore = useModelStore();
 const interfaceModel = defineModel<IInterface>({ required: true });
@@ -16,6 +17,7 @@ const { interfaceData, serverSettings, loading = false } = defineProps<{
 }>();
 
 const currentRoute = useRoute();
+const { isFieldVisible } = useInterface();
 
 const userDataSection = computed(() => {
   return modelStore.userData[currentRoute.params.section.toString()];
@@ -30,7 +32,9 @@ const showContent = computed((): boolean => {
 })
 
 const fields = computed((): {[key: string]: IField } => {
-  return selectedSection.value.fields ?? {};
+  return Object.fromEntries(
+    Object.entries(selectedSection.value.fields).filter(item => isFieldVisible(item[1], currentRoute.params.section.toString()))
+  ) ?? {};
 })
 
 const form = ref<VForm | null>(null);
@@ -81,30 +85,32 @@ const canEditData = computed((): boolean => {
       v-for="(field, key) in fields"
       :key="key"
     >
-      <FieldItem
-        v-if="isFieldType(field, 'i18n') && userDataSection"
-        v-model="userDataSection[key][currentRoute.params.locale.toString()]"
-        :field="field"
-        :field-key="currentRoute.params.section + '.' + key"
-        :locale="currentRoute.params.locale.toString()"
-        :locales="interfaceData.locales"
-        :structure="interfaceData"
-        :interface="interfaceModel"
-        :server-settings="serverSettings"
-        :loading="loading"
-      />
-      <FieldItem
-        v-else-if="userDataSection"
-        v-model="userDataSection[key]"
-        :field="field"
-        :field-key="currentRoute.params.section.toString() + '.' + key"
-        :locale="currentRoute.params.locale.toString()"
-        :locales="interfaceData.locales"
-        :structure="interfaceData"
-        :interface="interfaceModel"
-        :server-settings="serverSettings"
-        :loading="loading"
-      />
+      <v-expand-transition group>
+        <FieldItem
+          v-if="isFieldI18n(field) && userDataSection"
+          v-model="userDataSection[key][currentRoute.params.locale.toString()]"
+          :field="field"
+          :field-key="currentRoute.params.section + '.' + key"
+          :locale="currentRoute.params.locale.toString()"
+          :locales="interfaceData.locales"
+          :structure="interfaceData"
+          :interface="interfaceModel"
+          :server-settings="serverSettings"
+          :loading="loading"
+        />
+        <FieldItem
+          v-else-if="userDataSection"
+          v-model="userDataSection[key]"
+          :field="field"
+          :field-key="currentRoute.params.section.toString() + '.' + key"
+          :locale="currentRoute.params.locale.toString()"
+          :locales="interfaceData.locales"
+          :structure="interfaceData"
+          :interface="interfaceModel"
+          :server-settings="serverSettings"
+          :loading="loading"
+        />
+      </v-expand-transition>
     </template>
 
     <p v-if="selectedSection.append" class="mt-3">

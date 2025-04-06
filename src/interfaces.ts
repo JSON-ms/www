@@ -59,7 +59,7 @@ export interface IFileManager {
   visible: boolean,
   multiple: boolean,
   canSelect: boolean,
-  callback?: (files?: IFile[]) => Promise<boolean>,
+  callback?: (files?: IFile | IFile[]) => Promise<boolean>,
   accept: string | null,
 }
 
@@ -72,10 +72,21 @@ export interface IInterface {
   server_url?: string
   server_secret?: string
   cypher_key?: string
+  webhook: string | null
   type: 'owner' | 'interface' | 'admin',
   owner_name?: string,
   permission_interface: string[],
   permission_admin: string[],
+  created_by?: number
+  created_at?: string
+  updated_at?: string
+}
+
+export interface IWebhook {
+  uuid?: string
+  url?: string
+  secret?: string
+  cypher?: string
   created_by?: number
   created_at?: string
   updated_at?: string
@@ -93,6 +104,7 @@ export interface ISession {
   }
   googleOAuthSignInUrl: string,
   interfaces: IInterface[],
+  webhooks: IWebhook[],
 }
 
 export interface IField {
@@ -103,6 +115,11 @@ export interface IField {
   hint?: string
   multiple?: boolean
   inline?: boolean
+  min?: number
+  max?: number
+  length?: number
+  step?: number
+  'half-increments'?: boolean
   prepend?: string
   append?: string
   accept?: string | string[]
@@ -110,6 +127,7 @@ export interface IField {
   'prepend-inner'?: string
   fields: {[key: string]: IField}
   items?: {[key: string]: string} | string[] | string
+  conditional?: string
 }
 
 export interface ISection {
@@ -118,6 +136,7 @@ export interface ISection {
   append?: string
   label?: string
   icon?: string
+  path?: string | string[]
   fields: {[key: string]: IField}
 }
 

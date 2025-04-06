@@ -30,10 +30,12 @@ const logout = () => {
         .then(response => {
           globalStore.setSession(response);
           emit('logout', response);
-          resolve(response);
         })
         .catch(globalStore.catchError)
-        .finally(() => sessionLoginOut.value = false);
+        .finally(() => {
+          sessionLoginOut.value = false;
+          resolve();
+        });
     })
   })
 }

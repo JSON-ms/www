@@ -1,82 +1,26 @@
 <script setup lang="ts">
 import draggable from 'vuedraggable'
-import {generateHash, isFieldType, isNativeObject} from '@/utils';
+import {generateHash} from '@/utils';
 import { useGlobalStore } from '@/stores/global';
-import { computed, ref } from 'vue';
-import type { IField, IServerSettings } from '@/interfaces';
+import {computed, ref} from 'vue';
 
 const globalStore = useGlobalStore();
 const list = defineModel<any[]>({ required: true });
 const {
   defaultItem,
-  field,
-  serverSettings,
-  locale,
   disabled = false,
+  collapsable = false,
+  removeItemCallback = () => ({}),
+  onCollapsableHeader = () => ({ title: 'Item', thumbnail: null }),
 } = defineProps<{
   defaultItem: any,
-  field: IField,
-  serverSettings: IServerSettings,
-  locale: string,
-  disabled: boolean,
+  disabled?: boolean,
+  collapsable?: boolean,
+  removeItemCallback?: (index: number, list: any[]) => void
+  onCollapsableHeader?: (item: any, index: number) => ({ title: string, thumbnail: string | boolean})
 }>()
 
 const panel = ref<null | number>(null);
-
-const formattedList = computed({
-  get(): any[] {
-    return list.value.map((item: any, itemIdx: number) => {
-      let title;
-      let thumbnail: string | false = false;
-      const fields = field.fields || {};
-      for (const key in fields) {
-        const fieldItem = fields[key];
-        if (!title && ['string', 'i18n:string', 'i18n', 'date', 'i18n:date'].includes(fieldItem.type)) {
-          if (fieldItem.type.includes('i18n')) {
-            title = item[key][locale];
-          } else {
-            title = item[key];
-          }
-        }
-        if (fieldItem.type === 'image' && typeof item[key] === 'object' && item[key] !== null && item[key].path) {
-          thumbnail = serverSettings.publicUrl + item[key].path;
-        }
-        if (thumbnail && title) {
-          break;
-        }
-      }
-
-      if (thumbnail && !title) {
-        title = thumbnail.substring(thumbnail.lastIndexOf('/') + 1);
-      }
-
-      if (!title) {
-        const keys = Object.keys(fields);
-        if (keys.length > 0) {
-          const fieldItem = fields[keys[0]];
-          if (isFieldType(fieldItem, 'i18n')) {
-            if (item[keys[0]][locale]) {
-              title = (item[keys[0]][locale] || '').toString().substring(0, 64);
-            }
-          } else {
-            if (!isNativeObject(item[keys[0]])) {
-              title = (item[keys[0]] || '').toString().substring(0, 64);
-            }
-          }
-        }
-      }
-      return {
-      ...item,
-        __listBuilderTitle: title || 'Item #' + (itemIdx + 1),
-        __listBuilderThumbnail: thumbnail,
-      }
-    })
-  },
-  set(items: any[]) {
-    list.value.length = 0
-    list.value.push(...items);
-  }
-})
 
 const addItem = () => {
   const newItem = structuredClone(defaultItem);
@@ -85,24 +29,80 @@ const addItem = () => {
   panel.value = list.value.length - 1;
 }
 const removeItem = (index: number) => {
-  globalStore.setPrompt({
-    ...globalStore.prompt,
-    visible: true,
-    title: 'Remove item',
-    body: 'Are you sure you want to remove this item?',
-    btnText: 'Remove',
-    btnIcon: 'mdi-delete-outline',
-    btnColor: 'error',
-    callback: () => new Promise(resolve => {
-      list.value.splice(index, 1);
-      resolve();
+  if (typeof removeItemCallback === 'function') {
+    removeItemCallback(index, list.value);
+  } else {
+    globalStore.setPrompt({
+      ...globalStore.prompt,
+      visible: true,
+      title: 'Remove item',
+      body: 'Are you sure you want to remove this item?',
+      btnText: 'Remove',
+      btnIcon: 'mdi-delete-outline',
+      btnColor: 'error',
+      callback: () => new Promise(resolve => {
+        list.value.splice(index, 1);
+        resolve();
+      })
     })
-  })
+  }
 }
+
+const formattedList = computed({
+  get(): any[] {
+    return list.value;
+  },
+  set(items: any[]) {
+    console.log(items);
+    list.value.length = 0
+    list.value.push(...items);
+  }
+})
 </script>
 
 <template>
-  <v-expansion-panels v-model="panel">
+  <draggable
+    v-if="!collapsable"
+    v-model="formattedList"
+    item-key="hash"
+    handle=".handle"
+  >
+    <template #item="{ index }">
+      <div class="d-flex align-start" :style="['gap: 1rem', { marginTop: index > 0 ? '1rem' : 0 }]">
+        <slot
+          name="default"
+          :item="list[index]"
+          :index="index"
+        />
+
+        <v-btn
+          :disabled="disabled"
+          color="error"
+          size="small"
+          variant="text"
+          class="mt-3"
+          icon
+          @click.stop="() => removeItem(index)"
+        >
+          <v-icon icon="mdi-delete-outline" />
+        </v-btn>
+      </div>
+    </template>
+    <template #footer>
+      <v-btn
+        :disabled="disabled"
+        :class="{
+          'mt-4': list.length > 0
+        }"
+        color="primary"
+        block
+        @click="addItem"
+      >
+        Add
+      </v-btn>
+    </template>
+  </draggable>
+  <v-expansion-panels v-else v-model="panel">
     <draggable
       v-model="formattedList"
       item-key="hash"
@@ -115,15 +115,15 @@ const removeItem = (index: number) => {
               <div class="d-flex align-center justify-start" style="flex: 1; gap: 1rem">
                 <v-icon class="handle" icon="mdi-drag-vertical px-4 ml-n3" @mousedown.stop />
                 <v-img
-                  v-if="element.__listBuilderThumbnail"
-                  :src="element.__listBuilderThumbnail"
+                  v-if="onCollapsableHeader(element, index).thumbnail"
+                  :src="onCollapsableHeader(element, index).thumbnail || ''"
                   width="32"
                   height="32"
                   max-width="32"
                   class="my-n3"
                 />
                 <div class="d-flex" style="flex: 1; width: 0">
-                  <span class="text-truncate">{{ element.__listBuilderTitle }}</span>
+                  <span class="text-truncate">{{ onCollapsableHeader(element, index).title }}</span>
                 </div>
               </div>
 

@@ -39,5 +39,7 @@ declare module 'vue' {
     Snack: typeof import('./src/components/Snack.vue')['default']
     Toolbar: typeof import('./src/components/Toolbar.vue')['default']
     TypingsModal: typeof import('./src/components/TypingsModal.vue')['default']
+    WebhookManager: typeof import('./src/components/WebhookManager.vue')['default']
+    WebhookManagerModal: typeof import('./src/components/WebhookManagerModal.vue')['default']
   }
 }

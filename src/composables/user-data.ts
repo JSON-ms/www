@@ -124,7 +124,7 @@ export function useUserData() {
     const files: string[] = [];
     const sections = interfaceParsedData.value.sections as unknown as { [key: string]: IField; };
     loopThroughFields(sections, (field, path, data) => {
-      if (['i18n:file', 'i18n:image', 'i18n:video', 'file', 'image', 'video'].includes(field.type)) {
+      if (isFieldType(field, 'file') && data.path && data.meta.size > 0) {
         files.push(modelStore.interface.server_url + '/' + data.path);
       }
     }, modelStore.userData)
@@ -178,7 +178,7 @@ export function useUserData() {
     const clonedFields = structuredClone(fields);
     const result: any = clean
       ? parseFields(clonedFields, locales)
-      : Object.assign({}, parseFields(clonedFields, locales), override);
+      : Object.assign({}, override, parseFields(clonedFields, locales));
 
     const processCallback = (parent: any, key: string, path: string) => {
       const overrideValue = getDataByPath(override, path);
@@ -227,7 +227,7 @@ export function useUserData() {
 
       // Number/String
       if (typeof parent[key] !== 'object' || typeof parent[key] !== null) {
-        if (isFieldType(field, 'number')) {
+        if (isFieldType(field, ['number', 'slider', 'rating'])) {
           return parent[key] = typeof overrideValue === 'number' ? overrideValue : field.required ? 0 : null;
         }
         if (isFieldType(field, 'boolean')) {
