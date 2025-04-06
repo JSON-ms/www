@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {useGlobalStore} from '@/stores/global';
-import {computed, defineExpose, nextTick, onMounted, onUnmounted, ref, watch} from 'vue';
+import {defineExpose, nextTick, onMounted, onUnmounted, ref, watch} from 'vue';
 import type {IInterface, IInterfaceData} from '@/interfaces';
 import {useLayout} from '@/composables/layout';
 import InterfaceEditor from '@/components/InterfaceEditor.vue';
