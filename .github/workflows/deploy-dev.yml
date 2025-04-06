@@ -21,7 +21,7 @@ jobs:
       - name: Defining environment variables
         run: |
           echo "VITE_SERVER_URL=https://server.dev.json.ms" > .env
-          echo "VITE_DEMO_PREVIEW_URL=https://dev.json.ms/admin" >> .env
+          echo "VITE_DEMO_PREVIEW_URL=https://demo.dev.json.ms" >> .env
 
       - name: Install dependencies
         run: yarn
