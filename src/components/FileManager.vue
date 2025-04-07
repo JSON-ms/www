@@ -88,6 +88,7 @@ const onFileClick = (file: IFile) => {
 }
 
 const load = () => {
+  if (interfaceModel.value.webhook) {
     loading.value = true;
     return Services.get(interfaceModel.value.server_url + '/file/list/' + interfaceModel.value.hash, {
       'Content-Type': 'application/json',
@@ -96,6 +97,7 @@ const load = () => {
       .then(response => files.value = response)
       .catch(globalStore.catchError)
       .finally(() => loading.value = false);
+  }
 }
 
 const promptUpload = () => {
@@ -272,7 +274,7 @@ watch(() => globalStore.fileManager.visible, () => {
         @dragover.prevent.stop="onDragEnter"
         @dragleave.prevent.stop="onDragLeave"
       >
-        <div v-if="loading || filteredFiles.length === 0" class="d-flex align-center justify-center text-center" style="height: 33vh">
+        <div v-if="loading || filteredFiles.length === 0 || !interfaceModel.value.webhook" class="d-flex align-center justify-center text-center" style="height: 33vh">
           <v-progress-circular
             v-if="loading"
             size="96"
@@ -294,16 +296,23 @@ watch(() => globalStore.fileManager.visible, () => {
             />
           </v-card>
           <v-card
-            v-else-if="filteredFiles.length === 0"
+            v-else-if="filteredFiles.length === 0 || !interfaceModel.webhook"
             color="transparent"
             class="w-100 fill-height"
             tile
             flat
           >
             <v-empty-state
+              v-if="interfaceModel.webhook"
               icon="mdi-file-hidden"
               title="Empty"
               text="No files available yet."
+            />
+            <v-empty-state
+              v-else
+              icon="mdi-help-network-outline"
+              title="No endpoint detected"
+              text="Files cannot be loaded without a properly configured webhook. Please check your project's settings in advanced mode."
             />
           </v-card>
         </div>
