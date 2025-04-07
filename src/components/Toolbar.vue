@@ -178,6 +178,7 @@ watch(() => currentRoute.params.locale, () => {
         v-model="globalStore.admin.interface"
         color="primary"
         variant="text"
+        @update:model-value="value => globalStore.admin.interface = !!value"
       >
         <v-tooltip
           text="Advanced (CTRL+A)"
