@@ -282,21 +282,7 @@ watch(() => globalStore.fileManager.visible, () => {
             indeterminate
           />
           <v-card
-            v-else-if="filteredFiles.length === 0 && canUpload"
-            color="transparent"
-            class="w-100 fill-height"
-            tile
-            flat
-            @click="promptUpload"
-          >
-            <v-empty-state
-              icon="mdi-gesture-tap-button"
-              title="Touch to upload"
-              text="Or drag and drop files here"
-            />
-          </v-card>
-          <v-card
-            v-else-if="filteredFiles.length === 0 || !interfaceModel.webhook"
+            v-else-if="(filteredFiles.length === 0 && !canUpload) || !interfaceModel.webhook"
             color="transparent"
             class="w-100 fill-height"
             tile
@@ -313,6 +299,20 @@ watch(() => globalStore.fileManager.visible, () => {
               icon="mdi-help-network-outline"
               title="No endpoint detected"
               text="Files cannot be loaded without a properly configured webhook. Please check your project's settings in advanced mode."
+            />
+          </v-card>
+          <v-card
+            v-else-if="filteredFiles.length === 0 && canUpload"
+            color="transparent"
+            class="w-100 fill-height"
+            tile
+            flat
+            @click="promptUpload"
+          >
+            <v-empty-state
+              icon="mdi-gesture-tap-button"
+              title="Touch to upload"
+              text="Or drag and drop files here"
             />
           </v-card>
         </div>
