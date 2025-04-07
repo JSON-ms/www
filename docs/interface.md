@@ -55,9 +55,60 @@ sections:
 - `label`: The value associated with this key is the label that will be displayed in the sidebar of the admin panel.
 - `fields`: This key contains all the fields that will be displayed and editable by the user within this section.
 
+### Fields
+
+A field must be defined within the `fields` property using a unique key and must include at least a type and a label.
+
+For instance:
+
+```yaml
+      title: 
+        type: i18n
+        label: Title
+```
+
+#### Supported Types
+- `string`: A single-line text input.
+- `markdown`: A fully-featured Markdown editor that allows for easy formatting of text using simple syntax.
+- `number`: A numeric input field for entering numbers.
+- `rating`: A component that allows users to provide feedback or evaluate an item using a star or point system, typically ranging from 1 to 5, visually represented through icons or bars.
+- `slider`: A slider component that allows you to select a number. 
+- `select`: A dropdown menu that allows users to choose one or multiple items from a predefined list.
+- `checkbox`: A binary input that allows users to select one or more items from a set of choices.
+- `radio`: A set of options where only one can be selected at a time, typically displayed as buttons.
+- `date`: A date picker input for selecting a specific date.
+- `switch`: A toggle switch that allows users to turn a setting on or off.
+- `array`: A collection of items that can hold multiple fields.
+- `node`: A fieldset (aka group) that contains a list of fields. Useful to categorize information both visually and structurally.
+- `file`: An option to upload a file.
+- `i18n`: A translatable single-line text input.
+- `i18n:[TYPE]`: You can use any of the above types except `node` to make them translatable. For example, you can specify `i18n:string`, `i18n:markdown`, or even `i18n:file` to indicate that these fields should support multiple languages.
+
+#### All Field Properties:
+- `type`: Specifies a supported field type as defined earlier.
+- `label`: The title that will be displayed within the field.
+- `multiple`: A boolean value that indicates whether the field can accept multiple values (e.g., for `select`, `checkbox` or `file` types).
+- `accept`: For `file` field only. It takes as its value a comma-separated list of one or more file types. You can add file extensions `*.jpg,*.gif` or even mime types `application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document`.
+- `prepend`: An optional string that will be displayed before the input field.
+- `append`: An optional string that will be displayed after the input field.
+- `prepend-inner`: An optional string that will be displayed inside and before the input field. Can be used with `string`, `number`, `select`, `textarea` and `date` fields.'
+- `append-inner`: An optional string that will be displayed inside and after the input field. Can be used with `string`, `number`, `select`, `textarea` and `date` fields.'
+- `hint`: An optional string that provides additional information or guidance to the user about the field, displayed below the field.
+- `icon`: (Optional) An icon that will be displayed next to the menu item.
+  - Make sure to prefix all icons with "mdi-". For instance: mdi-check will show the "check" icon.
+  - Documentation: https://pictogrammers.com/library/mdi/
+- `required`: (Optional) It ensures that the user must provide a value, preventing the form from being submitted until the field is completed.
+- `fields`: This is applicable only for `array` and `node` types. You can use any supported type here, and you can nest sub-arrays as needed to create complex data structures and hierarchies.
+- `items`: This is applicable only for `select`, `checkbox` and `radio` types. You can list all available values or even use an enum.
+- `min`: An optional minimum number. Works with `number` and `slider` fields.
+- `max`: An optional maximum number. Works with `number` and `slider` fields.
+- `length`: An optional length amount of stars in `rating` field.
+- `step`: An optional incremental amount when using `number` and `slider` fields.
+- `half-increments`: (Optional) Allows half-increments of stars when using the `rating` field.
+
 ### Paths
 
-If you want to synchronize your sections with your website or app pages, you need to define paths. By default, if you do not set this parameter, JSON.ms will still try to find a route name matching the section key (in this case, "about"). 
+If you want to synchronize your sections with your website or app pages, you need to define paths. By default, if you do not set this parameter, JSON.ms will still try to find a route name matching the section key (in this case, "about").
 
 ```yaml
 section:
@@ -127,58 +178,7 @@ section:
             conditional: this.title == "potato"
 ```
 
-So this is a similar structure, however the `about` section now contains a field named `items` which is an array that contains a `title` and a `body`. Now what if we want the condition to be based on the value of an item that is within of the same index of the array we're in? That's where `this` becomes handy! Now we're telling the conditional field to check for a field named `title` at the same level of `body`.  
-
-### Fields
-
-A field must be defined within the `fields` property using a unique key and must include at least a type and a label.
-
-For instance:
-
-```yaml
-      title: 
-        type: i18n
-        label: Title
-```
-
-#### Supported Types
-- `string`: A single-line text input.
-- `markdown`: A fully-featured Markdown editor that allows for easy formatting of text using simple syntax.
-- `number`: A numeric input field for entering numbers.
-- `rating`: A component that allows users to provide feedback or evaluate an item using a star or point system, typically ranging from 1 to 5, visually represented through icons or bars.
-- `slider`: A slider component that allows you to select a number. 
-- `select`: A dropdown menu that allows users to choose one or multiple items from a predefined list.
-- `checkbox`: A binary input that allows users to select one or more items from a set of choices.
-- `radio`: A set of options where only one can be selected at a time, typically displayed as buttons.
-- `date`: A date picker input for selecting a specific date.
-- `switch`: A toggle switch that allows users to turn a setting on or off.
-- `array`: A collection of items that can hold multiple fields.
-- `node`: A fieldset (aka group) that contains a list of fields. Useful to categorize information both visually and structurally.
-- `file`: An option to upload a file.
-- `i18n`: A translatable single-line text input.
-- `i18n:[TYPE]`: You can use any of the above types except `node` to make them translatable. For example, you can specify `i18n:string`, `i18n:markdown`, or even `i18n:file` to indicate that these fields should support multiple languages.
-
-#### All Field Properties:
-- `type`: Specifies a supported field type as defined earlier.
-- `label`: The title that will be displayed within the field.
-- `multiple`: A boolean value that indicates whether the field can accept multiple values (e.g., for `select`, `checkbox` or `file` types).
-- `accept`: For `file` field only. It takes as its value a comma-separated list of one or more file types. You can add file extensions `*.jpg,*.gif` or even mime types `application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document`.
-- `prepend`: An optional string that will be displayed before the input field.
-- `append`: An optional string that will be displayed after the input field.
-- `prepend-inner`: An optional string that will be displayed inside and before the input field. Can be used with `string`, `number`, `select`, `textarea` and `date` fields.'
-- `append-inner`: An optional string that will be displayed inside and after the input field. Can be used with `string`, `number`, `select`, `textarea` and `date` fields.'
-- `hint`: An optional string that provides additional information or guidance to the user about the field, displayed below the field.
-- `icon`: (Optional) An icon that will be displayed next to the menu item.
-  - Make sure to prefix all icons with "mdi-". For instance: mdi-check will show the "check" icon.
-  - Documentation: https://pictogrammers.com/library/mdi/
-- `required`: (Optional) It ensures that the user must provide a value, preventing the form from being submitted until the field is completed.
-- `fields`: This is applicable only for `array` and `node` types. You can use any supported type here, and you can nest sub-arrays as needed to create complex data structures and hierarchies.
-- `items`: This is applicable only for `select`, `checkbox` and `radio` types. You can list all available values or even use an enum.
-- `min`: An optional minimum number. Works with `number` and `slider` fields.
-- `max`: An optional maximum number. Works with `number` and `slider` fields.
-- `length`: An optional length amount of stars in `rating` field.
-- `step`: An optional incremental amount when using `number` and `slider` fields.
-- `half-increments`: (Optional) Allows half-increments of stars when using the `rating` field.
+So this is a similar structure, however the `about` section now contains a field named `items` which is an array that contains a `title` and a `body`. Now what if we want the condition to be based on the value of an item that is within of the same index of the array we're in? That's where `this` becomes handy! Now we're telling the conditional field to check for a field named `title` at the same level of `body`.
 
 ## Enums
 
