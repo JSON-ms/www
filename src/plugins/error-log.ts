@@ -58,12 +58,12 @@ window.onerror = function(message: string , source?: string, line?: number, colu
 }
 
 function saveErrorQueue() {
-  localStorage.setItem('errorQueue', JSON.stringify(errorQueue));
+  localStorage.setItem('jsonms/error:queue', JSON.stringify(errorQueue));
 }
 
 function loadErrorQueue() {
   errorQueue = []
-  errorQueue.push(...JSON.parse(localStorage.getItem('errorQueue') ?? '[]'));
+  errorQueue.push(...JSON.parse(localStorage.getItem('jsonms/error:queue') ?? '[]'));
 }
 
 let syncErrorInterval: any;

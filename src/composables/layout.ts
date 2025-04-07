@@ -166,14 +166,14 @@ export function useLayout() {
 
     const globalStore = useGlobalStore();
     try {
-      const globalAdmin = JSON.parse(localStorage.getItem('global.admin') ?? '{}');
+      const globalAdmin = JSON.parse(localStorage.getItem('jsonms/global:admin') ?? '{}');
       globalStore.setAdmin(globalAdmin);
     } catch (e) {
       console.error(e);
     }
     watch(() => globalStore.admin, () => {
       globalStore.setAdmin(globalStore.admin);
-      localStorage.setItem('global.admin', JSON.stringify(globalStore.admin));
+      localStorage.setItem('jsonms/global:admin', JSON.stringify(globalStore.admin));
     }, { deep: true })
   }
 

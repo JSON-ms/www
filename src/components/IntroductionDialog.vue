@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useGlobalStore } from '@/stores/global';
 
-const storageKey = 'jsonms/introduction_dialog';
+const storageKey = 'jsonms/introduction-dialog';
 const globalStore = useGlobalStore();
 const visible = ref(!globalStore.session.loggedIn && localStorage.getItem(storageKey) !== '1');
 const close = () => {
