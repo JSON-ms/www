@@ -156,7 +156,7 @@ export function useUserData() {
       'X-Jms-Api-Key': modelStore.interface.server_secret,
     })
       .then(response => {
-        setUserData(response.data);
+        setUserData(response.data, true);
         saved.value = true;
         setTimeout(() => saved.value = false, 1000);
       })
@@ -164,9 +164,9 @@ export function useUserData() {
       .finally(() => saving.value = false);
   }
 
-  const setUserData = (data: any) => {
+  const setUserData = (data: any, setOriginal = false) => {
     const parsedData = getParsedUserData(interfaceParsedData.value, deepToRaw(data));
-    modelStore.setUserData(parsedData);
+    modelStore.setUserData(parsedData, setOriginal);
   }
 
   const resetUserData = () => {

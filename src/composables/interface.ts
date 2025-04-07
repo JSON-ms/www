@@ -1,5 +1,13 @@
 import {computed, ref} from 'vue';
-import {getInterface, isNativeObject, objectsAreDifferent, isFieldType, getDataByPath, valueToString} from '@/utils';
+import {
+  getInterface,
+  isNativeObject,
+  objectsAreDifferent,
+  isFieldType,
+  getDataByPath,
+  valueToString,
+  parseStringValue
+} from '@/utils';
 import type {IField, IInterface, IInterfaceData, IServerSettings, IWebhook} from '@/interfaces';
 import Rules from '@/rules';
 import {useGlobalStore} from '@/stores/global';
@@ -71,7 +79,7 @@ export function useInterface() {
 
   const interfaceIsPristine = computed((): boolean => {
     return !objectsAreDifferent(modelStore.interface, modelStore.originalInterface, [
-      'label', 'logo', 'content', 'server_url', 'permission_admin', 'permission_interface'
+      'label', 'logo', 'content', 'permission_admin', 'permission_interface', 'webhook'
     ])
   })
 
@@ -149,26 +157,36 @@ export function useInterface() {
 
   const isFieldVisible = (field: IField, currentPath?: string): boolean => {
     if (field.conditional) {
-      const authorizedOperators = ['==', '===', '!=', '!==', '>', '>=', '<', '<='];
       const conditions = Array.isArray(field.conditional) ? field.conditional : [field.conditional];
       for (let i = 0; i < conditions.length; i++) {
         const subConditions = conditions[i].split('&');
         for (let j = 0; j < subConditions.length; j++) {
           const subCondition = subConditions[j];
           const [ path, operator, ...expectedValue ] = subCondition.split(' ').map((item: string) => item.trim());
+
           let adjustedPath = path;
           let adjustedExpectedValue = expectedValue.join(' ');
-          if (adjustedExpectedValue.startsWith('"') && adjustedExpectedValue.endsWith('"')) {
-            adjustedExpectedValue = adjustedExpectedValue.slice(1, -1);
+          adjustedExpectedValue = parseStringValue(adjustedExpectedValue);
+          if (typeof adjustedExpectedValue === 'string') {
+            if (adjustedExpectedValue.startsWith('"') && adjustedExpectedValue.endsWith('"')) {
+              adjustedExpectedValue = adjustedExpectedValue.slice(1, -1);
+            }
+            adjustedExpectedValue = adjustedExpectedValue.replace(/\\"/g, '"')
           }
-          adjustedExpectedValue = adjustedExpectedValue.replace(/\\"/g, '"')
+
           if (path.startsWith('this.')) {
             adjustedPath = (currentPath ? currentPath + '.' : '') + path.substring(5);
           }
           const value = getDataByPath(modelStore.userData, adjustedPath);
           if (
-            authorizedOperators.includes(operator)
-            && valueToString(value) === valueToString(adjustedExpectedValue)
+            (operator === '===' && value === adjustedExpectedValue)
+            || (operator === '!==' && value !== adjustedExpectedValue)
+            || (operator === '>' && value > adjustedExpectedValue)
+            || (operator === '>=' && value >= adjustedExpectedValue)
+            || (operator === '<' && value < adjustedExpectedValue)
+            || (operator === '<=' && value <= adjustedExpectedValue)
+            || (operator === '==' && valueToString(value) === valueToString(adjustedExpectedValue))
+            || (operator === '!=' && valueToString(value) !== valueToString(adjustedExpectedValue))
           ) {
             return true;
           }

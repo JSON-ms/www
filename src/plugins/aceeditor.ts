@@ -15,6 +15,9 @@ ace.config.setModuleUrl('ace/mode/php', modePhpUrl);
 import modeShUrl from 'ace-builds/src-noconflict/mode-sh?url';
 ace.config.setModuleUrl('ace/mode/sh', modeShUrl);
 
+import modeJsonUrl from 'ace-builds/src-noconflict/mode-json?url';
+ace.config.setModuleUrl('ace/mode/json', modeJsonUrl);
+
 import modeTypescriptUrl from 'ace-builds/src-noconflict/mode-typescript?url';
 ace.config.setModuleUrl('ace/mode/typescript', modeTypescriptUrl);
 

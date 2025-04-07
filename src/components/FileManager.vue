@@ -238,7 +238,7 @@ watch(() => globalStore.fileManager.visible, () => {
       title="File Manager"
       prepend-icon="mdi-file-multiple"
     >
-      <template #append>
+      <template v-if="globalStore.session.loggedIn" #append>
         <v-tabs v-model="filter" class="my-n4">
           <v-tab value="all">
             All ({{ getFilesByType('all').length }})

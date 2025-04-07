@@ -111,7 +111,7 @@ const onCreateInterface = () => {
 const onApplyNewInterface = (template: string) => {
   const newInterface = getInterface(template);
   modelStore.setInterface(getInterface(template))
-  setUserData({});
+  setUserData({}, true);
 
   newInterface.label = '';
   showNewInterfaceModal.value = false;
@@ -210,7 +210,7 @@ const onInterfaceModelChange = (model: IInterface) => {
   userDataLoaded.value = false;
   if (autoload) {
     updateRoute(model.hash, getAvailableSection(), getAvailableLocale());
-    setUserData({});
+    setUserData({}, true);
     refreshUserData();
     dataEditor.value?.resetValidation()
   }
@@ -229,7 +229,7 @@ watch(() => globalStore.admin.interface, () => {
 
 const refreshUserData = (): Promise<any> => {
   return fetchUserData().then((response: any) => {
-    setUserData(response.data);
+    setUserData(response.data, true);
     serverSettings.value = response.settings;
     return response;
   }).then(() => {
@@ -267,7 +267,7 @@ useShortcut({
 }).listen();
 initLayout();
 
-setUserData({});
+setUserData({}, true);
 onMounted(() => {
   sitePreview.value?.interfaceEditor?.scrollToSection(getAvailableSection());
   interfaceEditor.value?.scrollToSection(getAvailableSection());
@@ -322,7 +322,6 @@ if (autoload) {
     tile
     disable-resize-watcher
     disable-route-watcher
-    persistent
   >
     <v-card class="w-100 fill-height d-flex flex-column pa-2 pl-0" theme="dark">
       <InterfaceEditor

@@ -27,7 +27,6 @@ const { interfaceData, interfaces = [], defaultLocale = 'en-US' } = defineProps<
 const currentRoute = useRoute();
 const selectedLocale = ref(defaultLocale);
 const globalStore = useGlobalStore();
-const modelStore = useModelStore();
 const { smAndDown } = useDisplay();
 const { windowWidth, layoutSize } = useLayout();
 const { serverSettings, createInterface } = useInterface()
@@ -97,7 +96,7 @@ const onLocaleChange = (locale: string) => {
 
 const onFetchUserData = () => {
   fetchUserData().then((response: any) => {
-    setUserData(response.data);
+    setUserData(response.data, true);
     serverSettings.value = response.settings;
   })
 }
@@ -112,7 +111,7 @@ const onClearUserData = () => {
     btnIcon: 'mdi-close-box-outline',
     btnColor: 'warning',
     callback: () => new Promise(resolve => {
-      setUserData({})
+      setUserData({}, true)
       resolve();
     })
   })
@@ -155,10 +154,10 @@ watch(() => currentRoute.params.locale, () => {
 
     <div class="d-flex align-center" style="gap: 1rem; flex: 75">
       <InterfaceSelector
+        v-if="globalStore.session.loggedIn"
         v-model="interfaceModel"
         :interfaces="interfaces"
-        :actions="globalStore.session.loggedIn && windowWidth > 900"
-        :readonly="!globalStore.session.loggedIn"
+        :actions="windowWidth > 900"
         :show-icon="windowWidth > 450"
         :style="{
           width: 'min-content',

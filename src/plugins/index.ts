@@ -8,6 +8,7 @@
 import vuetify from './vuetify'
 import router from '../router'
 import MasonryWall from '@yeger/vue-masonry-wall'
+import './error-log';
 
 // Types
 import type { App } from 'vue'

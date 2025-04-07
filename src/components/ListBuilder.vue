@@ -10,7 +10,7 @@ const {
   defaultItem,
   disabled = false,
   collapsable = false,
-  removeItemCallback = () => ({}),
+  removeItemCallback = null,
   onCollapsableHeader = () => ({ title: 'Item', thumbnail: null }),
 } = defineProps<{
   defaultItem: any,

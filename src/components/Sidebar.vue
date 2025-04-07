@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {useGlobalStore} from '@/stores/global';
 import type {IInterface, IInterfaceData, ISection} from '@/interfaces';
-import {computed, watch} from 'vue';
+import {computed} from 'vue';
 import {useRoute} from 'vue-router';
 import router from '@/router';
 import {useUserData} from '@/composables/user-data';
@@ -84,7 +84,6 @@ const version = JSON.parse(process.env.APP_VERSION);
     :width="layoutSize.drawer.width"
     disable-resize-watcher
     disable-route-watcher
-    persistent
   >
     <v-empty-state
       v-if="!hasSections"

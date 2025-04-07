@@ -80,6 +80,7 @@ const onInput = (model: IInterface) => {
     return-object
     @update:model-value="onInput"
   >
+
     <!-- ICON/LOGO -->
     <template v-if="showIcon" #prepend-inner>
       <v-icon v-if="!modelStore.originalInterface.logo" :icon="modelStore.originalInterface.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'" />

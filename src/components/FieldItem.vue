@@ -786,34 +786,32 @@ const onWysiwygContentChange = (content: any) => {
           :key="key"
           :class="{ 'mt-4': keyIdx > 0 }"
         >
-          <v-expand-transition group>
-            <FieldItem
-              v-if="isFieldI18n(fields[key]) && isFieldVisible(fields[key], fieldKey + `[${index}]`)"
-              v-model="item[key][locale]"
-              :field="fields[key]"
-              :field-key="fieldKey + '[' + index + '].' + key"
-              :locale="locale"
-              :locales="locales"
-              :structure="structure"
-              :interface="interfaceModel"
-              :server-settings="serverSettings"
-              :disabled="disabled"
-              :loading="loading"
-            />
-            <FieldItem
-              v-else-if="fields[key] && isFieldVisible(fields[key], fieldKey + `[${index}]`)"
-              v-model="item[key]"
-              :field="fields[key]"
-              :field-key="fieldKey + '.' + '[' + index + '].' + key"
-              :locale="locale"
-              :locales="locales"
-              :structure="structure"
-              :interface="interfaceModel"
-              :server-settings="serverSettings"
-              :disabled="disabled"
-              :loading="loading"
-            />
-          </v-expand-transition>
+          <FieldItem
+            v-if="isFieldI18n(fields[key]) && isFieldVisible(fields[key], fieldKey + `[${index}]`)"
+            v-model="item[key][locale]"
+            :field="fields[key]"
+            :field-key="fieldKey + '[' + index + '].' + key"
+            :locale="locale"
+            :locales="locales"
+            :structure="structure"
+            :interface="interfaceModel"
+            :server-settings="serverSettings"
+            :disabled="disabled"
+            :loading="loading"
+          />
+          <FieldItem
+            v-else-if="fields[key] && isFieldVisible(fields[key], fieldKey + `[${index}]`)"
+            v-model="item[key]"
+            :field="fields[key]"
+            :field-key="fieldKey + '.' + '[' + index + '].' + key"
+            :locale="locale"
+            :locales="locales"
+            :structure="structure"
+            :interface="interfaceModel"
+            :server-settings="serverSettings"
+            :disabled="disabled"
+            :loading="loading"
+          />
         </div>
       </template>
     </ListBuilder>

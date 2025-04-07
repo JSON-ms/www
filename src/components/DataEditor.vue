@@ -85,32 +85,30 @@ const canEditData = computed((): boolean => {
       v-for="(field, key) in fields"
       :key="key"
     >
-      <v-expand-transition group>
-        <FieldItem
-          v-if="isFieldI18n(field) && userDataSection"
-          v-model="userDataSection[key][currentRoute.params.locale.toString()]"
-          :field="field"
-          :field-key="currentRoute.params.section + '.' + key"
-          :locale="currentRoute.params.locale.toString()"
-          :locales="interfaceData.locales"
-          :structure="interfaceData"
-          :interface="interfaceModel"
-          :server-settings="serverSettings"
-          :loading="loading"
-        />
-        <FieldItem
-          v-else-if="userDataSection"
-          v-model="userDataSection[key]"
-          :field="field"
-          :field-key="currentRoute.params.section.toString() + '.' + key"
-          :locale="currentRoute.params.locale.toString()"
-          :locales="interfaceData.locales"
-          :structure="interfaceData"
-          :interface="interfaceModel"
-          :server-settings="serverSettings"
-          :loading="loading"
-        />
-      </v-expand-transition>
+      <FieldItem
+        v-if="isFieldI18n(field) && userDataSection"
+        v-model="userDataSection[key][currentRoute.params.locale.toString()]"
+        :field="field"
+        :field-key="currentRoute.params.section + '.' + key"
+        :locale="currentRoute.params.locale.toString()"
+        :locales="interfaceData.locales"
+        :structure="interfaceData"
+        :interface="interfaceModel"
+        :server-settings="serverSettings"
+        :loading="loading"
+      />
+      <FieldItem
+        v-else-if="userDataSection"
+        v-model="userDataSection[key]"
+        :field="field"
+        :field-key="currentRoute.params.section.toString() + '.' + key"
+        :locale="currentRoute.params.locale.toString()"
+        :locales="interfaceData.locales"
+        :structure="interfaceData"
+        :interface="interfaceModel"
+        :server-settings="serverSettings"
+        :loading="loading"
+      />
     </template>
 
     <p v-if="selectedSection.append" class="mt-3">

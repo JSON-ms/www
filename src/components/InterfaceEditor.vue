@@ -64,7 +64,7 @@ const scrollToSection = (section: string) => {
   }
 }
 
-let lastPosition;
+let lastPosition: { row: number, column: number } | null;
 onMounted(() => {
   const instance = editor.value?.getAceInstance();
   if (instance) {

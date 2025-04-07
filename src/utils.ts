@@ -408,3 +408,34 @@ export function getFileIcon(file: IFile): string {
   }
   return 'mdi-file';
 }
+
+export function parseStringValue(value: string) {
+  value = value.trim();
+  if (value === "null") { return null; }
+  if (value === "true") { return true; }
+  if (value === "false") { return false; }
+
+  const numValue = Number(value);
+  if (!isNaN(numValue) && value.trim() !== "") {
+    return numValue;
+  }
+  return value;
+}
+
+export function formatDate(date: Date, format = 'YYYY-MM-DD HH:mm:ss') {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are zero-based
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+
+  // Replace format tokens with actual values
+  return format
+    .replace('YYYY', year.toString())
+    .replace('MM', month)
+    .replace('DD', day)
+    .replace('HH', hours)
+    .replace('mm', minutes)
+    .replace('ss', seconds);
+}

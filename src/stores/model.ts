@@ -24,15 +24,17 @@ export const useModelStore = defineStore('model', {
       this.interface = model;
       this.setOriginalInterface(model);
       if (isNativeObject(data)) {
-        this.setUserData(data);
+        this.setUserData(data, true);
       }
     },
     setOriginalInterface(model: IInterface) {
       this.originalInterface = structuredClone(deepToRaw(model));
     },
-    setUserData(data: any) {
+    setUserData(data: any, setOriginal = false) {
       this.userData = data;
-      this.setOriginalUserData(data);
+      if (setOriginal) {
+        this.setOriginalUserData(data);
+      }
     },
     setOriginalUserData(data: any) {
       this.originalUserData = structuredClone(deepToRaw(data));

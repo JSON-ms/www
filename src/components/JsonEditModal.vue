@@ -16,7 +16,7 @@ const apply = () => {
     const json = JSON.parse(content.value);
     emit('apply', json);
     visible.value = false;
-  } catch (e) {
+  } catch (e: any) {
     globalStore.setError({
       title: 'JSON Error',
       icon: 'mdi-alert',
