@@ -56,7 +56,7 @@ sections:
         label: Call-to-action
         required: true
       image:
-        type: image
+        type: file
         label: Image
   services:
     label: Services
