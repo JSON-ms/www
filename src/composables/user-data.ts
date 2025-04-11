@@ -9,7 +9,7 @@ import {
   getFieldByPath, objectsAreDifferent,
   parseFields,
   processObject,
-  downloadFilesAsZip, loopThroughFields, isFieldType,
+  downloadFilesAsZip, loopThroughFields, isFieldType, generateHash,
 } from '@/utils';
 import Rules from '@/rules';
 import {useModelStore} from '@/stores/model';
@@ -222,6 +222,10 @@ export function useUserData() {
         } else if (field.items && Array.isArray(overrideValue)) {
           return parent[key] = overrideValue;
         }
+
+        // Make sure they all have hashes
+        parent[key] = parent[key].map((item: any) => ({ ...item, hash: item.hash ?? generateHash(8) }))
+
         return parent[key];
       }
 
