@@ -236,7 +236,13 @@ export function useUserData() {
         return parent[key] = field.required && !overrideValue ? "" : overrideValue ?? null;
       }
     };
-    processObject(result, processCallback);
+    processObject(result, processCallback, undefined, undefined, undefined, path => {
+      const field = getFieldByPath(fields, path);
+      if (isFieldType(field, 'file')) {
+        return false;
+      }
+      return true;
+    });
     return result;
   }
 

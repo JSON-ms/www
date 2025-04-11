@@ -444,10 +444,11 @@ if (autoload) {
   <!-- FILE MANAGER -->
   <FileManager
     v-model="interfaceModel"
-    :server-settings="serverSettings"
+    :selected="globalStore.fileManager.selected"
     :can-select="globalStore.fileManager.canSelect"
     :can-upload="globalStore.session.loggedIn"
     :can-delete="globalStore.session.loggedIn"
+    :server-settings="serverSettings"
     can-download
   />
 </template>

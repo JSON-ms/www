@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import ListBuilder from '@/components/ListBuilder.vue';
 import FieldHeader from '@/components/FieldHeader.vue';
+import FileFieldItem from '@/components/FileFieldItem.vue';
 import type {IInterfaceData, IField, IServerSettings, IInterface, IFile} from '@/interfaces';
 import Rules from '@/rules';
-import {deepToRaw, parseFields, getFieldType, isFieldType, isNativeObject, getFileIcon, isFieldI18n} from '@/utils';
+import {deepToRaw, parseFields, getFieldType, isFieldType, isNativeObject, isFieldI18n} from '@/utils';
 import { computed, ref } from 'vue';
 import { useGlobalStore } from '@/stores/global';
-import { useDisplay } from 'vuetify';
 import {useUserData} from '@/composables/user-data';
 import {useInterface} from "@/composables/interface";
 
-const { smAndDown } = useDisplay()
 const globalStore = useGlobalStore();
 const value = defineModel<any>({ required: true });
 const {
@@ -91,58 +90,12 @@ const getDefaultItem = () => {
   return parseFields(structuredClone(deepToRaw(fields.value) || {}), locales);
 }
 
-const downloading = ref(false);
-const onDownloadFile = (file: IFile) => {
-  downloading.value = true;
-  fetch(filePath(file))
-    .then(response => response.blob())
-    .then(blob => {
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = file.meta.originalFileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(link.href);
-    })
-    .catch(globalStore.catchError)
-    .finally(() => downloading.value = false);
-}
-const onRemoveFile = (file: IFile) => {
-  globalStore.setPrompt({
-    ...globalStore.prompt,
-    visible: true,
-    title: 'Remove file',
-    body: 'Are you sure you want to remove this file? The file won\'t be deleted and will remain on the server, but it will not be accessible once modifications are saved.',
-    btnText: 'Remove',
-    btnIcon: 'mdi-close',
-    btnColor: 'warning',
-    callback: () => new Promise(resolve => {
-      if (field.multiple) {
-        value.value = value.value.filter((val: IFile) => val.path !== file.path);
-      } else {
-        value.value = null;
-      }
-      resolve();
-    })
-  });
-}
-
 const fields = computed((): {[key: string]: IField } => {
   return field.fields ?? {};
 })
 const fieldType = computed((): string => {
   return getFieldType(field);
 })
-const isImage = (file: IFile): boolean => {
-  return file.meta.type.startsWith('image/');
-}
-const isVideo = (file: IFile): boolean => {
-  return file.meta.type.startsWith('video/');
-}
-const filePath = (file: IFile): string => {
-  return serverSettings.publicUrl + file.path;
-}
 const showPrependInner = computed((): boolean => {
   return !!(field['prepend-inner']);
 })
@@ -191,7 +144,7 @@ const markdownToolbar = [
   'bold', 'italic', 'heading', '|', 'unordered-list', 'ordered-list', 'link', {
     name: "image",
     action: (editor: any) => {
-      globalStore.showFileManager(true, false, (response) => {
+      globalStore.showFileManager([], true, false, (response) => {
         return new Promise((resolve) => {
           if (response) {
             const file = response as IFile;
@@ -209,7 +162,7 @@ const markdownToolbar = [
 ];
 
 const openFileManager = () => {
-  globalStore.showFileManager(true, field.multiple === true, files => {
+  globalStore.showFileManager(files.value, true, field.multiple === true, files => {
     return new Promise((resolve) => {
       value.value = files;
       resolve(true);
@@ -229,7 +182,7 @@ const onCollapsableHeader = (item: any, index: number) => {
         title = item[key];
       }
     }
-    if (fieldItem.type === 'image' && typeof item[key] === 'object' && item[key] !== null && item[key].path) {
+    if (fieldItem.type === 'file' && typeof item[key] === 'object' && item[key] !== null && item[key].path && item[key].meta && item[key].meta.type.startsWith('image/')) {
       thumbnail = serverSettings.publicUrl + item[key].path;
     }
     if (thumbnail && title) {
@@ -648,91 +601,37 @@ const onWysiwygContentChange = (content: any) => {
   <!-- FILE -->
   <div v-else-if="isFieldType(field, 'file')">
     <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
-    <v-card
-      v-for="(file, fileIdx) in files"
-      :key="file.path ?? fileIdx"
-      variant="tonal"
-      class="w-100 mb-1"
+    <ListBuilder
+      v-if="field.multiple"
+      v-model="value"
+      :disabled="disabled"
+      :can-add="false"
     >
-      <div class="d-flex align-center">
-        <div class="pa-3 text-center bg-surface align-center justify-center" style="min-width: 128px">
-          <v-avatar v-if="isImage(file)" size="100%" rounded="0">
-            <v-img :src="filePath(file)" :cover="false">
-              <template #placeholder>
-                <v-overlay>
-                  <v-progress-circular
-                    indeterminate
-                    size="32"
-                    width="2"
-                  />
-                </v-overlay>
-              </template>
-            </v-img>
-          </v-avatar>
-          <video v-else-if="isVideo(file)" :src="filePath(file)" :style="{ height: smAndDown ? '96px' : '128px', float: 'left' }" controls />
-          <v-icon v-else :icon="getFileIcon(file)" :size="smAndDown ? 48 : 64" />
-        </div>
-        <div class="pa-3 pl-0 w-100">
-          <v-card-title
-            :class="{
-              'py-0 d-flex': true,
-              'text-body-1': smAndDown,
-            }"
-          >
-            <div class="d-flex" style="flex: 1; width: 0">
-              <span class="text-truncate">{{ file.meta.originalFileName }}</span>
-            </div>
-          </v-card-title>
-          <v-card-subtitle class="py-0">
-            Size: {{ $formatBytes(file.meta.size) }}
-            <br>Type: <span>{{ file.meta.type }}</span>
-          </v-card-subtitle>
-          <v-card-actions class="pb-0 flex-wrap" style="min-height: 0">
-            <v-tooltip
-              text="Download"
-              location="bottom"
-            >
-              <template #activator="{ props }">
-                <v-btn
-                  v-bind="props"
-                  :loading="downloading"
-                  :disabled="disabled || downloading"
-                  :size="smAndDown ? 'small' : 'default'"
-                  color="primary"
-                  icon
-                  @click="() => onDownloadFile(file)"
-                >
-                  <v-icon icon="mdi-download" />
-                </v-btn>
-              </template>
-            </v-tooltip>
-            <v-tooltip
-              text="Remove"
-              location="bottom"
-            >
-              <template #activator="{ props }">
-                <v-btn
-                  v-bind="props"
-                  :disabled="disabled"
-                  :size="smAndDown ? 'small' : 'default'"
-                  color="error"
-                  variant="text"
-                  icon
-                  @click="() => onRemoveFile(file)"
-                >
-                  <v-icon icon="mdi-trash-can-outline" />
-                </v-btn>
-              </template>
-            </v-tooltip>
-          </v-card-actions>
-        </div>
-      </div>
-    </v-card>
+      <template #default="{ index }">
+        <FileFieldItem
+          v-model="value"
+          :file="files[index]"
+          :field="field"
+          :server-settings="serverSettings"
+          :disabled="disabled"
+        />
+      </template>
+    </ListBuilder>
+    <FileFieldItem
+      v-else-if="files.length > 0"
+      v-model="value"
+      :file="files[0]"
+      :field="field"
+      :server-settings="serverSettings"
+      :disabled="disabled"
+      class="mb-1"
+    />
 
     <v-btn
       color="primary"
       block
       variant="tonal"
+      :class="{ 'mt-3': files.length > 0 }"
       @click="openFileManager"
     >
       File Manager
@@ -744,20 +643,11 @@ const onWysiwygContentChange = (content: any) => {
     <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
     <ListBuilder
       v-model="value"
-      :label="field.label"
-      :field="field"
-      :locale="locale"
-      :server-settings="serverSettings"
-      :required="field.required"
-      :rules="getRules(field)"
       :default-item="getDefaultItem()"
       :disabled="disabled"
-      :loading="loading"
       :on-collapsable-header="onCollapsableHeader"
       class="d-flex flex-column"
       style="gap: 0.5rem"
-      hide-details="auto"
-      clearable
       collapsable
     >
       <template #actions="{ index }">
@@ -885,4 +775,7 @@ const onWysiwygContentChange = (content: any) => {
   min-height: 6rem !important;
   max-height: 40vh !important;
 }
+.handle {
+   cursor: grabbing;
+ }
 </style>

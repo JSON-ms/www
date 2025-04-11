@@ -141,12 +141,19 @@ export const parseFields = (fields: any = {}, locales = {}) => {
   return result;
 }
 
-export const processObject = (obj: any, callback: (parent: any, key: string, path: string) => void, path = '', parent = null, parentKey: string | null = null) => {
-  if (obj !== null && typeof obj === 'object' && !Array.isArray(obj)) {
+export const processObject = (
+  obj: any,
+  callback: (parent: any, key: string, path: string) => void,
+  path = '',
+  parent = null,
+  parentKey: string | null = null,
+  continueCallback: (path: string) => boolean = () => true
+) => {
+  if (obj !== null && typeof obj === 'object' && !Array.isArray(obj) && continueCallback(path)) {
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
         const currentPath = path ? `${path}.${key}` : key;
-        processObject(obj[key], callback, currentPath, obj, key);
+        processObject(obj[key], callback, currentPath, obj, key, continueCallback);
       }
     }
   } else if (parentKey) {

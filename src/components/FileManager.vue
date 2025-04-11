@@ -7,12 +7,13 @@ import {downloadFilesAsZip, getFileIcon, phpStringSizeToBytes} from '@/utils';
 
 const globalStore = useGlobalStore();
 const interfaceModel = defineModel<IInterface>({ required: true });
-const { serverSettings, canUpload = false, canDelete = false, canSelect = false, canDownload = false } = defineProps<{
-  serverSettings: IServerSettings,
+const { selected = [], serverSettings, canUpload = false, canDelete = false, canSelect = false, canDownload = false } = defineProps<{
+  selected?: IFile[],
   canUpload?: boolean,
   canDelete?: boolean,
   canSelect?: boolean,
   canDownload?: boolean,
+  serverSettings: IServerSettings,
 }>();
 const loading = ref(false);
 const filter = ref<'all' | 'image' | 'video' | 'document'>('all');
@@ -37,7 +38,7 @@ const getFilesByType = (type: string): IFile[] => {
   return [];
 }
 const acceptedFiles = computed((): IFile[] => {
-  if (globalStore.fileManager.accept === null) {
+  if (!globalStore.fileManager.accept) {
     return files.value;
   }
 
@@ -95,6 +96,15 @@ const load = () => {
       'X-Jms-Api-Key': interfaceModel.value.server_secret,
     })
       .then(response => files.value = response)
+      .then(() => {
+        selectedFiles.value = [];
+        selected.forEach(selectedFile => {
+          const file = files.value.find(file => file.path === selectedFile.path);
+          if (file) {
+            selectedFiles.value.push(file);
+          }
+        })
+      })
       .catch(globalStore.catchError)
       .finally(() => loading.value = false);
   }
@@ -274,7 +284,7 @@ watch(() => globalStore.fileManager.visible, () => {
         @dragover.prevent.stop="onDragEnter"
         @dragleave.prevent.stop="onDragLeave"
       >
-        <div v-if="loading || filteredFiles.length === 0 || !interfaceModel.value.webhook" class="d-flex align-center justify-center text-center" style="height: 33vh">
+        <div v-if="loading || filteredFiles.length === 0 || !interfaceModel.webhook" class="d-flex align-center justify-center text-center" style="height: 33vh">
           <v-progress-circular
             v-if="loading"
             size="96"

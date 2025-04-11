@@ -80,6 +80,7 @@ export const useGlobalStore = defineStore('global', {
     },
     fileManager: {
       visible: false,
+      selected: [],
       multiple: false,
       canSelect: false,
       callback: () => new Promise(resolve => resolve(true)),
@@ -124,8 +125,15 @@ export const useGlobalStore = defineStore('global', {
     setSession(session: ISession) {
       this.session = session;
     },
-    showFileManager(canSelect = false, multiple = false, callback?: (files?: IFile | IFile[]) => Promise<boolean>, accept: null | string = null) {
+    showFileManager(
+      selected = [],
+      canSelect = false,
+      multiple = false,
+      callback?: (files?: IFile | IFile[]) => Promise<boolean>,
+      accept: null | string = null
+    ) {
       this.fileManager.visible = true;
+      this.fileManager.selected = selected;
       this.fileManager.multiple = multiple;
       this.fileManager.canSelect = canSelect;
       this.fileManager.accept = accept;

@@ -7,15 +7,17 @@ import {computed, ref} from 'vue';
 const globalStore = useGlobalStore();
 const list = defineModel<any[]>({ required: true });
 const {
-  defaultItem,
+  defaultItem = null,
   disabled = false,
   collapsable = false,
+  canAdd = true,
   removeItemCallback = null,
   onCollapsableHeader = () => ({ title: 'Item', thumbnail: null }),
 } = defineProps<{
-  defaultItem: any,
+  defaultItem?: any,
   disabled?: boolean,
   collapsable?: boolean,
+  canAdd?: boolean,
   removeItemCallback?: (index: number, list: any[]) => void
   onCollapsableHeader?: (item: any, index: number) => ({ title: string, thumbnail: string | boolean})
 }>()
@@ -53,7 +55,6 @@ const formattedList = computed({
     return list.value;
   },
   set(items: any[]) {
-    console.log(items);
     list.value.length = 0
     list.value.push(...items);
   }
@@ -64,11 +65,15 @@ const formattedList = computed({
   <draggable
     v-if="!collapsable"
     v-model="formattedList"
+    :animation="200"
     item-key="hash"
     handle=".handle"
+    class="draggable-list"
   >
     <template #item="{ index }">
-      <div class="d-flex align-start" :style="['gap: 1rem', { marginTop: index > 0 ? '1rem' : 0 }]">
+      <div class="d-flex align-start" :style="[ 'gap: 1rem' ]">
+        <v-icon class="handle" icon="mdi-drag-vertical px-4 ml-n3" @mousedown.stop />
+
         <slot
           name="default"
           :item="list[index]"
@@ -90,6 +95,7 @@ const formattedList = computed({
     </template>
     <template #footer>
       <v-btn
+        v-if="canAdd"
         :disabled="disabled"
         :class="{
           'mt-4': list.length > 0
@@ -105,6 +111,7 @@ const formattedList = computed({
   <v-expansion-panels v-else v-model="panel">
     <draggable
       v-model="formattedList"
+      :animation="200"
       item-key="hash"
       handle=".handle"
     >
@@ -158,6 +165,7 @@ const formattedList = computed({
       </template>
       <template #footer>
         <v-btn
+          v-if="canAdd"
           :disabled="disabled"
           :class="{
             'mt-4': list.length > 0
@@ -176,5 +184,8 @@ const formattedList = computed({
 <style lang="scss" scoped>
 .handle {
   cursor: grabbing;
+}
+.draggable-list > *:not(:first-child) {
+  margin-top: 1rem;
 }
 </style>
