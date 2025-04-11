@@ -1,6 +1,6 @@
 # JSON.ms
 
-![example](https://json.ms/meta-preview.jpg "Title")
+![Meta Preview](https://json.ms/meta-preview.jpg "Meta Preview")
 
 JSON.ms allows you to create an admin panel from a YAML interface that communicates with a remote server using JSON. Users enjoy a sleek interface while you dynamically manage fields through YAML, handling all RESTful requests seamlessly from your server.
 

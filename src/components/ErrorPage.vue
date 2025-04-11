@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const {
-  title = '500 - Unknown Error',
-  text = 'Sorry, an unknown error occured.',
+  title = '404 - Page Not Found',
+  text = 'It seems the page you\'re looking for has wandered off. Whether it was moved, deleted, or never existed, we can\'t seem to find it.',
   showBtn = true,
 } = defineProps<{
   title?: string,

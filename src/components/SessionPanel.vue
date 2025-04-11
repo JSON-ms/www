@@ -2,8 +2,10 @@
 import { useGlobalStore } from '@/stores/global';
 import { ref } from 'vue';
 import { Services } from '@/services';
+import {useModelStore} from '@/stores/model';
 
 const globalStore = useGlobalStore();
+const modelStore = useModelStore();
 const sessionLoginOut = ref(false);
 const emit = defineEmits(['logout'])
 const {
@@ -26,13 +28,14 @@ const logout = () => {
       sessionLoginOut.value = true;
       Services.get(import.meta.env.VITE_SERVER_URL + '/session/logout')
         .then(response => {
-          emit('logout');
-          return response;
+          globalStore.setSession(response);
+          emit('logout', response);
         })
-        .then(globalStore.setSession)
-        .then(resolve)
         .catch(globalStore.catchError)
-        .finally(() => sessionLoginOut.value = false);
+        .finally(() => {
+          sessionLoginOut.value = false;
+          resolve();
+        });
     })
   })
 }
@@ -41,7 +44,7 @@ const logout = () => {
 <template>
   <v-menu>
     <template #activator="{ props }">
-      <v-btn v-bind="props" :icon="dense">
+      <v-btn v-bind="props" :icon="dense" height="40">
         <v-avatar size="32" color="primary">
           <v-img
             v-if="globalStore.session.user.avatar"

@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia';
-import type { ISession, IPrompt, IError, ISnack } from '@/interfaces';
-import InterfaceModel from '@/models/interface.model';
+import type {ISession, IPrompt, IError, ISnack, IAdmin, IInterface, IFileManager, IFile} from '@/interfaces';
 
 export const mimeTypes = {
   images: [
@@ -34,13 +33,15 @@ export const mimeTypes = {
   ]
 };
 
-export const useGlobalStore = defineStore('example', {
+export const useGlobalStore = defineStore('global', {
   state: (): {
     theme: 'dark' | 'light',
+    admin: IAdmin,
     snack: ISnack,
     error: IError,
     prompt: IPrompt,
     session: ISession,
+    fileManager: IFileManager,
   } => ({
     theme: 'light',
     prompt: {
@@ -57,6 +58,12 @@ export const useGlobalStore = defineStore('example', {
       body: '',
       visible: false,
     },
+    admin: {
+      drawer: window.innerWidth >= 1300,
+      interface: window.innerWidth >= 1400,
+      previewMode: window.innerWidth >= 1400 ? 'desktop' : 'mobile',
+      tab: 'data',
+    },
     session: {
       loggedIn: false,
       user: {
@@ -69,7 +76,16 @@ export const useGlobalStore = defineStore('example', {
       },
       googleOAuthSignInUrl: '',
       interfaces: [],
+      webhooks: [],
     },
+    fileManager: {
+      visible: false,
+      selected: [],
+      multiple: false,
+      canSelect: false,
+      callback: () => new Promise(resolve => resolve(true)),
+      accept: null,
+    }
   }),
   actions: {
     catchError(error: Error) {
@@ -92,6 +108,10 @@ export const useGlobalStore = defineStore('example', {
           body: serverError ? 'Please check your webhook URL or check your server settings.' : error.message,
         };
       }
+      throw error;
+    },
+    setAdmin(admin: Partial<IAdmin>) {
+      Object.assign(this.admin, admin);
     },
     setPrompt(prompt: IPrompt) {
       this.prompt = prompt;
@@ -104,17 +124,38 @@ export const useGlobalStore = defineStore('example', {
     },
     setSession(session: ISession) {
       this.session = session;
-      if (!this.session.interfaces) {
-        this.session.interfaces = session.interfaces;
+    },
+    showFileManager(
+      selected = [],
+      canSelect = false,
+      multiple = false,
+      callback?: (files?: IFile | IFile[]) => Promise<boolean>,
+      accept: null | string = null
+    ) {
+      this.fileManager.visible = true;
+      this.fileManager.selected = selected;
+      this.fileManager.multiple = multiple;
+      this.fileManager.canSelect = canSelect;
+      this.fileManager.accept = accept;
+      this.fileManager.callback = callback;
+    },
+    addInterface(item: IInterface) {
+      if (!this.session.interfaces.find(inter => inter.uuid === item.uuid)) {
+        this.session.interfaces.push(item);
       }
     },
-    addInterface(item: InterfaceModel) {
-      this.session.interfaces.push(item.data);
-    },
-    removeInterface(item: InterfaceModel) {
-      const filteredItems = this.session.interfaces.filter(child => child.uuid !== item.data.uuid);
+    removeInterface(item: IInterface) {
+      const filteredItems = this.session.interfaces.filter(child => child.uuid !== item.uuid);
       this.session.interfaces.length = 0;
       Array.prototype.push.apply(this.session.interfaces, filteredItems);
+    },
+    updateInterface(item: IInterface) {
+      const index = this.session.interfaces.findIndex(child => child.uuid === item.uuid);
+      if (index >= 0) {
+        this.session.interfaces[index] = item;
+      } else {
+        this.addInterface(item);
+      }
     },
   },
 });

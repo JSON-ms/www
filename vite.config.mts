@@ -5,6 +5,7 @@ import Vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
 import ViteFonts from 'unplugin-fonts/vite'
 import VueRouter from 'unplugin-vue-router/vite'
 import {stringPlugin} from "vite-string-plugin";
+import vuetifyRemPlugin from './src/plugins/vite-vuetify-to-rem';
 import { resolve } from 'path';
 import { readFileSync } from 'fs';
 
@@ -28,6 +29,7 @@ export default defineConfig({
         configFile: 'src/styles/settings.scss',
       },
     }),
+    vuetifyRemPlugin(),
     Components(),
     ViteFonts({
       google: {

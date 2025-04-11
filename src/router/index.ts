@@ -1,26 +1,44 @@
 /**
- * router/index.ts
+ * router/plugin.ts
  *
- * Automatic routes for `./src/pages/*.vue`
+ * Automatic routes for `./src/views/*.vue`
  */
 
 // Composables
 import { createRouter, createWebHistory } from 'vue-router/auto'
-import { routes } from 'vue-router/auto-routes'
 import ErrorPage from '@/components/ErrorPage.vue'
+import MainView from '@/views/MainView.vue';
+import {useInterface} from '@/composables/interface';
+import {useGlobalStore} from '@/stores/global';
+import type {RouteLocationGeneric} from 'vue-router';
+import {useModelStore} from '@/stores/model';
 
+const getValidInterfaceRoute = (route:  RouteLocationGeneric): string => {
+  const globalStore = useGlobalStore();
+  const foundInterface = globalStore.session.interfaces.find(item => item.hash === route.params.hash);
+  if (foundInterface) {
+    const modelStore = useModelStore();
+    modelStore.setInterface(foundInterface);
+    const { getAvailableSection, getAvailableLocale } = useInterface();
+    const splitPath = window.location.pathname.split('/');
+    return `/admin/${route.params.hash}/${getAvailableSection(undefined, splitPath[3])}/${getAvailableLocale(undefined, splitPath[4])}`;
+  }
+  return `/admin/${route.params.hash}/home/en-US`;
+}
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    ...routes, {
-      path: '/:pathMatch(.*)*',
-      name: 'ErrorPage',
-      component: ErrorPage,
-    }, {
-      path: '/error/:code',
-      name: 'ErrorPage',
-      component: ErrorPage,
-    }
+    { path: '/', redirect: '/admin/demo/home/en-US' },
+    { path: '/admin/:hash/', redirect: getValidInterfaceRoute },
+    { path: '/admin/:hash/:section?/:locale?', name: 'admin', beforeEnter: (to, from, next) => {
+      const url = getValidInterfaceRoute(to);
+      if (to.fullPath !== url) {
+        next(url);
+      } else {
+        next();
+      }
+    }, component: MainView },
+    { path: '/:pathMatch(.*)*', name: 'ErrorPageGeneral', component: ErrorPage },
   ],
 })
 

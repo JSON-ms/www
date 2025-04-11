@@ -14,10 +14,10 @@ export class Services {
     return this.handle(url, 'POST', JSON.stringify(body), headers);
   }
 
-  static delete(url: string, body?: any): Promise<any> {
-    return this.handle(url, 'DELETE', JSON.stringify(body), {
-      'Content-Type': 'application/json',
-    });
+  static delete(url: string, headers: {[key: string]: any} = {
+    'Content-Type': 'application/json'
+  }): Promise<any> {
+    return this.handle(url, 'DELETE', undefined, headers);
   }
 
   static upload(url: string, file: File, callback: (percentage: number, completed: boolean) => void = () => {}, headers: {[key: string]: any} = {}): Promise<any> {

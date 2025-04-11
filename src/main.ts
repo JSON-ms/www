@@ -11,15 +11,30 @@ import { registerFilters } from './filters';
 // Components
 import App from './App.vue'
 import ErrorPage from './Error.vue';
+import VueEasymde from 'vue3-easymde'
+import { QuillEditor } from '@vueup/vue-quill'
+
+// Directives
+import ifRef from '@/directives/if-ref';
 
 // Composable
 import { createApp } from 'vue'
 import { createPinia } from 'pinia';
 import { useGlobalStore } from '@/stores/global';
 import { Services } from '@/services';
-import { QuillEditor } from '@vueup/vue-quill'
+
+// Calculate <html> font-size based on a viewport width of 1800px
+// const adjustHtmlFontSize = () => {
+//   const screenWidth = window.innerWidth;
+//   if (screenWidth >= 1800) {
+//     document.documentElement.style.fontSize = 'calc(' + screenWidth + 'px / 1800 * 16)';
+//   }
+// }
+// window.addEventListener('resize', adjustHtmlFontSize);
+// adjustHtmlFontSize();
+
+// Stylesheets
 import '@vueup/vue-quill/dist/vue-quill.snow.css';
-import VueEasymde from 'vue3-easymde'
 import "easymde/dist/easymde.min.css"
 
 const app = createApp(App)
@@ -27,9 +42,7 @@ const pinia = createPinia();
 app.use(pinia);
 app.use(VueEasymde);
 app.component('QuillEditor', QuillEditor)
-
-registerFilters(app);
-registerPlugins(app)
+app.directive('if-ref', ifRef);
 
 const globalStore = useGlobalStore();
 const loadSession = async (): Promise<any> => {
@@ -48,8 +61,12 @@ const handleError = () => {
 
 loadSession()
   .then(globalStore.setSession)
-  .then(() => app.mount('#app'))
-  .catch(handleError)
+  .catch(handleError) // Do not catch errors from app.mount
+  .then(() => {
+    registerFilters(app);
+    registerPlugins(app)
+    app.mount('#app')
+  })
 
 document.addEventListener('visibilitychange', () => {
   const wasLoggedIn = globalStore.session.loggedIn;

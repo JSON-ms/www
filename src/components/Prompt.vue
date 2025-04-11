@@ -7,7 +7,8 @@ const proceed = () => {
   proceeding.value = true;
   globalStore.prompt.callback()
     .then(close)
-    .then(() => proceeding.value = false);
+    .catch(globalStore.catchError)
+    .finally(() => proceeding.value = false);
 }
 const proceeding = ref(false);
 const close = () => {
