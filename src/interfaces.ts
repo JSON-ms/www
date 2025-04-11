@@ -57,6 +57,7 @@ export interface IFile {
 
 export interface IFileManager {
   visible: boolean,
+  selected: IFile[],
   multiple: boolean,
   canSelect: boolean,
   callback?: (files?: IFile | IFile[]) => Promise<boolean>,

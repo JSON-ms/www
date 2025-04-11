@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia';
 import type {IInterface} from '@/interfaces';
 import {deepToRaw, getDefaultInterfaceContent, getInterface, isNativeObject} from '@/utils';
-import {useInterface} from '@/composables/interface';
-import {useUserData} from '@/composables/user-data';
 
 const defaultInterfaceContent = getDefaultInterfaceContent();
 const defaultInterface = getInterface(defaultInterfaceContent);

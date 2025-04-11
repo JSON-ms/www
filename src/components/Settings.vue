@@ -46,6 +46,11 @@ const server = computed({
   },
   set(value: string) {
     interfaceModel.value.webhook = value;
+    const webhook = globalStore.session.webhooks.find(webhook => webhook.uuid === value);
+    if (webhook) {
+      interfaceModel.value.server_url = webhook.url;
+      interfaceModel.value.server_secret = webhook.secret;
+    }
   }
 })
 

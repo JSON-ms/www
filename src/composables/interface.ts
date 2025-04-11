@@ -26,13 +26,19 @@ export interface EditorAnnotation {
   type: 'error' | 'warning' | 'info'
 }
 
+const serverSettings = ref<IServerSettings>({
+  postMaxSize: '8M',
+  publicUrl: '',
+  uploadMaxSize: '2M',
+})
+const siteCompatible = ref(false);
+const siteNotCompatibleSnack = ref(false);
+
 export function useInterface() {
 
   const globalStore = useGlobalStore();
   const modelStore = useModelStore();
   const currentRoute = useRoute();
-  const siteCompatible = ref(false);
-  const siteNotCompatibleSnack = ref(false);
   const yamlException = ref<(EditorAnnotation)[]>([]);
 
   const interfaceStates = ref({
@@ -44,12 +50,6 @@ export function useInterface() {
     secretKeyLoaded: false,
     loadingCypherKey: false,
     cypherKeyLoaded: false,
-  })
-
-  const serverSettings = ref<IServerSettings>({
-    postMaxSize: '8M',
-    publicUrl: '',
-    uploadMaxSize: '2M',
   })
 
   const adminBaseUrl = ref(window.location.origin);
@@ -334,6 +334,11 @@ export function useInterface() {
     siteCompatible.value = false;
     siteNotCompatibleSnack.value = false;
     modelStore.setOriginalInterface(modelStore.interface);
+    serverSettings.value = {
+      postMaxSize: '8M',
+      publicUrl: '',
+      uploadMaxSize: '2M',
+    };
   }
 
   const getInterfaceRules = (key: string | null = null): ((value: any) => (string | boolean))[] => {

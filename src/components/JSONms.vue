@@ -44,7 +44,7 @@ const showNewInterfaceModal = ref(false);
 const interfaceEditor = ref<InstanceType<typeof InterfaceEditor> | null>();
 const sitePreview = ref<InstanceType<typeof SitePreview> | null>();
 const dataEditor = ref<InstanceType<typeof DataEditor> | null>();
-const { serverSettings, interfaceParsedData, interfaceStates, interfaceHasSettingsError, getAvailableSection, deleteInterface, getAvailableLocale, interfaceHasSection, interfaceHasLocale, saveInterface, canSaveInterface, canDeleteInterface } = useInterface();
+const { serverSettings, interfaceParsedData, interfaceStates, interfaceHasSettingsError, getAvailableSection, deleteInterface, getAvailableLocale, interfaceHasSection, interfaceHasLocale, saveInterface, canSaveInterface, canDeleteInterface, resetInterface } = useInterface();
 const { fetchUserData, canSave, saveUserData, downloading, userDataLoaded, userDataLoading, setUserData } = useUserData();
 const { sendMessageToIframe } = useIframe();
 const { syncTypings } = useTypings();
@@ -109,6 +109,8 @@ const onCreateInterface = () => {
 }
 
 const onApplyNewInterface = (template: string) => {
+  resetInterface();
+
   const newInterface = getInterface(template);
   modelStore.setInterface(getInterface(template))
   setUserData({}, true);
@@ -206,6 +208,7 @@ const onApplyJsonContent = (json: any) => {
 }
 
 const onInterfaceModelChange = (model: IInterface) => {
+  resetInterface();
   modelStore.setInterface(model, {});
   userDataLoaded.value = false;
   if (autoload) {

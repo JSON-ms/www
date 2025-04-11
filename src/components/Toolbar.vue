@@ -15,7 +15,6 @@ import type {VAppBar} from 'vuetify/components';
 import {useLayout} from '@/composables/layout';
 import {useTypings} from '@/composables/typings';
 import {useIframe} from '@/composables/iframe';
-import {useModelStore} from '@/stores/model';
 
 const interfaceModel = defineModel<IInterface>({ required: true });
 const { interfaceData, interfaces = [], defaultLocale = 'en-US' } = defineProps<{
@@ -150,7 +149,7 @@ watch(() => currentRoute.params.locale, () => {
         <Logo />
       </v-app-bar-title>
     </template>
-    <div v-else class="mr-4"></div>
+    <div v-else class="mr-4" />
 
     <div class="d-flex align-center" style="gap: 1rem; flex: 75">
       <InterfaceSelector
@@ -252,7 +251,7 @@ watch(() => currentRoute.params.locale, () => {
         @update:model-value="onLocaleChange"
       >
         <template v-if="!userDataLoading" #prepend-inner-selection>
-          <v-icon v-if="Object.keys(userDataErrorList).find(key => key.endsWith(selectedLocale))" icon="mdi-alert" color="warning"></v-icon>
+          <v-icon v-if="Object.keys(userDataErrorList).find(key => key.endsWith(selectedLocale))" icon="mdi-alert" color="warning" />
           <v-icon v-else-if="Object.keys(userDataErrorList).find(key => locales.find(locale => key.endsWith(locale.value)))" icon="mdi-alert-outline" color="warning" />
         </template>
         <template v-if="!userDataLoading" #prepend-inner-item="{ item }">
