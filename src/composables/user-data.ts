@@ -124,8 +124,17 @@ export function useUserData() {
     const files: string[] = [];
     const sections = interfaceParsedData.value.sections as unknown as { [key: string]: IField; };
     loopThroughFields(sections, (field, path, data) => {
-      if (isFieldType(field, 'file') && data.path && data.meta.size > 0) {
-        files.push(modelStore.interface.server_url + '/' + data.path);
+      if (isFieldType(field, 'file')) {
+        if (Array.isArray(data)) {
+          data.forEach(file => {
+            if (file.path && file.meta.size > 0) {
+              files.push(modelStore.interface.server_url + '/file/read/' + file.path);
+            }
+          })
+        }
+        else if (data.path && data.meta.size > 0) {
+          files.push(modelStore.interface.server_url + '/file/read/' + data.path);
+        }
       }
     }, modelStore.userData)
     downloading.value = true;
