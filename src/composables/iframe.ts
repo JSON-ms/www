@@ -47,10 +47,13 @@ export function useIframe() {
     }));
   }
 
-  const getSectionFromRoute = (route: string): string | null => {
+  const getSectionFromRoute = (route: any): string | null => {
     const getSection = (value: string): string | null => {
       for(const sectionKey in interfaceParsedData.value.sections) {
         const section = interfaceParsedData.value.sections[sectionKey];
+        if (isNativeObject(route) && route.name === sectionKey) {
+          return sectionKey;
+        }
         if (section.path) {
           const paths = Array.isArray(section.path) ? section.path : [section.path];
           for (let i = 0; i < paths.length; i++) {
@@ -74,11 +77,10 @@ export function useIframe() {
       return null;
     }
     try {
-      const json = JSON.parse(route);
-      if (typeof json === 'string') {
-        return getSection(json);
-      } else if (isNativeObject(json) && json.name && json.path) {
-        return getSection(json.path) ?? getSection(json.name);
+      if (typeof route === 'string') {
+        return getSection(route);
+      } else if (isNativeObject(route) && route.name || route.path) {
+        return getSection(route.path) ?? getSection(route.name);
       }
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
