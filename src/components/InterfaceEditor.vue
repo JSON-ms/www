@@ -138,6 +138,7 @@ const options = {
   //   },
   // }],
   fontSize: 14,
+  showPrintMargin: false,
   // enableLiveAutocompletion: true,
   tabSize: 2,
   useSoftTabs: true
