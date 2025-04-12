@@ -21,17 +21,19 @@ const close = () => {
     <v-card
       title="Welcome to JSON.ms!"
       prepend-icon="mdi-human-greeting"
-      max-width="600"
+      max-width="800"
     >
+      <iframe
+        :height="800 / (16/9)"
+        src="https://www.youtube.com/embed/QbzHaJ3GeJM?si=HsQLg2_cXyt97vv1"
+        title="YouTube video player"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allowfullscreen
+      />
       <v-card-text>
         <p>Unlock the power of seamless admin panel generation with our intuitive YAML interface. JSON.ms enables you to create dynamic admin panels that save user inputs directly in JSON format to YOUR server through RESTful API calls.</p>
-        <p class="mt-4"><strong>How to use it?</strong></p>
-        <ol class="my-4 ml-6">
-          <li><strong>Play with the YAML Template:</strong> Experiment with our user-friendly template and see live changes in the preview section. Every detail is thoroughly explained in the Docs section to guide you through the process.</li>
-          <li class="mt-2"><strong>Integration Made Easy:</strong> Follow our comprehensive documentation for PHP, Python, or Node to set up your webhook and API key.</li>
-          <li class="mt-2"><strong>Save User Data:</strong> Once integrated, JSON.ms will handle RESTful API calls to your server, allowing you to effortlessly capture and store user inputs from your dynamically generated admin panels in JSON format.</li>
-        </ol>
-        <p>Dive in and transform your admin experience with JSON.ms!</p>
       </v-card-text>
       <template #actions>
         <v-btn
@@ -44,3 +46,10 @@ const close = () => {
     </v-card>
   </v-dialog>
 </template>
+
+<style lang="scss" scoped>
+iframe, object, embed {
+  max-width: 100%;
+  max-height: 100%;
+}
+</style>
