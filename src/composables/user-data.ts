@@ -133,7 +133,7 @@ export function useUserData() {
             }
           })
         }
-        else if (data.path && data.meta.size > 0) {
+        else if (data && data.path && data.meta.size > 0) {
           files.push(modelStore.interface.server_url + '/file/read/' + data.path);
         }
       }
