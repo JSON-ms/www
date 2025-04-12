@@ -13,6 +13,7 @@ const defaultObjOnly = ref(false)
 const options = {
   fontSize: 14,
   showPrintMargin: false,
+  tabSize: 2,
 };
 const { getTypescriptTypings, getPhpTypings, typingFileHandle, askForSyncTypings, syncTypings } = useTypings();
 

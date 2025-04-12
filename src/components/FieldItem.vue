@@ -4,8 +4,8 @@ import FieldHeader from '@/components/FieldHeader.vue';
 import FileFieldItem from '@/components/FileFieldItem.vue';
 import type {IInterfaceData, IField, IServerSettings, IInterface, IFile} from '@/interfaces';
 import Rules from '@/rules';
-import {deepToRaw, parseFields, getFieldType, isFieldType, isNativeObject, isFieldI18n} from '@/utils';
-import { computed, ref } from 'vue';
+import {deepToRaw, parseFields, getFieldType, isFieldType, isNativeObject, isFieldI18n, getFieldRules} from '@/utils';
+import {computed, ref, watch} from 'vue';
 import { useGlobalStore } from '@/stores/global';
 import {useUserData} from '@/composables/user-data';
 import {useInterface} from "@/composables/interface";
@@ -48,6 +48,18 @@ const getRules = (field: IField): any[] => {
   if (fieldType.value.includes('number') && value.value) {
     rules.push((value: string) => Rules.digit(value) || 'This field must be a digit');
   }
+  const fieldRules = getFieldRules(field);
+  fieldRules.forEach(fieldRule => {
+    const match = fieldRule.regex.match(/^\/(.*?)\/([gimsuy]*)$/);
+    if (match) {
+      const pattern = match[1];
+      const flags = match[2];
+      const regex = new RegExp(pattern, flags);
+      rules.push((value: string) => regex.test(value) || fieldRule.message);
+    } else {
+      // throw new Error("Invalid regex string format");
+    }
+  })
   return rules;
 }
 const optionItems = computed((): { title: string, value: string }[] => {
@@ -87,7 +99,7 @@ const computedReadOnlyDate = computed((): string => {
 });
 
 const getDefaultItem = () => {
-  return parseFields(structuredClone(deepToRaw(fields.value) || {}), locales);
+  return parseFields(structuredClone(deepToRaw(fields.value) || {}), locales, structure.schemas);
 }
 
 const fields = computed((): {[key: string]: IField } => {
@@ -224,9 +236,20 @@ const computedStringValue = computed({
   }
 })
 
+const onClickOutsideDate = () => {
+  if (showDatePicker.value) {
+    showDatePicker.value = false;
+  }
+}
+
 const onWysiwygContentChange = (content: any) => {
   console.log(content);
 }
+
+const expanded = ref(field.collapsed === true ? null : 0);
+watch(() => field.collapsed, () => {
+  expanded.value = field.collapsed === true ? null : 0;
+})
 </script>
 
 <template>
@@ -481,6 +504,25 @@ const onWysiwygContentChange = (content: any) => {
     />
   </div>
 
+  <!-- RANGE -->
+  <div v-else-if="isFieldType(field, 'range')">
+    <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
+    <v-range-slider
+      v-model="value"
+      :required="field.required"
+      :rules="getRules(field)"
+      :hint="field.hint"
+      :persistent-hint="!!field.hint"
+      :min="field.min || 0"
+      :max="field.max || 100"
+      :step="field.step || 1"
+      :disabled="disabled"
+      color="primary"
+      hide-details="auto"
+      thumb-label="always"
+    />
+  </div>
+
   <!-- RATING -->
   <div v-else-if="isFieldType(field, 'rating')">
     <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
@@ -550,7 +592,6 @@ const onWysiwygContentChange = (content: any) => {
     :close-on-content-click="false"
     :disabled="disabled"
     :loading="loading"
-    location="bottom"
   >
     <template #activator="{ props }">
       <v-text-field
@@ -591,6 +632,7 @@ const onWysiwygContentChange = (content: any) => {
     </template>
     <v-date-picker
       v-model="computedDate"
+      v-click-outside="onClickOutsideDate"
       :disabled="disabled"
       hide-header
       show-adjacent-months
@@ -606,6 +648,8 @@ const onWysiwygContentChange = (content: any) => {
       v-model="value"
       :disabled="disabled"
       :can-add="false"
+      :min="field.min"
+      :max="field.max"
     >
       <template #default="{ index }">
         <FileFieldItem
@@ -624,18 +668,24 @@ const onWysiwygContentChange = (content: any) => {
       :field="field"
       :server-settings="serverSettings"
       :disabled="disabled"
-      class="mb-1"
     />
 
-    <v-btn
-      color="primary"
-      block
-      variant="tonal"
-      :class="{ 'mt-3': files.length > 0 }"
-      @click="openFileManager"
+    <div
+      :class="{
+        'mt-1': files.length > 0,
+        'pl-9': files.length > 0 && field.multiple,
+        'pr-14': files.length > 0 && field.multiple,
+      }"
     >
-      File Manager
-    </v-btn>
+      <v-btn
+        color="primary"
+        block
+        variant="tonal"
+        @click="openFileManager"
+      >
+        File Manager
+      </v-btn>
+    </div>
   </div>
 
   <!-- ARRAY -->
@@ -646,6 +696,8 @@ const onWysiwygContentChange = (content: any) => {
       :default-item="getDefaultItem()"
       :disabled="disabled"
       :on-collapsable-header="onCollapsableHeader"
+      :min="field.min"
+      :max="field.max"
       class="d-flex flex-column"
       style="gap: 0.5rem"
       collapsable
@@ -708,45 +760,91 @@ const onWysiwygContentChange = (content: any) => {
   </div>
 
   <!-- NODE -->
-  <fieldset v-else-if="fieldType === 'node'" class="pa-3">
-    <legend class="font-weight-bold">
-      {{ field.label }}
-    </legend>
-    <div
-      class="d-flex flex-column"
-      style="gap: 1rem"
-    >
-      <template
-        v-for="(nodeField, key) in fields"
-        :key="key"
+  <template v-else-if="fieldType === 'node'">
+    <v-expansion-panels v-if="field.collapsable" v-model="expanded">
+      <v-expansion-panel>
+        <v-expansion-panel-title>
+          <v-icon v-if="field.icon" :icon="field.icon" start />
+          {{ field.label }}
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <div
+            class="d-flex flex-column"
+            style="gap: 1rem"
+          >
+            <template
+              v-for="(nodeField, key) in fields"
+              :key="key"
+            >
+              <FieldItem
+                v-if="isFieldI18n(nodeField)"
+                v-model="value[key][locale]"
+                :field="nodeField"
+                :field-key="fieldKey + '.' + key"
+                :locale="locale"
+                :locales="locales"
+                :structure="structure"
+                :interface="interfaceModel"
+                :server-settings="serverSettings"
+                :loading="loading"
+              />
+              <FieldItem
+                v-else
+                v-model="value[key]"
+                :field="nodeField"
+                :field-key="fieldKey + '.' + key"
+                :locale="locale"
+                :locales="locales"
+                :structure="structure"
+                :interface="interfaceModel"
+                :server-settings="serverSettings"
+                :loading="loading"
+              />
+            </template>
+          </div>
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+    </v-expansion-panels>
+    <fieldset v-else class="pa-3">
+      <legend class="font-weight-bold px-3">
+        {{ field.label }}
+      </legend>
+      <div
+        class="d-flex flex-column"
+        style="gap: 1rem"
       >
-        <FieldItem
-          v-if="isFieldI18n(nodeField)"
-          v-model="value[key][locale]"
-          :field="nodeField"
-          :field-key="fieldKey + '.' + key"
-          :locale="locale"
-          :locales="locales"
-          :structure="structure"
-          :interface="interfaceModel"
-          :server-settings="serverSettings"
-          :loading="loading"
-        />
-        <FieldItem
-          v-else
-          v-model="value[key]"
-          :field="nodeField"
-          :field-key="fieldKey + '.' + key"
-          :locale="locale"
-          :locales="locales"
-          :structure="structure"
-          :interface="interfaceModel"
-          :server-settings="serverSettings"
-          :loading="loading"
-        />
-      </template>
-    </div>
-  </fieldset>
+        <template
+          v-for="(nodeField, key) in fields"
+          :key="key"
+        >
+          <FieldItem
+            v-if="isFieldI18n(nodeField)"
+            v-model="value[key][locale]"
+            :field="nodeField"
+            :field-key="fieldKey + '.' + key"
+            :locale="locale"
+            :locales="locales"
+            :structure="structure"
+            :interface="interfaceModel"
+            :server-settings="serverSettings"
+            :loading="loading"
+          />
+          <FieldItem
+            v-else
+            v-model="value[key]"
+            :field="nodeField"
+            :field-key="fieldKey + '.' + key"
+            :locale="locale"
+            :locales="locales"
+            :structure="structure"
+            :interface="interfaceModel"
+            :server-settings="serverSettings"
+            :loading="loading"
+          />
+        </template>
+      </div>
+    </fieldset>
+  </template>
 
   <!-- FALLBACK: FIELD NOT EXISTING -->
   <v-alert

@@ -52,13 +52,14 @@ const logout = () => {
             alt="Avatar"
           >
             <template #placeholder>
-              <v-overlay>
+              <div class="d-flex align-center justify-center fill-height">
                 <v-progress-circular
+                  color="surface"
                   indeterminate
                   size="16"
-                  width="2"
+                  width="1"
                 />
-              </v-overlay>
+              </div>
             </template>
           </v-img>
           <strong v-else>{{ globalStore.session.user.name.substring(0, 1) }}</strong>

@@ -342,14 +342,21 @@ watch(() => globalStore.fileManager.visible, () => {
                     :src="serverSettings.publicUrl + item.path"
                     :aspect-ratio="(item.meta.width || 1) / (item.meta.height || 1)"
                   >
+                    <template #error>
+                      <div class="d-flex bg-blue-grey-lighten-4 px-2 align-center justify-center fill-height flex-column">
+                        <v-icon color="warning" size="32" icon="mdi-alert-outline" />
+                        <div class="text-caption text-disabled mt-1" style="line-height: 1rem">Unable to load image</div>
+                      </div>
+                    </template>
                     <template #placeholder>
-                      <v-overlay>
+                      <div class="d-flex align-center justify-center fill-height">
                         <v-progress-circular
+                          color="primary"
                           indeterminate
-                          size="16"
+                          size="32"
                           width="2"
                         />
-                      </v-overlay>
+                      </div>
                     </template>
                   </v-img>
                   <v-responsive v-else-if="item.meta.type.startsWith('video')" :aspect-ratio="(item.meta.width || 1) / (item.meta.height || 1)">

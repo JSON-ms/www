@@ -1,8 +1,8 @@
-export interface IModel {
-  uuid?: string,
-}
-
 type PHPMegabyte = `${number}M`;
+export type TRule = { regex: string, message: string }
+export type TEnum = {[key: string]: string[]} | {[key: string]: {[key: string]: string}}
+export type TSchema = {[key: string]: { [key: string]: IField }}
+
 export interface IServerSettings {
   postMaxSize: PHPMegabyte,
   publicUrl: string,
@@ -112,6 +112,7 @@ export interface IField {
   type: string
   label: string
   required?: boolean
+  default?: any
   icon?: string
   hint?: string
   multiple?: boolean
@@ -129,6 +130,9 @@ export interface IField {
   fields: {[key: string]: IField}
   items?: {[key: string]: string} | string[] | string
   conditional?: string
+  rules?: TRule[]
+  collapsable?: boolean
+  collapsed?: boolean
 }
 
 export interface ISection {
@@ -157,7 +161,8 @@ export interface IInterfaceData {
       }
     }
   },
-  enums: {[key: string]: string[]} | {[key: string]: {[key: string]: string}},
+  enums: TEnum,
+  schemas: TSchema,
   locales: {[key: string]: string}
   sections: {[key: string]: ISection}
 }

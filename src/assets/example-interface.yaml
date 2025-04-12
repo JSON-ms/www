@@ -33,6 +33,21 @@ enums:
     mx: Mexico
 
 
+# Reusable Schemas:
+#   This feature allows you to define a schema of fields that can
+#   be reused throughout your document. A good example of schemas
+#   could be meta titles and descriptions for your web pages.
+schemas:
+  meta:
+    title:
+      type: string
+      label: Title
+      required: true
+    description:
+      type: string
+      label: Description
+
+
 # App Sections and Fields:
 #   Outline the various sections of your data, detailing the
 #   specific fields within each section. This allows for a structured
@@ -43,6 +58,8 @@ sections:
     label: Home page
     icon: mdi-account
     fields:
+      meta:
+        type: schemas.meta
       title:
         type: i18n
         label: Title

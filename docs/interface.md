@@ -73,6 +73,7 @@ For instance:
 - `number`: A numeric input field for entering numbers.
 - `rating`: A component that allows users to provide feedback or evaluate an item using a star or point system, typically ranging from 1 to 5, visually represented through icons or bars.
 - `slider`: A slider component that allows you to select a number. 
+- `range`: A range slider component that allows you to select a range of number. 
 - `select`: A dropdown menu that allows users to choose one or multiple items from a predefined list.
 - `checkbox`: A binary input that allows users to select one or more items from a set of choices.
 - `radio`: A set of options where only one can be selected at a time, typically displayed as buttons.
@@ -87,24 +88,43 @@ For instance:
 #### All Field Properties:
 - `type`: Specifies a supported field type as defined earlier.
 - `label`: The title that will be displayed within the field.
+- `default`: A optional default value for the current field.
 - `multiple`: A boolean value that indicates whether the field can accept multiple values (e.g., for `select`, `checkbox` or `file` types).
+- `icon`: (Optional) An icon that will be displayed next to the menu item.
 - `accept`: For `file` field only. It takes as its value a comma-separated list of one or more file types. You can add file extensions `*.jpg,*.gif` or even mime types `application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document`.
+- `rules`: An optional list of rules (regex) to be applied to the field. See rules section for explanation.
 - `prepend`: An optional string that will be displayed before the input field.
 - `append`: An optional string that will be displayed after the input field.
 - `prepend-inner`: An optional string that will be displayed inside and before the input field. Can be used with `string`, `number`, `select`, `textarea` and `date` fields.'
 - `append-inner`: An optional string that will be displayed inside and after the input field. Can be used with `string`, `number`, `select`, `textarea` and `date` fields.'
 - `hint`: An optional string that provides additional information or guidance to the user about the field, displayed below the field.
-- `icon`: (Optional) An icon that will be displayed next to the menu item.
   - Make sure to prefix all icons with "mdi-". For instance: mdi-check will show the "check" icon.
   - Documentation: https://pictogrammers.com/library/mdi/
 - `required`: (Optional) It ensures that the user must provide a value, preventing the form from being submitted until the field is completed.
 - `fields`: This is applicable only for `array` and `node` types. You can use any supported type here, and you can nest sub-arrays as needed to create complex data structures and hierarchies.
 - `items`: This is applicable only for `select`, `checkbox` and `radio` types. You can list all available values or even use an enum.
-- `min`: An optional minimum number. Works with `number` and `slider` fields.
-- `max`: An optional maximum number. Works with `number` and `slider` fields.
+- `min`: An optional minimum number. Works with `array`, `number`, `slider` and `range` fields.
+- `max`: An optional maximum number. Works with `array`, `number`, `slider` and `range` fields.
 - `length`: An optional length amount of stars in `rating` field.
-- `step`: An optional incremental amount when using `number` and `slider` fields.
+- `step`: An optional incremental amount when using `number`, `slider` and `range` fields.
 - `half-increments`: (Optional) Allows half-increments of stars when using the `rating` field.
+
+### Rules
+
+You can create validation for your form using regex expressions. Here's an example of two rules for a field `title`. It will validate that the value of the title starts with `abc` and ends with `123`.
+
+```yaml
+      title:
+        type: string
+        label: Title
+        rules:
+          - regex: /^abc/
+            message: The string must start with abc
+          - regex: /123$/
+            message: The string must end with 123
+```
+
+Fields `number` automatically includes a rule for checking number values.
 
 ### Paths
 
@@ -201,4 +221,32 @@ Here's an example of a field using an enum:
         type: select
         label: Title
         items: enums.countries
+```
+
+## Schemas
+
+Reusable schemas (fieldset) are a powerful feature that allows you to define a set of predefined fields that can be referenced multiple times throughout your interface. This promotes consistency in your data definitions and reduces redundancy, making your code cleaner and easier to maintain.
+
+```yaml
+schemas:
+  meta:
+    title:
+      type: string
+      label: Title
+      required: true
+    description:
+      type: string
+      label: Description
+```
+
+You can later use these schemas as a field type like any other widget using the `schemas.[NAME]` syntax. 
+
+Here's an example of a field using an schema:
+
+```yaml
+      meta: 
+        type: schemas.meta
+        label: Meta data # (Optional) A title for your collapsable group
+        collapsable: true # Make it a collapsable group
+        collapsed: true # Make it collapsed by default
 ```
