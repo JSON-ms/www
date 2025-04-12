@@ -108,6 +108,10 @@ For instance:
 - `length`: An optional length amount of stars in `rating` field.
 - `step`: An optional incremental amount when using `number`, `slider` and `range` fields.
 - `half-increments`: (Optional) Allows half-increments of stars when using the `rating` field.
+- `swatches`: (Optional, false by default) Shows a palette of colors when expanding the `color` field.
+- `canvas`: (Optional, true by default) Shows a canvas to select a color when using the `color` field.
+- `sliders`: (Optional, true by default) Shows a slider to select a color when using the `color` field.
+- `inputs`: (Optional) Shows an input field to customize your color when using the `color` field.
 
 ### Rules
 

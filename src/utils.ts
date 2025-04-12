@@ -15,6 +15,7 @@ export const allNonI18nFields: string[] = [
   'number',
   'slider',
   'range',
+  'color',
   'rating',
   'select',
   'checkbox',

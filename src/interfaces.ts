@@ -133,6 +133,10 @@ export interface IField {
   rules?: TRule[]
   collapsable?: boolean
   collapsed?: boolean
+  swatches?: boolean
+  canvas?: boolean
+  inputs?: boolean
+  sliders?: boolean
 }
 
 export interface ISection {
