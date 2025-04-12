@@ -8,6 +8,7 @@ const visible = defineModel<boolean>('visible');
 const options = {
   fontSize: 14,
   showPrintMargin: false,
+  tabSize: 2,
 };
 const globalStore = useGlobalStore();
 

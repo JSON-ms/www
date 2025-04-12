@@ -37,6 +37,7 @@ const applyEditors = (language = 'yaml') => {
       showFoldWidgets: false,
       showGutter: false,
       fontSize: 14,
+      tabSize: 2,
     });
   }
 }

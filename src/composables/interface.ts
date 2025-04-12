@@ -6,7 +6,7 @@ import {
   isFieldType,
   getDataByPath,
   valueToString,
-  parseStringValue
+  parseStringValue, getFieldSchemaKey
 } from '@/utils';
 import type {IField, IInterface, IInterfaceData, IServerSettings, IWebhook} from '@/interfaces';
 import Rules from '@/rules';
@@ -25,14 +25,23 @@ export interface EditorAnnotation {
   value: string
   type: 'error' | 'warning' | 'info'
 }
-
+const siteCompatible = ref(false);
+const siteNotCompatibleSnack = ref(false);
+const interfaceStates = ref({
+  saving: false,
+  saved: false,
+  deleting: false,
+  deleted: false,
+  loadingSecretKey: false,
+  secretKeyLoaded: false,
+  loadingCypherKey: false,
+  cypherKeyLoaded: false,
+})
 const serverSettings = ref<IServerSettings>({
   postMaxSize: '8M',
   publicUrl: '',
   uploadMaxSize: '2M',
 })
-const siteCompatible = ref(false);
-const siteNotCompatibleSnack = ref(false);
 
 export function useInterface() {
 
@@ -40,17 +49,6 @@ export function useInterface() {
   const modelStore = useModelStore();
   const currentRoute = useRoute();
   const yamlException = ref<(EditorAnnotation)[]>([]);
-
-  const interfaceStates = ref({
-    saving: false,
-    saved: false,
-    deleting: false,
-    deleted: false,
-    loadingSecretKey: false,
-    secretKeyLoaded: false,
-    loadingCypherKey: false,
-    cypherKeyLoaded: false,
-  })
 
   const adminBaseUrl = ref(window.location.origin);
   const secretKey = ref('');
@@ -238,6 +236,15 @@ export function useInterface() {
         if (isNativeObject(field)) {
           field.type = field.type ?? 'unknown';
           field.fields = isNativeObject(field.fields) ? field.fields : {};
+
+          if (field.type.startsWith('schemas.')) {
+            const schemaKey = getFieldSchemaKey(field);
+            field.type = 'node';
+            if (schemaKey) {
+              field.fields = parseData.schemas[schemaKey] ?? {};
+            }
+          }
+
           checkFields(field.fields);
 
           if (isFieldType(field, 'array')) {
@@ -339,6 +346,16 @@ export function useInterface() {
       publicUrl: '',
       uploadMaxSize: '2M',
     };
+    interfaceStates.value = {
+      saving: false,
+      saved: false,
+      deleting: false,
+      deleted: false,
+      loadingSecretKey: false,
+      secretKeyLoaded: false,
+      loadingCypherKey: false,
+      cypherKeyLoaded: false,
+    }
   }
 
   const getInterfaceRules = (key: string | null = null): ((value: any) => (string | boolean))[] => {

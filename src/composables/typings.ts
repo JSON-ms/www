@@ -213,8 +213,8 @@ export function useTypings() {
       }
       result += '\n\n';
       result += `export type JmsLocaleSet<T> = {
-    '${Object.keys(locales).join('\': T\n  \'')}': T
-  }`
+  '${Object.keys(locales).join('\': T\n  \'')}': T
+}`
       result += '\n\n';
 
       // Prepare interfaces

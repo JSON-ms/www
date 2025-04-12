@@ -11,6 +11,9 @@ const {
   disabled = false,
   collapsable = false,
   canAdd = true,
+  canRemove = true,
+  min = 0,
+  max = 1e10,
   removeItemCallback = null,
   onCollapsableHeader = () => ({ title: 'Item', thumbnail: null }),
 } = defineProps<{
@@ -18,19 +21,35 @@ const {
   disabled?: boolean,
   collapsable?: boolean,
   canAdd?: boolean,
+  canRemove?: boolean,
+  min?: number,
+  max?: number,
   removeItemCallback?: (index: number, list: any[]) => void
   onCollapsableHeader?: (item: any, index: number) => ({ title: string, thumbnail: string | boolean})
 }>()
 
 const panel = ref<null | number>(null);
 
+const computedCanAdd = computed((): boolean => {
+  return !disabled && canAdd && max > list.value.length;
+})
+const computedCanRemove = computed((): boolean => {
+  return !disabled && canRemove && min < list.value.length
+})
+
 const addItem = () => {
+  if (!computedCanAdd.value) {
+    return;
+  }
   const newItem = structuredClone(defaultItem);
   newItem.hash = generateHash(8);
   list.value.push(newItem);
   panel.value = list.value.length - 1;
 }
 const removeItem = (index: number) => {
+  if (!computedCanRemove.value) {
+    return;
+  }
   if (typeof removeItemCallback === 'function') {
     removeItemCallback(index, list.value);
   } else {
@@ -71,7 +90,7 @@ const formattedList = computed({
     class="draggable-list"
   >
     <template #item="{ index }">
-      <div class="d-flex align-start" :style="[ 'gap: 1rem' ]">
+      <div class="d-flex align-start" style="gap: 1rem">
         <v-icon class="handle" icon="mdi-drag-vertical px-4 ml-n3" @mousedown.stop />
 
         <slot
@@ -81,8 +100,8 @@ const formattedList = computed({
         />
 
         <v-btn
-          :disabled="disabled"
-          color="error"
+          :disabled="!computedCanRemove"
+          :color="computedCanRemove ? 'error' : undefined"
           size="small"
           variant="text"
           class="mt-3"
@@ -96,11 +115,11 @@ const formattedList = computed({
     <template #footer>
       <v-btn
         v-if="canAdd"
-        :disabled="disabled"
+        :disabled="!computedCanAdd"
         :class="{
           'mt-4': list.length > 0
         }"
-        color="primary"
+        :color="computedCanAdd ? 'primary' : undefined"
         block
         @click="addItem"
       >
@@ -128,7 +147,23 @@ const formattedList = computed({
                   height="32"
                   max-width="32"
                   class="my-n3"
-                />
+                >
+                  <template #error>
+                    <div class="d-flex align-center justify-center fill-height flex-column">
+                      <v-icon color="warning" size="16" icon="mdi-alert-outline" />
+                    </div>
+                  </template>
+                  <template #placeholder>
+                    <div class="d-flex align-center justify-center fill-height">
+                      <v-progress-circular
+                        color="primary"
+                        indeterminate
+                        size="16"
+                        width="1"
+                      />
+                    </div>
+                  </template>
+                </v-img>
                 <div class="d-flex" style="flex: 1; width: 0">
                   <span class="text-truncate">{{ onCollapsableHeader(element, index).title }}</span>
                 </div>
@@ -141,8 +176,8 @@ const formattedList = computed({
               />
 
               <v-btn
-                :disabled="disabled"
-                color="error"
+                :disabled="!computedCanRemove"
+                :color="computedCanRemove ? 'error' : undefined"
                 size="small"
                 variant="text"
                 icon
@@ -166,11 +201,11 @@ const formattedList = computed({
       <template #footer>
         <v-btn
           v-if="canAdd"
-          :disabled="disabled"
+          :disabled="!computedCanAdd"
           :class="{
-            'mt-4': list.length > 0
+            'mt-3': list.length > 0
           }"
-          color="primary"
+          :color="computedCanAdd ? 'primary' : undefined"
           block
           @click="addItem"
         >
@@ -186,6 +221,6 @@ const formattedList = computed({
   cursor: grabbing;
 }
 .draggable-list > *:not(:first-child) {
-  margin-top: 1rem;
+  margin-top: 0.25rem;
 }
 </style>

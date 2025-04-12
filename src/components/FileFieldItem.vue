@@ -26,9 +26,9 @@ const thumbnailRatio = (file: IFile): number => {
 }
 const thumbnailSize = (file: IFile): { width: number, height: number } => {
   const ratio = thumbnailRatio(file);
-  const maxWidth = smAndDown.value ? 128 : 256;
-  const maxHeight = smAndDown.value ? 128 : 256;
-  const width = file.meta.width ?? 256 > maxWidth ? maxWidth : file.meta.width ?? 256;
+  const maxWidth = smAndDown.value ? 96 : 128;
+  const maxHeight = smAndDown.value ? 128 : 128;
+  const width = file.meta.width ?? 128 > maxWidth ? maxWidth : file.meta.width ?? 128;
   const height = width / ratio > maxHeight ? maxHeight : width / ratio;
   return {
     width,
@@ -89,17 +89,24 @@ const onRemoveFile = (file: IFile) => {
     class="w-100"
   >
     <div class="d-flex align-center">
-      <div class="pa-3 text-center bg-surface align-center justify-center">
+      <div class="pl-3 d-flex text-center bg-surface align-center justify-center" :style="{ flex: 1, minWidth: thumbnailSize(file).width + 'px' }">
         <v-avatar v-if="isImage(file)" size="100%" rounded="0">
-          <v-img v-bind="thumbnailSize(file)" :src="filePath(file)" :cover="false">
+          <v-img :min-width="thumbnailSize(file).width" :min-height="thumbnailSize(file).height" :src="filePath(file)" cover>
+            <template #error>
+              <div class="d-flex px-2 align-center justify-center fill-height flex-column">
+                <v-icon color="warning" size="32" icon="mdi-alert-outline" />
+                <div class="text-caption text-disabled mt-1" style="line-height: 1rem">Unable to load image</div>
+              </div>
+            </template>
             <template #placeholder>
-              <v-overlay>
+              <div class="d-flex align-center justify-center fill-height">
                 <v-progress-circular
+                  color="primary"
                   indeterminate
                   size="32"
                   width="2"
                 />
-              </v-overlay>
+              </div>
             </template>
           </v-img>
         </v-avatar>
@@ -163,7 +170,3 @@ const onRemoveFile = (file: IFile) => {
     </div>
   </v-card>
 </template>
-
-<style scoped lang="scss">
-
-</style>

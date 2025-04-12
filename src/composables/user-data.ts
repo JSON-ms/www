@@ -9,18 +9,18 @@ import {
   getFieldByPath, objectsAreDifferent,
   parseFields,
   processObject,
-  downloadFilesAsZip, loopThroughFields, isFieldType, generateHash,
+  downloadFilesAsZip, loopThroughFields, isFieldType, generateHash, isFieldArrayType,
 } from '@/utils';
 import Rules from '@/rules';
 import {useModelStore} from '@/stores/model';
 
-export function useUserData() {
+const loading = ref(false);
+const loaded = ref(false);
+const downloading = ref(false);
+const saving = ref(false);
+const saved = ref(false);
 
-  const loading = ref(false);
-  const loaded = ref(false);
-  const downloading = ref(false);
-  const saving = ref(false);
-  const saved = ref(false);
+export function useUserData() {
   const globalStore = useGlobalStore();
   const modelStore = useModelStore();
   const { interfaceParsedData, interfaceIsPristine, interfaceHasError } = useInterface();
@@ -108,6 +108,7 @@ export function useUserData() {
         })
           .then(response => {
             loaded.value = true;
+            response.data = getParsedUserData(interfaceParsedData.value, response.data);
             resolve(response);
             return response;
           })
@@ -186,15 +187,16 @@ export function useUserData() {
 
     const clonedFields = structuredClone(fields);
     const result: any = clean
-      ? parseFields(clonedFields, locales)
-      : Object.assign({}, override, parseFields(clonedFields, locales));
+      ? parseFields(clonedFields, locales, interfaceParsedData.value.schemas)
+      : Object.assign({}, override, parseFields(clonedFields, locales, interfaceParsedData.value.schemas));
 
     const processCallback = (parent: any, key: string, path: string) => {
-      const overrideValue = getDataByPath(override, path);
       const field = getFieldByPath(fields, path);
       if (!field) {
         return;
       }
+      const defaultValue = field.default ? field.default : undefined;
+      const overrideValue = getDataByPath(override, path, defaultValue);
 
       // Node
       if (isFieldType(field, 'node')) {
@@ -218,12 +220,12 @@ export function useUserData() {
       }
 
       // Array
-      const isArray = isFieldType(field, 'array');
+      const isArray = isFieldArrayType(field);
       if (isArray || field.multiple) {
         if (!overrideValue || !Array.isArray(overrideValue)) {
           return;
         }
-        if (isArray && field.fields) {
+        if (isArray && field.fields && isFieldType(field, 'array')) {
           parent[key] = [];
           overrideValue.forEach(overrideItem => {
             parent[key].push(getParsedFields(field.fields, locales, overrideItem));
@@ -233,7 +235,13 @@ export function useUserData() {
         }
 
         // Make sure they all have hashes
-        parent[key] = parent[key].map((item: any) => ({ ...item, hash: item.hash ?? generateHash(8) }))
+        if (isFieldType(field, 'array')) {
+          parent[key] = parent[key].map((item: any) => ({ ...item, hash: item.hash ?? generateHash(8) }))
+        }
+        // Otherwise just apply overridden value
+        else if (Array.isArray(overrideValue)) {
+          return parent[key] = overrideValue;
+        }
 
         return parent[key];
       }

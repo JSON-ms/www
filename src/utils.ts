@@ -1,5 +1,5 @@
 import exampleInterface from '@/assets/example-interface.yaml'
-import type {IInterface, IField, IFile} from '@/interfaces';
+import type {IInterface, IField, IFile, TSchema, TRule} from '@/interfaces';
 import type {Ref} from 'vue';
 import {isRef, toRaw} from 'vue';
 import JSZip from 'jszip';
@@ -14,6 +14,7 @@ export const allNonI18nFields: string[] = [
   'wysiwyg',
   'number',
   'slider',
+  'range',
   'rating',
   'select',
   'checkbox',
@@ -47,8 +48,24 @@ export const isFieldType = (field: IField, types: string | string[]): boolean =>
   }
   return false;
 }
+export const isFieldArrayType = (field: IField): boolean => {
+  return isFieldType(field, 'array')
+    || isFieldType(field, 'range');
+}
 export const isFieldI18n = (field: IField): boolean => {
   return field && typeof field.type === 'string' && field.type.startsWith('i18n');
+}
+export const getFieldSchemaKey = (field: IField): string | null => {
+  if (field && field.type && field.type.startsWith('schemas.')) {
+    return field.type.split('schemas.')[1];
+  }
+  return null;
+}
+export const getFieldRules = (field: IField): TRule[] => {
+  if (field && field.rules && Array.isArray(field.rules)) {
+    return field.rules;
+  }
+  return [];
 }
 export const getFieldType = (field: IField): string => {
   return typeof field?.type === 'string' ? field.type : 'unknown'
@@ -85,10 +102,10 @@ export const getDefaultInterfaceContent = (): string => {
     .replace('[INTERFACE_EDITOR_URL]', window.location.origin);
 }
 
-export const parseFields = (fields: any = {}, locales = {}) => {
+export const parseFields = (fields: any = {}, locales = {}, schemas: TSchema = {}) => {
   fields = fields ? fields : {}; // Make sure it's an object
 
-  const multipleTypes = ['array', 'i18n:array'];
+  const multipleTypes = ['array', 'i18n:array', 'range', 'i18n:range'];
   const mayBeMultipleTypes = ['select', 'i18n:select', 'checkbox', 'i18n:checkbox', 'radio', 'i18n:radio', 'file', 'i18n:file'];
   const applyValues = (key: string) => {
     const field = fields[key];
@@ -98,6 +115,7 @@ export const parseFields = (fields: any = {}, locales = {}) => {
     const type = field.type || '';
     const required = !!(field.required);
     const multiple = !!(field.multiple);
+    const schemaKey = getFieldSchemaKey(field);
     let value;
     if (multipleTypes.includes(type) || (mayBeMultipleTypes.includes(type) && multiple)) {
       value = [];
@@ -109,6 +127,8 @@ export const parseFields = (fields: any = {}, locales = {}) => {
         width: 0,
         height: 0,
       } } as IFile : null;
+    } else if (schemaKey) {
+      value = parseFields(schemas[schemaKey], locales, schemas);
     } else {
       value = required
         ? isFieldType(field, ['number', 'slider', 'rating'])
@@ -116,6 +136,11 @@ export const parseFields = (fields: any = {}, locales = {}) => {
           : ''
         : null;
     }
+
+    if (value === null && field.default) {
+      value = field.default;
+    }
+
     return value;
   }
 
@@ -124,7 +149,7 @@ export const parseFields = (fields: any = {}, locales = {}) => {
     result[key] = {};
     if (isFieldType(field, 'node')) {
       if (isNativeObject(fields[key].fields)) {
-        result[key] = parseFields(fields[key].fields, locales);
+        result[key] = parseFields(fields[key].fields, locales, schemas);
       }
     }
     else if (isFieldI18n(field)) {
@@ -161,15 +186,19 @@ export const processObject = (
   }
 }
 
-export const getDataByPath = (obj: any, path = '') => {
+export const getDataByPath = (obj: any, path = '', defaultValue?: any) => {
   const keys = path.split(/\.|\[|\]/).filter(key => key);
-  return keys.reduce((accumulator: any, key: string) => {
+  const data = keys.reduce((accumulator: any, key: string) => {
     if (accumulator !== null && accumulator !== undefined) {
       const index = Number(key);
       return Array.isArray(accumulator) && !isNaN(index) ? accumulator[index] : accumulator[key];
     }
     return undefined;
   }, obj);
+  if (defaultValue && data === undefined) {
+    return defaultValue;
+  }
+  return data;
 }
 
 export const getFieldByPath = (obj: any, path: string): any => {
