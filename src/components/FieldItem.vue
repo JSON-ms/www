@@ -37,6 +37,7 @@ const {
 const { isFieldVisible } = useInterface();
 const { getUserDataErrors } = useUserData();
 const showDatePicker = ref(false);
+const showColorPicker = ref(false);
 const getRules = (field: IField): any[] => {
   const rules: any[] = [];
   if (field.required) {
@@ -239,6 +240,12 @@ const computedStringValue = computed({
 const onClickOutsideDate = () => {
   if (showDatePicker.value) {
     showDatePicker.value = false;
+  }
+}
+
+const onClickOutsideColor = () => {
+  if (showColorPicker.value) {
+    showColorPicker.value = false;
   }
 }
 
@@ -522,6 +529,70 @@ watch(() => field.collapsed, () => {
       thumb-label="always"
     />
   </div>
+
+  <!-- COLOR -->
+  <v-menu
+    v-else-if="isFieldType(field, 'color')"
+    v-model="showColorPicker"
+    :close-on-content-click="false"
+    :disabled="disabled"
+    :loading="loading"
+  >
+    <template #activator="{ props }">
+      <v-text-field
+        v-model="value"
+        v-bind="props"
+        :label="field.label"
+        :required="field.required"
+        :rules="getRules(field)"
+        :hint="field.hint"
+        :persistent-hint="!!field.hint"
+        :disabled="disabled"
+        :loading="loading"
+        readonly
+        hide-details="auto"
+        clearable
+        @click="showColorPicker = true"
+        @click:clear="value = null"
+      >
+        <template v-if="field.required" #label>
+          <span class="mr-2 text-error">*</span>{{ field.label }}
+        </template>
+        <template #prepend-inner>
+          <v-icon icon="mdi-circle" :color="value" start />
+          <span v-if="showPrependInner" class="text-no-wrap">{{ field['prepend-inner'] }}</span>
+        </template>
+        <template v-if="showAppendInner" #append-inner>
+          <span v-if="field['append-inner']" class="text-no-wrap">{{ field['append-inner'] }}</span>
+          <v-tooltip
+            v-if="isFieldI18n(field)"
+            text="Translatable"
+            location="bottom"
+          >
+            <template #activator="{ props: transProps }">
+              <v-icon v-bind="transProps" size="small" icon="mdi-translate-variant" />
+            </template>
+          </v-tooltip>
+        </template>
+      </v-text-field>
+    </template>
+    <v-color-picker
+      v-model="value"
+      v-click-outside="onClickOutsideColor"
+      :label="field.label"
+      :required="field.required"
+      :rules="getRules(field)"
+      :hint="field.hint"
+      :show-swatches="field.swatches"
+      :hide-canvas="field.canvas === false"
+      :hide-inputs="field.inputs === false"
+      :hide-sliders="field.sliders === false"
+      :persistent-hint="!!field.hint"
+      :disabled="disabled"
+      hide-details="auto"
+      mode="hex"
+    />
+  </v-menu>
 
   <!-- RATING -->
   <div v-else-if="isFieldType(field, 'rating')">

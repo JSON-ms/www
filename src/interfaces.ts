@@ -51,6 +51,7 @@ export interface IFile {
     size: number,
     width?: number,
     height?: number,
+    timestamp: number,
     originalFileName: string,
   }
 }
@@ -68,11 +69,10 @@ export interface IInterface {
   uuid?: string
   hash?: string
   label: string
-  logo?: string
+  logo?: string | null
   content: string
   server_url?: string
   server_secret?: string
-  cypher_key?: string
   webhook: string | null
   type: 'owner' | 'interface' | 'admin',
   owner_name?: string,
@@ -133,6 +133,10 @@ export interface IField {
   rules?: TRule[]
   collapsable?: boolean
   collapsed?: boolean
+  swatches?: boolean
+  canvas?: boolean
+  inputs?: boolean
+  sliders?: boolean
 }
 
 export interface ISection {
@@ -148,18 +152,8 @@ export interface ISection {
 export interface IInterfaceData {
   global: {
     title?: string
-    copyright?: string
     logo?: string
     preview?: string
-    theme?: {
-      default?: 'dark' | 'light',
-      dark?: {
-        primary: string
-      },
-      light?: {
-        primary: string
-      }
-    }
   },
   enums: TEnum,
   schemas: TSchema,

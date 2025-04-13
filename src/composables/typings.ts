@@ -183,6 +183,7 @@ export function useTypings() {
         { key: 'type', type: 'string' },
         { key: 'width', type: 'number' },
         { key: 'height', type: 'number' },
+        { key: 'timestamp', type: 'number' },
         { key: 'originalFileName', type: 'string' },
       ]
     });
