@@ -89,7 +89,7 @@ export function useInterface() {
       for (const item of items) {
         if (item.key.source === currentKey) {
           if (splitPath.length === 0) {
-            const line = lineCounter.linePos(item.value.range[0]);
+            const line = lineCounter.linePos(item.value?.range[0]);
             return {
               ...item,
               ...line,

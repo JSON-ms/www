@@ -73,7 +73,6 @@ export interface IInterface {
   content: string
   server_url?: string
   server_secret?: string
-  cypher_key?: string
   webhook: string | null
   type: 'owner' | 'interface' | 'admin',
   owner_name?: string,
@@ -153,18 +152,8 @@ export interface ISection {
 export interface IInterfaceData {
   global: {
     title?: string
-    copyright?: string
     logo?: string
     preview?: string
-    theme?: {
-      default?: 'dark' | 'light',
-      dark?: {
-        primary: string
-      },
-      light?: {
-        primary: string
-      }
-    }
   },
   enums: TEnum,
   schemas: TSchema,
