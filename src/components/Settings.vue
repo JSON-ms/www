@@ -5,12 +5,14 @@ import type {IInterface} from '@/interfaces';
 import {useInterface} from '@/composables/interface';
 import {useGlobalStore} from '@/stores/global';
 import WebhookManagerModal from '@/components/WebhookManagerModal.vue';
+import {useUserData} from "@/composables/user-data";
 
 // Definitions
 const globalStore = useGlobalStore();
 const formIsValid = ref(false);
 const interfaceModel = defineModel<IInterface>({ required: true });
-const { secretKey, cypherKey, adminUrl, canOpenAdminUrl, computedServerSecretKey, computedCypherKey, interfaceStates, getInterfaceRules, getSecretKey, getCypherKey } = useInterface();
+const { secretKey, cypherKey, adminUrl, canOpenAdminUrl, serverSettings, computedServerSecretKey, computedCypherKey, interfaceStates, getInterfaceRules, getSecretKey, getCypherKey } = useInterface();
+const { fetchUserData, setUserData } = useUserData();
 const copied = ref(false);
 const { smAndDown } = useDisplay()
 
@@ -51,6 +53,23 @@ const server = computed({
       interfaceModel.value.server_url = webhook.url;
       interfaceModel.value.server_secret = webhook.secret;
     }
+
+    globalStore.setPrompt({
+      ...globalStore.prompt,
+      visible: true,
+      title: 'Fetch data',
+      body: 'User data might be different on this server. Do you wish to fetch the user data? This action will override any unsaved change in your forms.',
+      btnText: 'Fetch',
+      btnIcon: 'mdi-cloud-arrow-down-outline',
+      btnColor: 'warning',
+      callback: () => new Promise(resolve => {
+        fetchUserData().then((response: any) => {
+          serverSettings.value = response.settings;
+          setUserData(response.data, true);
+          resolve();
+        })
+      })
+    })
   }
 })
 
