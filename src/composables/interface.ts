@@ -400,11 +400,15 @@ export function useInterface() {
     return getInterfaceErrors(keys).length > 0;
   }
 
+  const getSecretKeySimple = async (webhookUuid: string): Promise<string> => {
+    return Services.get(import.meta.env.VITE_SERVER_URL + '/webhook/secret-key/' + webhookUuid);
+  }
+
   const getSecretKey = async (): Promise<string> => {
     const globalStore = useGlobalStore();
     interfaceStates.value.loadingSecretKey = true;
     interfaceStates.value.secretKeyLoaded = false;
-    return Services.get(import.meta.env.VITE_SERVER_URL + '/webhook/secret-key/' + webhook.value?.uuid)
+    return getSecretKeySimple(webhook.value?.uuid || '')
       .then(response => secretKey.value = response)
       .catch(error => globalStore.catchError(error))
       .finally(() => {
@@ -445,20 +449,26 @@ export function useInterface() {
     })
   }
 
-  const saveInterface = (): Promise<IInterface> => {
+  const saveInterfaceSimple = (
+    interfaceModel: IInterface = modelStore.interface,
+  ): Promise<IInterface> => {
+    return Services.post(import.meta.env.VITE_SERVER_URL + '/interface' + (interfaceModel.uuid ? '/' + interfaceModel.uuid : ''), interfaceModel)
+  }
+
+  const saveInterface = (interfaceModel: IInterface = modelStore.interface): Promise<IInterface> => {
     const body = {
-      ...modelStore.interface,
+      ...interfaceModel,
       label: interfaceParsedData.value.global.title ?? 'Untitled',
       logo: interfaceParsedData.value.global.logo,
     };
     return new Promise((resolve, reject) => {
       if (!canSaveInterface.value) {
-        resolve(modelStore.interface);
+        resolve(interfaceModel);
       }
 
       interfaceStates.value.saving = true;
       const globalStore = useGlobalStore();
-      Services.post(import.meta.env.VITE_SERVER_URL + '/interface' + (modelStore.interface.uuid ? '/' + modelStore.interface.uuid : ''), body)
+      saveInterfaceSimple(body)
         .then((response: IInterface) => {
           modelStore.setInterface(response);
           modelStore.setOriginalInterface(response);
@@ -551,6 +561,7 @@ export function useInterface() {
     getSecretKey,
     getCypherKey,
     createInterface,
+    saveInterfaceSimple,
     saveInterface,
     deleteInterface,
     applyTemplate,
@@ -559,5 +570,6 @@ export function useInterface() {
     secretKey,
     cypherKey,
     isFieldVisible,
+    getSecretKeySimple,
   };
 }

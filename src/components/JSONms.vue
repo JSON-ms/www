@@ -3,6 +3,7 @@ import Toolbar from '@/components/Toolbar.vue';
 import Sidebar from '@/components/Sidebar.vue';
 import InterfaceEditor from '@/components/InterfaceEditor.vue';
 import SitePreview from '@/components/SitePreview.vue';
+import MigrationDialog from '@/components/MigrationDialog.vue';
 import DataEditor from '@/components/DataEditor.vue';
 import JsonEditModal from '@/components/JsonEditModal.vue';
 import ActionBar from '@/components/ActionBar.vue';
@@ -40,6 +41,7 @@ const { layoutSize, init: initLayout, windowWidth, mobileFrameWidth } = useLayou
 const showEditJson = ref(false);
 const showTypings = ref(false);
 const editJsonContent = ref('');
+const showMigrationDialog = ref(false);
 const showNewInterfaceModal = ref(false);
 const interfaceEditor = ref<InstanceType<typeof InterfaceEditor> | null>();
 const sitePreview = ref<InstanceType<typeof SitePreview> | null>();
@@ -199,6 +201,10 @@ const onEditJson = () => {
   editJsonContent.value = JSON.stringify(deepToRaw(modelStore.userData), null, 2);
 }
 
+const onMigrateData = () => {
+  showMigrationDialog.value = true;
+}
+
 const onShowTypings = () => {
   showTypings.value = true;
 }
@@ -294,6 +300,7 @@ if (autoload) {
     @delete="onDeleteInterface"
     @locale="onLocaleChange"
     @edit-json="onEditJson"
+    @migrate-data="onMigrateData"
     @show-typings="onShowTypings"
     @update:model-value="onInterfaceModelChange"
     @logout="onLogout"
@@ -414,6 +421,12 @@ if (autoload) {
     v-model="editJsonContent"
     v-model:visible="showEditJson"
     @apply="onApplyJsonContent"
+  />
+
+  <!-- MIGRATION DIALOG -->
+  <MigrationDialog
+    v-model:visible="showMigrationDialog"
+    :interfaces="interfaces"
   />
 
   <!-- TYPINGS MODAL -->

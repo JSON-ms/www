@@ -2,28 +2,28 @@
 import {computed} from 'vue';
 import { useGlobalStore } from '@/stores/global';
 import type {IInterface} from '@/interfaces';
-import {deepToRaw} from '@/utils';
+import {deepToRaw, getInterface} from '@/utils';
 import {useInterface} from '@/composables/interface';
-import {useModelStore} from '@/stores/model';
 
 // Props
-const interfaceModel = defineModel<IInterface>({ required: true });
+const interfaceModel = defineModel<IInterface | null>({ required: true });
+const { interfaceStates, canDeleteInterface, canSaveInterface } = useInterface();
 const {
   interfaces = [],
   actions = false,
   largeText = false,
   showIcon = true,
+  originalInterface = null,
 } = defineProps<{
   interfaces: IInterface[],
   actions?: boolean,
   largeText?: boolean,
   showIcon?: boolean,
+  originalInterface?: IInterface | null,
 }>();
 
 // Declarations
 const globalStore = useGlobalStore();
-const modelStore = useModelStore();
-const { interfaceStates, canDeleteInterface, canSaveInterface } = useInterface();
 
 // Emits
 const emit = defineEmits(['change', 'create', 'save', 'delete', 'update:model-value'])
@@ -59,10 +59,9 @@ const computedInterfaces = computed((): (IInterface | { header: string })[] => {
   }
   return results;
 })
-
-const onInput = (model: IInterface) => {
-  modelStore.setOriginalInterface(model);
-}
+const computedInterface = computed((): IInterface => {
+  return originalInterface ?? interfaceModel.value ?? getInterface();
+})
 </script>
 
 <template>
@@ -71,22 +70,18 @@ const onInput = (model: IInterface) => {
     :items="computedInterfaces"
     item-title="label"
     item-value="hash"
-    label="Interface"
-    variant="outlined"
     color="primary"
     hide-details
-    density="compact"
     no-data-text="No interface available yet"
     return-object
-    @update:model-value="onInput"
   >
 
     <!-- ICON/LOGO -->
     <template v-if="showIcon" #prepend-inner>
-      <v-icon v-if="!modelStore.originalInterface.logo" :icon="modelStore.originalInterface.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'" />
+      <v-icon v-if="!computedInterface.logo" :icon="computedInterface.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'" />
       <v-img
         v-else
-        :src="modelStore.originalInterface.logo"
+        :src="computedInterface.logo"
         width="24"
         height="24"
         class="mr-1"
@@ -97,10 +92,10 @@ const onInput = (model: IInterface) => {
     <template #selection>
       <template v-if="largeText">
         <div class="text-h6 text-truncate">
-          {{ modelStore.originalInterface.label }}
+          {{ computedInterface.label }}
         </div>
       </template>
-      <span v-else class="text-truncate">{{ modelStore.originalInterface.label }}</span>
+      <span v-else class="text-truncate">{{ computedInterface.label }}</span>
     </template>
 
     <!-- ACTIONS -->
@@ -113,6 +108,7 @@ const onInput = (model: IInterface) => {
       >
         <template #activator="{ props }">
           <v-btn
+            v-if="interfaceModel"
             v-bind="props"
             color="secondary"
             size="small"
@@ -131,6 +127,7 @@ const onInput = (model: IInterface) => {
       >
         <template #activator="{ props }">
           <v-btn
+            v-if="interfaceModel"
             v-bind="props"
             :loading="interfaceStates.saving"
             :disabled="!canSaveInterface"
@@ -153,7 +150,7 @@ const onInput = (model: IInterface) => {
       >
         <template #activator="{ props }">
           <v-btn
-            v-if="modelStore.originalInterface.type === 'owner'"
+            v-if="computedInterface.type === 'owner' && interfaceModel"
             v-bind="props"
             :disabled="!canDeleteInterface || interfaceStates.deleting"
             :loading="interfaceStates.deleting"
@@ -178,7 +175,7 @@ const onInput = (model: IInterface) => {
       <v-list-item
         v-else
         v-bind="props"
-        :active="item.value === modelStore.originalInterface.hash"
+        :active="item.value === computedInterface.hash"
       >
         <template #prepend>
           <v-icon v-if="!item.raw.logo" :icon="item.raw.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'" />

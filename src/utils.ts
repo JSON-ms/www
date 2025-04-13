@@ -322,6 +322,52 @@ export const deepToRaw = (obj: any): any => {
   return raw;
 }
 
+type TBlobItem = { filename: string, blob: Blob }
+export async function urlsToBlobArray(
+  urls: string[],
+  secret?: string,
+  onItemDownload?: (item: TBlobItem, index: number) => void,
+  onItemBeforeDownload?: (url: string, index: number) => void,
+): Promise<TBlobItem[]> {
+  return new Promise(async (resolve, reject) => {
+    const items: TBlobItem[] = [];
+    for (let i = 0; i < urls.length; i++) {
+      const url = urls[i];
+      try {
+        const params: any = {
+          headers: {
+            'Content-Type': 'application/octet-stream',
+          },
+        };
+        if (secret) {
+          params.headers['X-Jms-Api-Key'] = secret;
+        }
+
+        if (onItemBeforeDownload instanceof Function) {
+          onItemBeforeDownload(url, i);
+        }
+        const response = await fetch(url, params);
+        if (!response.ok) {
+          console.error(`Failed to fetch ${url}: ${response.statusText}`);
+          reject(`Failed to fetch ${url}: ${response.statusText}`)
+          continue;
+        }
+        const blob = await response.blob();
+        const filename = url.split('/').pop() ?? 'file';
+        const item = { filename, blob };
+        items.push(item);
+        if (onItemDownload instanceof Function) {
+          onItemDownload(item, i);
+        }
+      } catch (error) {
+        console.error(`Error fetching ${url}:`, error);
+        reject(`Error fetching ${url}:` + error)
+      }
+    }
+    resolve(items);
+  })
+}
+
 export async function downloadFilesAsZip(urls: string[], jsonData: object | false, zipFileName: string): Promise<Blob> {
   return new Promise(async (resolve, reject) => {
 
@@ -334,29 +380,10 @@ export async function downloadFilesAsZip(urls: string[], jsonData: object | fals
     }
 
     // Fetch each URL and add it as a blob to the zip
-    for (const url of urls) {
-      try {
-        const params = {
-          headers: {
-            'Content-Type': 'application/octet-stream',
-            'X-Jms-Api-Key': modelStore.interface.server_secret,
-          },
-        };
-        // @ts-expect-error No idea why it complains...
-        const response = await fetch(url, params);
-        if (!response.ok) {
-          console.error(`Failed to fetch ${url}: ${response.statusText}`);
-          reject(`Failed to fetch ${url}: ${response.statusText}`)
-          continue;
-        }
-        const blob = await response.blob();
-        const fileName = url.split('/').pop() ?? 'file';
-        zip.file(fileName, blob);
-      } catch (error) {
-        console.error(`Error fetching ${url}:`, error);
-        reject(`Error fetching ${url}:` + error)
-      }
-    }
+    const files = await urlsToBlobArray(urls, modelStore.interface.server_secret);
+    files.forEach(file => {
+      zip.file(file.filename, file.blob);
+    })
 
     // Generate the zip file
     try {

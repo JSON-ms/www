@@ -15,6 +15,7 @@ import type {VAppBar} from 'vuetify/components';
 import {useLayout} from '@/composables/layout';
 import {useTypings} from '@/composables/typings';
 import {useIframe} from '@/composables/iframe';
+import {useModelStore} from "@/stores/model";
 
 const interfaceModel = defineModel<IInterface>({ required: true });
 const { interfaceData, interfaces = [], defaultLocale = 'en-US' } = defineProps<{
@@ -26,13 +27,14 @@ const { interfaceData, interfaces = [], defaultLocale = 'en-US' } = defineProps<
 const currentRoute = useRoute();
 const selectedLocale = ref(defaultLocale);
 const globalStore = useGlobalStore();
+const modelStore = useModelStore();
 const { smAndDown } = useDisplay();
 const { windowWidth, layoutSize } = useLayout();
 const { serverSettings, createInterface } = useInterface()
-const { downloadUserData, downloading, userDataLoading, setUserData, fetchUserData, canFetchUserData, canInteractWithServer, getUserDataErrors } = useUserData();
+const { downloadUserData, migrating, downloading, userDataLoading, setUserData, fetchUserData, canFetchUserData, canInteractWithServer, getUserDataErrors } = useUserData();
 const { hasSyncEnabled } = useTypings()
 const { reloading } = useIframe()
-const emit = defineEmits(['locale', 'preview', 'refresh', 'update:model-value', 'create', 'save', 'delete', 'edit-json', 'show-typings', 'logout'])
+const emit = defineEmits(['locale', 'preview', 'refresh', 'update:model-value', 'create', 'save', 'delete', 'edit-json', 'show-typings', 'migrate-data', 'logout'])
 
 const locales = computed(() => {
   return Object.entries(interfaceData.locales).map(item => ({ value: item[0], title: item[1] }));
@@ -58,6 +60,10 @@ const onEditJson = () => {
   emit('edit-json');
 }
 
+const onMigrateData = () => {
+  emit('migrate-data');
+}
+
 const onShowTypings = () => {
   emit('show-typings');
 }
@@ -78,6 +84,10 @@ const onDeleteInterface = (model: IInterface) => {
 
 const onRefreshPreview = () => {
   emit('refresh');
+}
+
+const onInterfaceSelectorInput = (model: IInterface) => {
+  modelStore.setOriginalInterface(model);
 }
 
 const onPreviewModeChange = (mode: null | 'mobile' | 'desktop') => {
@@ -158,6 +168,7 @@ watch(() => currentRoute.params.locale, () => {
         :interfaces="interfaces"
         :actions="windowWidth > 900"
         :show-icon="windowWidth > 450"
+        :original-interface="modelStore.originalInterface"
         :style="{
           width: 'min-content',
           maxWidth: windowWidth < 1000 ? 'auto' : '25rem'
@@ -167,6 +178,7 @@ watch(() => currentRoute.params.locale, () => {
         variant="solo-filled"
         flat
         large-text
+        @update:model-value="onInterfaceSelectorInput"
         @create="onCreateInterface"
         @save="onSaveInterface"
         @delete="onDeleteInterface"
@@ -281,6 +293,12 @@ watch(() => currentRoute.params.locale, () => {
             title="Download data"
             prepend-icon="mdi-tray-arrow-down"
             @click="downloadUserData"
+          />
+          <v-list-item
+            :disabled="migrating || !canInteractWithServer"
+            title="Migrate data"
+            prepend-icon="mdi-folder-arrow-left-right-outline"
+            @click="onMigrateData"
           />
           <v-list-item
             :disabled="userDataLoading"

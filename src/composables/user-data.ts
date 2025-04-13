@@ -1,4 +1,4 @@
-import type {IField, IInterfaceData} from '@/interfaces';
+import type {IField, IFile, IInterface, IInterfaceData} from '@/interfaces';
 import {Services} from '@/services';
 import {computed, ref} from 'vue';
 import {useGlobalStore} from '@/stores/global';
@@ -23,7 +23,7 @@ const saved = ref(false);
 export function useUserData() {
   const globalStore = useGlobalStore();
   const modelStore = useModelStore();
-  const { interfaceParsedData, interfaceIsPristine, interfaceHasError } = useInterface();
+  const { interfaceParsedData, interfaceIsPristine, interfaceHasError, getParsedInterfaceData } = useInterface();
 
   const canFetchUserData = computed((): boolean => {
     return globalStore.session.loggedIn
@@ -97,47 +97,68 @@ export function useUserData() {
     return errors;
   }
 
-  const fetchUserData = () => {
+  const fetchUserDataSimple = (interfaceModel: IInterface = modelStore.interface): Promise<any> => {
+    const path = (interfaceModel.server_url + '/data/' + (interfaceModel.hash) || '');
+    return Services.get(path, {
+      'Content-Type': 'application/json',
+      'X-Jms-Api-Key': interfaceModel.server_secret,
+    })
+  }
+
+  const fetchUserData = (interfaceModel: IInterface = modelStore.interface): Promise<any> => {
     return new Promise((resolve, reject) => {
-      if (modelStore.interface.hash && modelStore.interface.server_url) {
-        const path = (modelStore.interface.server_url + '/data/' + (modelStore.interface.hash) || '');
+      if (interfaceModel.hash && interfaceModel.server_url) {
         loading.value = true;
-        Services.get(path, {
-          'Content-Type': 'application/json',
-          'X-Jms-Api-Key': modelStore.interface.server_secret,
+        fetchUserDataSimple(interfaceModel).then(response => {
+          loaded.value = true;
+          const parsedInterface = getParsedInterfaceData(interfaceModel);
+          response.data = getParsedUserData(parsedInterface, response.data);
+          resolve(response);
+          return response;
         })
-          .then(response => {
-            loaded.value = true;
-            response.data = getParsedUserData(interfaceParsedData.value, response.data);
-            resolve(response);
-            return response;
-          })
-          .catch(reason => {
-            globalStore.catchError(reason);
-            reject(reason);
-          })
-          .finally(() => loading.value = false);
+        .catch(reason => {
+          globalStore.catchError(reason);
+          reject(reason);
+        })
+        .finally(() => loading.value = false);
       }
     })
   }
 
-  const downloadUserData = () => {
-    const files: string[] = [];
-    const sections = interfaceParsedData.value.sections as unknown as { [key: string]: IField; };
+  const getUserFiles = (interfaceModel: IInterface = modelStore.interface, data: any = modelStore.userData): IFile[] => {
+    const parsedInterface = getParsedInterfaceData(interfaceModel);
+    const files: IFile[] = [];
+    const sections = parsedInterface.sections as unknown as { [key: string]: IField; };
     loopThroughFields(sections, (field, path, data) => {
       if (isFieldType(field, 'file')) {
         if (Array.isArray(data)) {
           data.forEach(file => {
             if (file.path && file.meta.size > 0) {
-              files.push(modelStore.interface.server_url + '/file/read/' + file.path);
+              files.push(file);
             }
           })
         }
         else if (data && data.path && data.meta.size > 0) {
-          files.push(modelStore.interface.server_url + '/file/read/' + data.path);
+          files.push(data);
         }
       }
-    }, modelStore.userData)
+    }, data)
+    return files;
+  }
+
+  const testServer = (
+    url: string,
+    serverSecret: string,
+  ): Promise<boolean> => {
+    return Services.get(url + '/test/try', {
+      'Content-Type': 'application/json',
+      'X-Jms-Api-Key': serverSecret,
+    }, true)
+      .catch(globalStore.catchError)
+  }
+
+  const downloadUserData = () => {
+    const files = getUserFiles().map(file => modelStore.interface.server_url + '/file/read/' + file.path);
     downloading.value = true;
     const path = (modelStore.interface.server_url + '/data/' + modelStore.interface.hash) || ''
     return Services.get(path, {
@@ -151,27 +172,39 @@ export function useUserData() {
       .finally(() => downloading.value = false);
   }
 
-  const saveUserData = async (): Promise<any> => {
-    saving.value = true;
-
-    const path = (modelStore.interface.server_url + '/data/' + (modelStore.interface.hash) || '');
-    const { interfaceParsedData } = useInterface();
-    const parsedData = getParsedUserData(interfaceParsedData.value, modelStore.userData, true);
+  const saveUserDataSimple = async (
+    interfaceModel: IInterface = modelStore.interface,
+    data: any = modelStore.userData,
+    serverUrl?: string,
+    serverSecret?: string,
+  ): Promise<any> => {
+    serverUrl = serverUrl ? serverUrl : interfaceModel.server_url;
+    serverSecret = serverSecret ? serverSecret : interfaceModel.server_secret;
+    const path = (serverUrl + '/data/' + (interfaceModel.hash) || '');
+    const parsedInterface = getParsedInterfaceData(interfaceModel);
+    const parsedData = getParsedUserData(parsedInterface, data, true);
     return Services.post(path, {
-      hash: modelStore.interface.hash,
+      hash: interfaceModel.hash,
       data: parsedData,
-      interface: interfaceParsedData.value,
+      interface: parsedInterface,
     }, {
       'Content-Type': 'application/json',
-      'X-Jms-Api-Key': modelStore.interface.server_secret,
+      'X-Jms-Api-Key': serverSecret,
+    });
+  }
+
+  const saveUserData = async (
+    interfaceModel: IInterface = modelStore.interface,
+    data: any = modelStore.userData,
+  ): Promise<any> => {
+    saving.value = true;
+    return saveUserDataSimple(interfaceModel, data).then(response => {
+      setUserData(response.data, true);
+      saved.value = true;
+      setTimeout(() => saved.value = false, 1000);
     })
-      .then(response => {
-        setUserData(response.data, true);
-        saved.value = true;
-        setTimeout(() => saved.value = false, 1000);
-      })
-      .catch(globalStore.catchError)
-      .finally(() => saving.value = false);
+    .catch(globalStore.catchError)
+    .finally(() => saving.value = false);
   }
 
   const setUserData = (data: any, setOriginal = false) => {
@@ -289,11 +322,15 @@ export function useUserData() {
     canFetchUserData,
     canInteractWithServer,
     fetchUserData,
+    fetchUserDataSimple,
     resetUserData,
     downloading,
     saveUserData,
+    saveUserDataSimple,
     downloadUserData,
     getParsedUserData,
     setUserData,
+    getUserFiles,
+    testServer,
   };
 }
