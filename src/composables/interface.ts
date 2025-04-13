@@ -459,7 +459,7 @@ export function useInterface() {
     const body = {
       ...interfaceModel,
       label: interfaceParsedData.value.global.title ?? 'Untitled',
-      logo: interfaceParsedData.value.global.logo,
+      logo: interfaceParsedData.value.global.logo ?? null,
     };
     return new Promise((resolve, reject) => {
       if (!canSaveInterface.value) {

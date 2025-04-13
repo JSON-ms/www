@@ -69,7 +69,7 @@ export interface IInterface {
   uuid?: string
   hash?: string
   label: string
-  logo?: string
+  logo?: string | null
   content: string
   server_url?: string
   server_secret?: string
