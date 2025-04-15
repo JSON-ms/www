@@ -171,7 +171,7 @@ export function useTypings() {
     items.push({
       name: 'File',
       fields: [
-        { key: 'path', type: 'string' },
+        { key: 'path', type: 'string | null' },
         { key: 'meta', type: 'JmsFileMeta' },
       ]
     });

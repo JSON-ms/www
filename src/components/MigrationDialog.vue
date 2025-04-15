@@ -77,7 +77,7 @@ watch(() => visible.value, () => {
   <v-dialog
     v-model="visible"
     :persistent="migrating"
-    width="800"
+    :width="panel === 2 ? 400 : 800"
     scrollable
   >
     <v-card

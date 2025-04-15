@@ -235,6 +235,9 @@ export function useInterface() {
         const field = fields[key];
         if (isNativeObject(field)) {
           field.type = field.type ?? 'unknown';
+          if (typeof field.type !== 'string') {
+            field.type = 'unknown';
+          }
           field.fields = isNativeObject(field.fields) ? field.fields : {};
 
           if (field.type.startsWith('schemas.')) {
