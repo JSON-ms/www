@@ -55,26 +55,26 @@ const reset = () => {
             </div>
           </v-alert>
         </div>
-        <div v-else-if="userDataLoaded && (interfaceHasError() || userDataHasError)">
-          <v-tooltip v-if="layoutSize.data < 850" location="top" text="Please correct the errors in the form before submitting.">
-            <template #activator="{ props }">
-              <v-btn icon color="warning" variant="tonal" style="cursor: default">
-                <v-icon v-bind="props" icon="mdi-alert" />
-              </v-btn>
-            </template>
-          </v-tooltip>
-          <v-alert
-            v-else
-            density="compact"
-            variant="tonal"
-            type="error"
-            icon="mdi-alert"
-          >
-            <div class="d-flex">
-              <span class="text-truncate">Please correct the errors in the form before submitting.</span>
-            </div>
-          </v-alert>
-        </div>
+<!--        <div v-else-if="userDataLoaded && (interfaceHasError() || userDataHasError)">-->
+<!--          <v-tooltip v-if="layoutSize.data < 850" location="top" text="Please correct the errors in the form before submitting.">-->
+<!--            <template #activator="{ props }">-->
+<!--              <v-btn icon color="warning" variant="tonal" style="cursor: default">-->
+<!--                <v-icon v-bind="props" icon="mdi-alert" />-->
+<!--              </v-btn>-->
+<!--            </template>-->
+<!--          </v-tooltip>-->
+<!--          <v-alert-->
+<!--            v-else-->
+<!--            density="compact"-->
+<!--            variant="tonal"-->
+<!--            type="warning"-->
+<!--            icon="mdi-alert"-->
+<!--          >-->
+<!--            <div class="d-flex">-->
+<!--              <span class="text-truncate">Please correct the errors in the form before submitting.</span>-->
+<!--            </div>-->
+<!--          </v-alert>-->
+<!--        </div>-->
         <div v-else-if="!canInteractWithServer">
           <v-tooltip v-if="layoutSize.data < 850" location="top" text="You need to define your webhook URL to communicate with your server">
             <template #activator="{ props }">
