@@ -2,12 +2,12 @@
 import ListBuilder from '@/components/ListBuilder.vue';
 import FieldHeader from '@/components/FieldHeader.vue';
 import FileFieldItem from '@/components/FileFieldItem.vue';
+import FieldItemErrorTooltip from '@/components/FieldItemErrorTooltip.vue';
 import type {IInterfaceData, IField, IServerSettings, IInterface, IFile} from '@/interfaces';
 import Rules from '@/rules';
 import {deepToRaw, parseFields, getFieldType, isFieldType, isNativeObject, isFieldI18n, getFieldRules} from '@/utils';
 import {computed, ref, watch} from 'vue';
 import { useGlobalStore } from '@/stores/global';
-import {useUserData} from '@/composables/user-data';
 import {useInterface} from "@/composables/interface";
 
 const globalStore = useGlobalStore();
@@ -35,7 +35,7 @@ const {
 }>();
 
 const { isFieldVisible } = useInterface();
-const { getUserDataErrors } = useUserData();
+
 const showDatePicker = ref(false);
 const showColorPicker = ref(false);
 const getRules = (field: IField): any[] => {
@@ -122,36 +122,6 @@ const files = computed((): IFile[] => {
       ? [value.value]
       : [];
 })
-const getErrors = (index: number): { i18n: string[], currentI18n: string[], general: string[] } => {
-  const allErrors = Object.keys(getUserDataErrors(fields.value, fieldKey + '[' + index + ']'));
-  const i18n = allErrors.filter(item => Object.keys(locales).find(subLocale => item.endsWith(subLocale)));
-  return {
-    i18n,
-    currentI18n: i18n.filter(item => item.endsWith(locale)),
-    general: allErrors.filter(item => Object.keys(locales).every(subLocale => item.endsWith(subLocale))),
-  }
-}
-
-const getErrorMsg = (index: number): string | null => {
-  const errors = getErrors(index);
-  if (errors.general.length > 0) {
-    const item = errors.general[0].split('.').pop();
-    if (item) {
-      return `${fields.value[item].label} field has an issue`;
-    }
-  } else if (errors.currentI18n.length > 0) {
-    const items = errors.currentI18n[0].split('.');
-    return `${fields.value[items[items.length - 2]].label} field has an issue`;
-  } else if (errors.i18n.length > 0) {
-    const items = errors.i18n[0].split('.');
-    const key = items.pop();
-    const field = items.pop();
-    if (field && key) {
-      return `${fields.value[field].label} field has an issue in ${locales[key]}`
-    }
-  }
-  return null;
-}
 
 const markdownToolbar = [
   'bold', 'italic', 'heading', '|', 'unordered-list', 'ordered-list', 'link', {
@@ -774,24 +744,14 @@ watch(() => field.collapsed, () => {
       collapsable
     >
       <template #actions="{ index }">
-        <v-tooltip
-          v-if="getErrors(index).general.length > 0 || getErrors(index).currentI18n.length > 0"
-          :text="getErrorMsg(index) || ''"
-          location="bottom"
-        >
-          <template #activator="{ props }">
-            <v-icon v-bind="props" icon="mdi-alert" color="warning" />
-          </template>
-        </v-tooltip>
-        <v-tooltip
-          v-else-if="getErrors(index).i18n.length > 0"
-          :text="getErrorMsg(index) || ''"
-          location="bottom"
-        >
-          <template #activator="{ props }">
-            <v-icon v-bind="props" icon="mdi-alert-outline" color="warning" />
-          </template>
-        </v-tooltip>
+        <FieldItemErrorTooltip
+          v-model="value"
+          :fields="fields"
+          :field-key="fieldKey"
+          :locales="locales"
+          :locale="locale"
+          :index="index"
+        />
       </template>
       <template #default="{ item, index }">
         <div
@@ -835,8 +795,19 @@ watch(() => field.collapsed, () => {
     <v-expansion-panels v-if="field.collapsable" v-model="expanded">
       <v-expansion-panel>
         <v-expansion-panel-title>
-          <v-icon v-if="field.icon" :icon="field.icon" start />
-          {{ field.label }}
+          <div class="d-flex align-center justify-space-between w-100 pr-3" style="gap: 1rem">
+            <div class="d-flex align-center" style="gap: 1rem">
+              <v-icon v-if="field.icon" :icon="field.icon" />
+              <span>{{ field.label }}</span>
+            </div>
+            <FieldItemErrorTooltip
+              v-model="value"
+              :fields="fields"
+              :field-key="fieldKey"
+              :locales="locales"
+              :locale="locale"
+            />
+          </div>
         </v-expansion-panel-title>
         <v-expansion-panel-text>
           <div

@@ -18,6 +18,7 @@ declare module 'vue' {
     FieldFieldItem: typeof import('./src/components/FieldFieldItem.vue')['default']
     FieldHeader: typeof import('./src/components/FieldHeader.vue')['default']
     FieldItem: typeof import('./src/components/FieldItem.vue')['default']
+    FieldItemErrorTooltip: typeof import('./src/components/FieldItemErrorTooltip.vue')['default']
     FileFieldItem: typeof import('./src/components/FileFieldItem.vue')['default']
     FileManager: typeof import('./src/components/FileManager.vue')['default']
     GlobalComponents: typeof import('./src/components/GlobalComponents.vue')['default']
