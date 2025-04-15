@@ -208,12 +208,14 @@ export function useUserData() {
   }
 
   const setUserData = (data: any, setOriginal = false) => {
-    const parsedData = getParsedUserData(interfaceParsedData.value, deepToRaw(data));
+    const parsedData = getParsedUserData(interfaceParsedData.value, structuredClone(deepToRaw(data)));
     modelStore.setUserData(parsedData, setOriginal);
   }
 
   const resetUserData = () => {
-    modelStore.userData = structuredClone(deepToRaw(modelStore.originalUserData));
+    const originalData = deepToRaw(modelStore.originalUserData);
+    const parsedData = getParsedUserData(interfaceParsedData.value, structuredClone(originalData));
+    modelStore.setUserData(parsedData, true);
   }
 
   const getParsedFields = (fields: {[key: string]: IField}, locales: {[key: string]: string}, override: any = {}, clean = false): any => {
