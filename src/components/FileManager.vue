@@ -22,9 +22,12 @@ const filter = ref<'all' | 'image' | 'video' | 'document'>('all');
 const selectedFiles = ref<IFile[]>([]);
 
 const search = ref('');
+const showInfo = ref(true);
 const uploading = ref(false);
 const deleting = ref(false);
 const downloading = ref(false);
+const sortBy = ref<'originalFileName' | 'timestamp' | 'size' | 'width' | 'height'>('timestamp');
+const sortOrder = ref<'asc' | 'desc'>('desc');
 const uploadProgress = ref(0);
 const files = ref<IFile[]>([]);
 const getFilesByType = (type: string): IFile[] => {
@@ -70,7 +73,15 @@ const acceptedFiles = computed((): IFile[] => {
 })
 const filteredFiles = computed((): IFile[] => {
   const words = (search.value || '').toLowerCase().split(/\s+/);
-  return getFilesByType(filter.value).filter(item => !search.value || words.every(word => item.meta.originalFileName.toLowerCase().includes(word)));
+  return getFilesByType(filter.value).filter(item => !search.value || words.every(word => item.meta.originalFileName.toLowerCase().includes(word))).sort((a, b) => {
+    if ((a.meta[sortBy.value] || 0) < (b.meta[sortBy.value] || 0)) {
+      return sortOrder.value === 'asc' ? -1 : 1;
+    }
+    if ((a.meta[sortBy.value] || 0) > (b.meta[sortBy.value] || 0)) {
+      return sortOrder.value === 'asc' ? 1 : -1;
+    }
+    return 0;
+  });
 })
 
 const fileIsSelected = (file: IFile): boolean => {
@@ -274,7 +285,40 @@ watch(() => globalStore.fileManager.visible, () => {
           label="Search"
           prepend-inner-icon="mdi-magnify"
           hide-details
-        />
+        >
+          <template #append-inner>
+            <div class="d-flex align-center" style="gap: 0.5rem">
+              <v-select
+                v-model="sortBy"
+                :items="[
+                  { title: 'Timestamp', value: 'timestamp' },
+                  { title: 'Name', value: 'originalFileName' },
+                  { title: 'Size', value: 'size' },
+                  { title: 'Width', value: 'width' },
+                  { title: 'Height', value: 'height' },
+                ]"
+                label="Sort by"
+                width="max-content"
+                hide-details
+                @mousedown.stop
+                @click.stop
+              />
+              <v-btn-toggle
+                v-model="sortOrder"
+                mandatory
+                @mousedown.stop
+                @click.stop
+              >
+                <v-btn value="asc">
+                  ASC
+                </v-btn>
+                <v-btn value="desc">
+                  DESC
+                </v-btn>
+              </v-btn-toggle>
+            </div>
+          </template>
+        </v-text-field>
       </v-card-actions>
       <v-card-text
         :class="['pa-0', {
@@ -357,12 +401,23 @@ watch(() => globalStore.fileManager.visible, () => {
                     </v-responsive>
                   </v-sheet>
                 </div>
-                <v-card-title class="pb-0">
-                  {{ item.meta.originalFileName }}
-                </v-card-title>
-                <v-card-subtitle class="pb-3">
-                  {{ $formatBytes(item.meta.size) }}
-                </v-card-subtitle>
+                <template v-if="showInfo">
+                  <v-card-title class="pb-0">
+                    {{ item.meta.originalFileName }}
+                  </v-card-title>
+                  <v-card-subtitle class="pb-3">
+                    <div>Size: {{ $formatBytes(item.meta.size) }}</div>
+                    <div>Dimension: {{ item.meta.width }} x {{ item.meta.height }}</div>
+                    <template v-if="item.meta.type.startsWith('video/')">
+                      <div v-if="item.meta.duration">Duration: {{ $formatSeconds(item.meta.duration) }}</div>
+                      <div v-if="item.meta.frameRate">Frame rate: {{ item.meta.frameRate }}</div>
+                    </template>
+                    <div class="text-capitalize">
+                      Type: {{ item.meta.type.split('/')[0] }}/{{ item.meta.type.split('/')[1].toUpperCase() }}
+                    </div>
+                    <div>Date: {{ $formatTimestamp(item.meta.timestamp, 'YYYY-MM-DD HH:mm:ss') }}</div>
+                  </v-card-subtitle>
+                </template>
               </v-card>
             </template>
           </masonry-wall>
@@ -413,6 +468,11 @@ watch(() => globalStore.fileManager.visible, () => {
             </v-list-item>
           </v-list>
         </v-menu>
+        <v-checkbox
+          v-model="showInfo"
+          label="Show additional info"
+          hide-details
+        />
         <v-spacer />
         <v-btn
           v-if="canSelect"

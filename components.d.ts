@@ -22,6 +22,7 @@ declare module 'vue' {
     FileManager: typeof import('./src/components/FileManager.vue')['default']
     GlobalComponents: typeof import('./src/components/GlobalComponents.vue')['default']
     GoogleSignInButton: typeof import('./src/components/GoogleSignInButton.vue')['default']
+    ImgTag: typeof import('./src/components/ImgTag.vue')['default']
     InterfaceEditor: typeof import('./src/components/InterfaceEditor.vue')['default']
     InterfaceSelector: typeof import('./src/components/InterfaceSelector.vue')['default']
     IntroductionDialog: typeof import('./src/components/IntroductionDialog.vue')['default']
@@ -42,6 +43,7 @@ declare module 'vue' {
     Snack: typeof import('./src/components/Snack.vue')['default']
     Toolbar: typeof import('./src/components/Toolbar.vue')['default']
     TypingsModal: typeof import('./src/components/TypingsModal.vue')['default']
+    VideoPlayer: typeof import('./src/components/VideoPlayer.vue')['default']
     WebhookManager: typeof import('./src/components/WebhookManager.vue')['default']
     WebhookManagerModal: typeof import('./src/components/WebhookManagerModal.vue')['default']
   }
