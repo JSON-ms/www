@@ -51,6 +51,8 @@ export interface IFile {
     size: number,
     width?: number,
     height?: number,
+    frameRate?: number,
+    duration?: number,
     timestamp: number,
     originalFileName: string,
   }

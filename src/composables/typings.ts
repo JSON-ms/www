@@ -184,6 +184,8 @@ export function useTypings() {
         { key: 'width', type: 'number' },
         { key: 'height', type: 'number' },
         { key: 'timestamp', type: 'number' },
+        { key: 'frameRate', type: 'number' },
+        { key: 'duration', type: 'number' },
         { key: 'originalFileName', type: 'string' },
       ]
     });

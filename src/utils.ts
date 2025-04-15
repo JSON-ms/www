@@ -127,6 +127,8 @@ export const parseFields = (fields: any = {}, locales = {}, schemas: TSchema = {
         originalFileName: '',
         width: 0,
         height: 0,
+        frameRate: 0,
+        duration: 0,
         timestamp: new Date().getTime() / 1000,
       } } as IFile : null;
     } else if (schemaKey) {
