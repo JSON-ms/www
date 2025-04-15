@@ -3,6 +3,8 @@ import { useGlobalStore } from '@/stores/global';
 import type { IFile, IInterface, IServerSettings} from '@/interfaces';
 import {computed, nextTick, ref, watch} from 'vue';
 import {Services} from '@/services';
+import ImgTag from '@/components/ImgTag.vue';
+import VideoPlayer from '@/components/VideoPlayer.vue';
 import {downloadFilesAsZip, getFileIcon, phpStringSizeToBytes} from '@/utils';
 
 const globalStore = useGlobalStore();
@@ -336,32 +338,19 @@ watch(() => globalStore.fileManager.visible, () => {
                 <div v-if="!canSelect || globalStore.fileManager.multiple" class="position-absolute" style="top: 0; left: 0; z-index: 10">
                   <v-checkbox :model-value="fileIsSelected(item)" color="primary" base-color="surface" hide-details @click.stop.prevent="onFileClick(item)" />
                 </div>
-                <div class="bg-surface">
-                  <v-img
+                <div class="bg-blue-grey-lighten-4">
+                  <ImgTag
                     v-if="item.meta.type.startsWith('image')"
-                    :src="serverSettings.publicUrl + item.path"
+                    :model-value="item"
+                    :server-settings="serverSettings"
                     :aspect-ratio="(item.meta.width || 1) / (item.meta.height || 1)"
-                  >
-                    <template #error>
-                      <div class="d-flex bg-blue-grey-lighten-4 px-2 align-center justify-center fill-height flex-column">
-                        <v-icon color="warning" size="32" icon="mdi-alert-outline" />
-                        <div class="text-caption text-disabled mt-1" style="line-height: 1rem">Unable to load image</div>
-                      </div>
-                    </template>
-                    <template #placeholder>
-                      <div class="d-flex align-center justify-center fill-height">
-                        <v-progress-circular
-                          color="primary"
-                          indeterminate
-                          size="32"
-                          width="2"
-                        />
-                      </div>
-                    </template>
-                  </v-img>
-                  <v-responsive v-else-if="item.meta.type.startsWith('video')" :aspect-ratio="(item.meta.width || 1) / (item.meta.height || 1)">
-                    <video :src="serverSettings.publicUrl + item.path" width="100%" disablePictureInPicture />
-                  </v-responsive>
+                  />
+                  <VideoPlayer
+                    v-else-if="item.meta.type.startsWith('video')"
+                    :model-value="item"
+                    :server-settings="serverSettings"
+                    :aspect-ratio="(item.meta.width || 1) / (item.meta.height || 1)"
+                  />
                   <v-sheet v-else>
                     <v-responsive :aspect-ratio="16 / 9" class="d-flex align-center justify-center text-center">
                       <v-icon :icon="getFileIcon(item)" size="96" />
