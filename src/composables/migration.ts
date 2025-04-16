@@ -8,7 +8,7 @@ import {useGlobalStore} from "@/stores/global";
 export function useMigration() {
 
   const globalStore = useGlobalStore();
-  const { fetchUserDataSimple, saveUserDataSimple, getUserFiles, testServer } = useUserData();
+  const { fetchUserDataSimple, saveUserDataSimple, getUserFiles, testServer, changeServerUrlInContent } = useUserData();
 
   const interfaceModel = ref<IInterface | null>(null);
   const fromWebhook = ref<string | null>(null);
@@ -144,12 +144,13 @@ export function useMigration() {
           if (userData.value) {
             downloadUserDataState.value = 1;
             fetchUserDataSimple(interfaceModel).then(response => {
+              const newData = changeServerUrlInContent(interfaceModel, response.data, fromServerUrl, toServerUrl);
               const userDataLength = JSON.stringify(response.data).length;
               downloadUserDataState.value = 2;
               downloadBytesProgress.value += userDataLength;
 
               uploadUserDataState.value = 1;
-              saveUserDataSimple(interfaceModel, response.data, toServerUrl, toServerSecret).then(() => {
+              saveUserDataSimple(interfaceModel, newData, toServerUrl, toServerSecret).then(() => {
                 uploadUserDataState.value = 2;
                 uploadBytesProgress.value += userDataLength;
                 callback();

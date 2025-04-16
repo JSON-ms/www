@@ -6,10 +6,17 @@ import {useInterface} from '@/composables/interface';
 import {
   deepToRaw,
   getDataByPath,
-  getFieldByPath, objectsAreDifferent,
+  getFieldByPath,
+  objectsAreDifferent,
   parseFields,
   processObject,
-  downloadFilesAsZip, loopThroughFields, isFieldType, generateHash, isFieldArrayType,
+  downloadFilesAsZip,
+  loopThroughFields,
+  isFieldType,
+  generateHash,
+  isFieldArrayType,
+  isNativeObject,
+  updateObjectByPath,
 } from '@/utils';
 import Rules from '@/rules';
 import {useModelStore} from '@/stores/model';
@@ -144,6 +151,37 @@ export function useUserData() {
       }
     }, data)
     return files;
+  }
+
+  const changeServerUrlInContent = (
+    interfaceModel: IInterface = modelStore.interface,
+    data: any,
+    fromServerUrl: string,
+    toServerUrl: string
+  ): any => {
+    const parsedInterface = getParsedInterfaceData(interfaceModel);
+    const sections = parsedInterface.sections as unknown as { [key: string]: IField; };
+    const newData = structuredClone(data);
+
+    loopThroughFields(sections, (field, path, fieldData) => {
+      if (isFieldType(field, ['markdown', 'wysiwyg'])) {
+        if (isNativeObject(fieldData)) {
+          const keys = Object.keys(fieldData);
+          for (let i = 0; i < keys.length; i++) {
+            const key = keys[i];
+            if (typeof fieldData[key] === 'string') {
+              const newValue = fieldData[key].replace(new RegExp(fromServerUrl, 'g'), toServerUrl)
+              updateObjectByPath(newData, path + '.' + key, newValue);
+            }
+          }
+        } else if (typeof fieldData === 'string') {
+          const newValue = fieldData.replace(new RegExp(fromServerUrl, 'g'), toServerUrl)
+          updateObjectByPath(newData, path, newValue);
+        }
+      }
+    }, data);
+
+    return newData;
   }
 
   const testServer = (
@@ -334,5 +372,6 @@ export function useUserData() {
     setUserData,
     getUserFiles,
     testServer,
+    changeServerUrlInContent,
   };
 }
