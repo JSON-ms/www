@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {useUserData} from "@/composables/user-data";
-import InterfaceSelector from "@/components/InterfaceSelector.vue";
-import type {IInterface, IWebhook} from "@/interfaces";
+import StructureSelector from "@/components/StructureSelector.vue";
+import type {IStructure, IWebhook} from '@/interfaces';
 import {useGlobalStore} from "@/stores/global";
 import {computed, ref, watch} from "vue";
 import {useModelStore} from "@/stores/model";
@@ -9,20 +9,20 @@ import {useMigration} from "@/composables/migration";
 
 const visible = defineModel<boolean>('visible');
 const {
-  interfaces = [],
+  structures = [],
 } = defineProps<{
-  interfaces: IInterface[],
+  structures: IStructure[],
 }>();
 const { getUserFiles, fetchUserData, userDataLoading } = useUserData();
-const { interfaceModel, fromWebhook, toWebhook, structure, userData, userDataContent, files, fileList, migrating, downloadBytesProgress, uploadBytesProgress, canMigrate, migrateUserData, totalSize, downloadPercentageProgress, uploadPercentageProgress, downloadStructureState, downloadUserDataState, downloadFilesState, uploadStructureState, uploadUserDataState, uploadFilesState, hasError, downloadTestState, uploadTestState, resetStates, nextDownloadPercentage, nextUploadPercentage } = useMigration();
+const { structure, fromWebhook, toWebhook, includeStructure, includeUserData, userDataContent, includeFiles, fileList, migrating, downloadBytesProgress, uploadBytesProgress, canMigrate, migrateUserData, totalSize, downloadPercentageProgress, uploadPercentageProgress, downloadStructureState, downloadUserDataState, downloadFilesState, uploadStructureState, uploadUserDataState, uploadFilesState, hasError, downloadTestState, uploadTestState, resetStates, nextDownloadPercentage, nextUploadPercentage } = useMigration();
 const globalStore = useGlobalStore();
 const modelStore = useModelStore();
 const panel = ref<number>(0);
 
 const migrate = () => {
-  if (interfaceModel.value) {
+  if (structure.value) {
     panel.value++;
-    migrateUserData(interfaceModel.value).then(() => {
+    migrateUserData(structure.value).then(() => {
       setTimeout(() => {
         panel.value++;
       }, 1000);
@@ -36,14 +36,14 @@ const goBack = () => {
 const close = () => {
   visible.value = false;
 }
-const onInterfaceChange = () => {
+const onStructureChange = () => {
   fileList.value = [];
   userDataContent.value = '';
-  if (interfaceModel.value) {
-    fromWebhook.value = interfaceModel.value.webhook;
-    fetchUserData(interfaceModel.value).then(response => {
-      if (interfaceModel.value) {
-        fileList.value = getUserFiles(interfaceModel.value, response.data);
+  if (structure.value) {
+    fromWebhook.value = structure.value.webhook;
+    fetchUserData(structure.value).then(response => {
+      if (structure.value) {
+        fileList.value = getUserFiles(structure.value, response.data);
         userDataContent.value = response.data;
       }
     })
@@ -58,16 +58,16 @@ watch(() => visible.value, () => {
     resetStates();
 
     panel.value = 0;
-    interfaceModel.value = interfaces.find(item => item.uuid === modelStore.interface.uuid) ?? null;
+    structure.value = structures.find(item => item.uuid === modelStore.structure.uuid) ?? null;
     fromWebhook.value = null;
     toWebhook.value = null;
-    structure.value = false;
-    userData.value = true;
+    includeStructure.value = false;
+    includeUserData.value = true;
     userDataContent.value = '';
-    files.value = false
+    includeFiles.value = false
     fileList.value = [];
-    if (interfaceModel.value) {
-      onInterfaceChange();
+    if (structure.value) {
+      onStructureChange();
     }
   }
 })
@@ -102,16 +102,16 @@ watch(() => visible.value, () => {
           <v-window v-model="panel">
             <v-window-item>
               <div class="d-flex flex-column" style="gap: 1rem">
-                <p>Choose the interface you wish to migrate.</p>
-                <InterfaceSelector
-                  v-model="interfaceModel"
-                  :interfaces="interfaces"
+                <p>Choose the structure you wish to migrate.</p>
+                <StructureSelector
+                  v-model="structure"
+                  :structures="structures"
                   :loading="userDataLoading"
-                  label="Interface"
+                  label="Structure"
                   type="admin"
                   large-text
                   clearable
-                  @update:model-value="onInterfaceChange"
+                  @update:model-value="onStructureChange"
                 />
 
                 <v-divider />
@@ -122,7 +122,7 @@ watch(() => visible.value, () => {
                     <v-select
                       v-model="fromWebhook"
                       :items="globalStore.session.webhooks.filter(item => item.uuid !== toWebhook)"
-                      :disabled="!interfaceModel"
+                      :disabled="!structure"
                       item-title="url"
                       item-value="uuid"
                       label="Copy from"
@@ -138,7 +138,7 @@ watch(() => visible.value, () => {
                     <v-select
                       v-model="toWebhook"
                       :items="globalStore.session.webhooks.filter(item => item.uuid !== fromWebhook)"
-                      :disabled="!interfaceModel || !fromWebhook"
+                      :disabled="!structure || !fromWebhook"
                       item-title="url"
                       item-value="uuid"
                       label="Copy to"
@@ -155,21 +155,21 @@ watch(() => visible.value, () => {
 
                 <div class="d-flex align-center" style="gap: 1rem">
                   <v-checkbox
-                    v-model="userData"
-                    :disabled="!interfaceModel"
+                    v-model="includeUserData"
+                    :disabled="!structure"
                     label="User data"
                     hide-details
                   />
                   <v-checkbox
-                    v-model="files"
-                    :disabled="!interfaceModel"
+                    v-model="includeFiles"
+                    :disabled="!structure"
                     label="Files"
                     hide-details
                   />
                 </div>
 
                 <v-expand-transition>
-                  <div v-if="interfaceModel">
+                  <div v-if="structure">
                     <v-alert
                       type="warning"
                       variant="tonal"
@@ -209,7 +209,7 @@ watch(() => visible.value, () => {
                           />
                           <span>Testing server communication</span>
                         </div>
-                        <div v-if="structure" class="d-flex align-center" style="gap: 1rem">
+                        <div v-if="includeStructure" class="d-flex align-center" style="gap: 1rem">
                           <v-icon v-if="uploadTestState === -1 || downloadTestState === -1" icon="mdi-help-circle-outline" size="16" />
                           <v-icon v-else-if="downloadStructureState === -1" icon="mdi-close" color="error" size="16" />
                           <v-icon v-else-if="downloadStructureState === 2" icon="mdi-check" color="secondary" size="16" />
@@ -220,9 +220,9 @@ watch(() => visible.value, () => {
                             size="16"
                             width="1"
                           />
-                          <span>Fetching interface content</span>
+                          <span>Fetching structure content</span>
                         </div>
-                        <div v-if="userData" class="d-flex align-center" style="gap: 1rem">
+                        <div v-if="includeUserData" class="d-flex align-center" style="gap: 1rem">
                           <v-icon v-if="uploadTestState === -1 || downloadTestState === -1" icon="mdi-help-circle-outline" size="16" />
                           <v-icon v-else-if="downloadUserDataState === -1" icon="mdi-close" color="error" size="16" />
                           <v-icon v-else-if="downloadUserDataState === 2" icon="mdi-check" color="secondary" size="16" />
@@ -235,7 +235,7 @@ watch(() => visible.value, () => {
                           />
                           <span>Fetching user data</span>
                         </div>
-                        <div v-if="files" class="d-flex align-center" style="gap: 1rem">
+                        <div v-if="includeFiles" class="d-flex align-center" style="gap: 1rem">
                           <v-icon v-if="uploadTestState === -1 || downloadTestState === -1" icon="mdi-help-circle-outline" size="16" />
                           <v-icon v-else-if="downloadFilesState === -1" icon="mdi-close" color="error" size="16" />
                           <v-icon v-else-if="downloadFilesState === 2" icon="mdi-check" color="secondary" size="16" />
@@ -289,7 +289,7 @@ watch(() => visible.value, () => {
                           />
                           <span>Testing server communication</span>
                         </div>
-                        <div v-if="structure" class="d-flex align-center" style="gap: 1rem">
+                        <div v-if="includeStructure" class="d-flex align-center" style="gap: 1rem">
                           <v-icon v-if="downloadTestState === -1 || uploadTestState === -1" icon="mdi-help-circle-outline" size="16" />
                           <v-icon v-else-if="downloadStructureState === -1 || uploadStructureState === -1" icon="mdi-close" color="error" size="16" />
                           <v-icon v-else-if="uploadStructureState === 2" icon="mdi-check" color="secondary" size="16" />
@@ -300,9 +300,9 @@ watch(() => visible.value, () => {
                             size="16"
                             width="1"
                           />
-                          <span>Uploading interface content</span>
+                          <span>Uploading structure content</span>
                         </div>
-                        <div v-if="userData" class="d-flex align-center" style="gap: 1rem">
+                        <div v-if="includeUserData" class="d-flex align-center" style="gap: 1rem">
                           <v-icon v-if="downloadTestState === -1 || uploadTestState === -1" icon="mdi-help-circle-outline" size="16" />
                           <v-icon v-else-if="downloadUserDataState === -1 || uploadUserDataState === -1" icon="mdi-close" color="error" size="16" />
                           <v-icon v-else-if="uploadUserDataState === 2" icon="mdi-check" color="secondary" size="16" />
@@ -315,7 +315,7 @@ watch(() => visible.value, () => {
                           />
                           <span>Uploading user data</span>
                         </div>
-                        <div v-if="files" class="d-flex align-center" style="gap: 1rem">
+                        <div v-if="includeFiles" class="d-flex align-center" style="gap: 1rem">
                           <v-icon v-if="uploadTestState === -1" icon="mdi-help-circle-outline" size="16" />
                           <v-icon v-else-if="downloadFilesState === -1 || uploadFilesState === -1" icon="mdi-close" color="error" size="16" />
                           <v-icon v-else-if="uploadFilesState === 2" icon="mdi-check" color="secondary" size="16" />

@@ -1,6 +1,6 @@
 # This YAML file serves as a blueprint for your admin panel, defining
 # all the fields and sections that will be displayed to users. It
-# outlines the structure and layout of the interface, specifying what
+# outlines the structure and layout of the structure, specifying what
 # data can be entered and how it will be organized.
 
 
@@ -10,7 +10,7 @@
 #   the overall appearance and functionality.
 global:
   title: Dynamic Admin Panel Example
-  logo: [INTERFACE_EDITOR_URL]/favicon.ico
+  logo: [STRUCTURE_EDITOR_URL]/favicon.ico
 
 
 # Supported Languages:

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useGlobalStore } from '@/stores/global';
-import type { IFile, IInterface, IServerSettings} from '@/interfaces';
+import type { IFile, IStructure, IServerSettings} from '@/interfaces';
 import {computed, nextTick, ref, watch} from 'vue';
 import {Services} from '@/services';
 import ImgTag from '@/components/ImgTag.vue';
@@ -8,7 +8,7 @@ import VideoPlayer from '@/components/VideoPlayer.vue';
 import {downloadFilesAsZip, getFileIcon, phpStringSizeToBytes} from '@/utils';
 
 const globalStore = useGlobalStore();
-const interfaceModel = defineModel<IInterface>({ required: true });
+const structure = defineModel<IStructure>({ required: true });
 const { selected = [], serverSettings, canUpload = false, canDelete = false, canSelect = false, canDownload = false } = defineProps<{
   selected?: IFile[],
   canUpload?: boolean,
@@ -102,11 +102,11 @@ const onFileClick = (file: IFile) => {
 }
 
 const load = () => {
-  if (interfaceModel.value.webhook) {
+  if (structure.value.webhook) {
     loading.value = true;
-    return Services.get(interfaceModel.value.server_url + '/file/list/' + interfaceModel.value.hash, {
+    return Services.get(structure.value.server_url + '/file/list/' + structure.value.hash, {
       'Content-Type': 'application/json',
-      'X-Jms-Api-Key': interfaceModel.value.server_secret,
+      'X-Jms-Api-Key': structure.value.server_secret,
     })
       .then(response => files.value = response)
       .then(() => {
@@ -153,8 +153,8 @@ const upload = async (fileList: FileList) => {
   for (let i = 0; i < fileList.length; i++) {
     const file = fileList[i];
     promises.push(
-      Services.upload(interfaceModel.value.server_url + '/file/upload/' + interfaceModel.value.hash, file, progress => uploadProgress.value = progress, {
-        'X-Jms-Api-Key': interfaceModel.value.server_secret,
+      Services.upload(structure.value.server_url + '/file/upload/' + structure.value.hash, file, progress => uploadProgress.value = progress, {
+        'X-Jms-Api-Key': structure.value.server_secret,
       })
       .then(response => {
         if (!files.value.find(item => item.path === response.internalPath)) {
@@ -185,8 +185,8 @@ const remove = () => {
       for (let i = 0; i < selectedFiles.value.length; i++) {
         const file = selectedFiles.value[i];
         promises.push(
-          Services.delete(interfaceModel.value.server_url + '/file/delete/' + interfaceModel.value.hash + '/' + file.path, {
-            'X-Jms-Api-Key': interfaceModel.value.server_secret,
+          Services.delete(structure.value.server_url + '/file/delete/' + structure.value.hash + '/' + file.path, {
+            'X-Jms-Api-Key': structure.value.server_secret,
           })
             .then(() => {
               selectedFiles.value = selectedFiles.value.filter(item => item.path !== file.path);
@@ -330,7 +330,7 @@ watch(() => globalStore.fileManager.visible, () => {
         @dragover.prevent.stop="onDragEnter"
         @dragleave.prevent.stop="onDragLeave"
       >
-        <div v-if="loading || filteredFiles.length === 0 || !interfaceModel.webhook" class="d-flex align-center justify-center text-center" style="height: 33vh">
+        <div v-if="loading || filteredFiles.length === 0 || !structure.webhook" class="d-flex align-center justify-center text-center" style="height: 33vh">
           <v-progress-circular
             v-if="loading"
             size="96"
@@ -338,14 +338,14 @@ watch(() => globalStore.fileManager.visible, () => {
             indeterminate
           />
           <v-card
-            v-else-if="(filteredFiles.length === 0 && !canUpload) || !interfaceModel.webhook"
+            v-else-if="(filteredFiles.length === 0 && !canUpload) || !structure.webhook"
             color="transparent"
             class="w-100 fill-height"
             tile
             flat
           >
             <v-empty-state
-              v-if="interfaceModel.webhook"
+              v-if="structure.webhook"
               icon="mdi-file-hidden"
               title="Empty"
               text="No files available yet."

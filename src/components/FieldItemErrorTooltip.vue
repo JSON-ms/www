@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {useUserData} from "@/composables/user-data";
 import {computed, ref, watch} from "vue";
-import type {IField} from "@/interfaces";
+import type {IField} from '@/interfaces';
 
 interface IFieldError {
   i18n: string[],

@@ -1,26 +1,26 @@
 <script setup lang="ts">
 import Toolbar from '@/components/Toolbar.vue';
 import Sidebar from '@/components/Sidebar.vue';
-import InterfaceEditor from '@/components/InterfaceEditor.vue';
+import StructureEditor from '@/components/StructureEditor.vue';
 import SitePreview from '@/components/SitePreview.vue';
 import MigrationDialog from '@/components/MigrationDialog.vue';
 import DataEditor from '@/components/DataEditor.vue';
 import JsonEditModal from '@/components/JsonEditModal.vue';
 import ActionBar from '@/components/ActionBar.vue';
 import TypingsModal from '@/components/TypingsModal.vue';
-import type {IInterface} from '@/interfaces';
+import type {IStructure} from '@/interfaces';
 import {useIframe} from '@/composables/iframe';
 import {computed, nextTick, onMounted, ref, watch} from 'vue';
 import {useGlobalStore} from '@/stores/global';
 import {useUserData} from '@/composables/user-data';
 import {type RouteLocationNormalizedGeneric, useRoute} from 'vue-router';
 import router from '@/router';
-import {useInterface} from '@/composables/interface';
+import {useStructure} from '@/composables/structure';
 import {useTypings} from '@/composables/typings';
 import {useLayout} from '@/composables/layout';
 import {useShortcut} from '@/composables/shortcut';
-import {deepToRaw, getInterface} from '@/utils';
-import NewInterfaceModal from '@/components/NewInterfaceModal.vue';
+import {deepToRaw, getStructure} from '@/utils';
+import NewStructureModal from '@/components/NewStructureModal.vue';
 import type {VForm} from 'vuetify/components';
 import Settings from '@/components/Settings.vue';
 import Docs from '@/components/Docs.vue';
@@ -28,10 +28,10 @@ import FileManager from '@/components/FileManager.vue';
 import {useModelStore} from '@/stores/model';
 
 // Model & Props
-const interfaceModel = defineModel<IInterface>({ required: true });
-const { interfaces = [], autoload = false } = defineProps<{
+const structure = defineModel<IStructure>({ required: true });
+const { structures = [], autoload = false } = defineProps<{
   autoload?: boolean,
-  interfaces: IInterface[],
+  structures: IStructure[],
 }>();
 
 const currentRoute = useRoute();
@@ -42,18 +42,18 @@ const showEditJson = ref(false);
 const showTypings = ref(false);
 const editJsonContent = ref('');
 const showMigrationDialog = ref(false);
-const showNewInterfaceModal = ref(false);
-const interfaceEditor = ref<InstanceType<typeof InterfaceEditor> | null>();
+const showNewStructureModal = ref(false);
+const structureEditor = ref<InstanceType<typeof StructureEditor> | null>();
 const sitePreview = ref<InstanceType<typeof SitePreview> | null>();
 const dataEditor = ref<InstanceType<typeof DataEditor> | null>();
-const { serverSettings, interfaceParsedData, interfaceStates, interfaceHasSettingsError, getAvailableSection, deleteInterface, getAvailableLocale, interfaceHasSection, interfaceHasLocale, saveInterface, canSaveInterface, canDeleteInterface, resetInterface } = useInterface();
+const { serverSettings, structureParsedData, structureStates, structureHasSettingsError, getAvailableSection, deleteStructure, getAvailableLocale, structureHasSection, structureHasLocale, saveStructure, canSaveStructure, canDeleteStructure, resetStructure } = useStructure();
 const { fetchUserData, canSave, saveUserData, downloading, userDataLoaded, userDataLoading, setUserData } = useUserData();
 const { sendMessageToIframe } = useIframe();
 const { syncTypings } = useTypings();
 
 const tab = computed({
   get: () => {
-    return globalStore.admin.interface ? globalStore.admin.tab : 'data';
+    return globalStore.admin.structure ? globalStore.admin.tab : 'data';
   },
   set: (tab: any) => {
     globalStore.setAdmin({
@@ -86,7 +86,7 @@ const bottomSheetData = ref<{
   text: '',
 });
 const showBottomSheet = computed((): boolean => {
-  return downloading.value || userDataLoading.value || interfaceStates.value.saved;
+  return downloading.value || userDataLoading.value || structureStates.value.saved;
 });
 watch(() => downloading.value, () => bottomSheetData.value = { text: 'Downloading files and generating ZIP file. Please wait...', loading: true });
 watch(() => userDataLoading.value, () => bottomSheetData.value = { text: 'Fetching user data. Please wait...', loading: true });
@@ -95,10 +95,10 @@ const showEditor = computed({
   get(): boolean {
     return windowWidth.value > 900
       && globalStore.admin.previewMode !== 'desktop'
-      && globalStore.admin.interface;
+      && globalStore.admin.structure;
   },
   set(visible: boolean) {
-    globalStore.setAdmin({ interface: visible })
+    globalStore.setAdmin({ structure: visible })
   }
 });
 
@@ -106,19 +106,19 @@ const onRefreshPreview = () => {
   sitePreview.value?.refresh();
 }
 
-const onCreateInterface = () => {
-  showNewInterfaceModal.value = true;
+const onCreateStructure = () => {
+  showNewStructureModal.value = true;
 }
 
-const onApplyNewInterface = (template: string) => {
-  resetInterface();
+const onApplyNewStructure = (template: string) => {
+  resetStructure();
 
-  const newInterface = getInterface(template);
-  modelStore.setInterface(getInterface(template))
+  const newStructure = getStructure(template);
+  modelStore.setStructure(getStructure(template))
   setUserData({}, true);
 
-  newInterface.label = '';
-  showNewInterfaceModal.value = false;
+  newStructure.label = '';
+  showNewStructureModal.value = false;
 
   // If template is blank
   if (template === '') {
@@ -130,11 +130,11 @@ const onApplyNewInterface = (template: string) => {
     tab.value = 'data';
   }
 
-  globalStore.admin.interface = true;
+  globalStore.admin.structure = true;
   nextTick(() => {
-    if (interfaceEditor.value) {
-      interfaceEditor.value.setFocus();
-      sitePreview.value?.interfaceEditor?.setFocus();
+    if (structureEditor.value) {
+      structureEditor.value.setFocus();
+      sitePreview.value?.structureEditor?.setFocus();
     }
     dataEditor.value?.resetValidation()
   })
@@ -142,22 +142,22 @@ const onApplyNewInterface = (template: string) => {
   updateRoute('new', getAvailableSection(), getAvailableLocale());
 }
 
-const onSaveInterfaceContent = () => {
-  onSaveInterface();
+const onSaveStructureContent = () => {
+  onSaveStructure();
 }
 
-const onSaveInterface = () => {
-  if (canSaveInterface.value) {
-    saveInterface().then(() => {
-      bottomSheetData.value = { text: 'Interface saved!', color: 'success', icon: 'mdi-check' };
+const onSaveStructure = () => {
+  if (canSaveStructure.value) {
+    saveStructure().then(() => {
+      bottomSheetData.value = { text: 'Structure saved!', color: 'success', icon: 'mdi-check' };
       syncTypings();
-      const newModel = modelStore.interface;
-      globalStore.addInterface(newModel);
+      const newModel = modelStore.structure;
+      globalStore.addStructure(newModel);
       updateRoute(newModel.hash, getAvailableSection(), getAvailableLocale()).then(() => {
         // Set cursor to original position
         setTimeout(() => {
-          if (interfaceEditor.value) {
-            interfaceEditor.value.setCaretToOriginalPosition();
+          if (structureEditor.value) {
+            structureEditor.value.setCaretToOriginalPosition();
           }
         }, 300)
       });
@@ -171,12 +171,12 @@ const onSaveUserData = () => {
   }
 }
 
-const onDeleteInterface = (model: IInterface) => {
-  if (canDeleteInterface.value) {
-    deleteInterface().then(() => {
-      globalStore.removeInterface(model);
-      onApplyNewInterface('');
-      showNewInterfaceModal.value = true;
+const onDeleteStructure = (model: IStructure) => {
+  if (canDeleteStructure.value) {
+    deleteStructure().then(() => {
+      globalStore.removeStructure(model);
+      onApplyNewStructure('');
+      showNewStructureModal.value = true;
     });
   }
 }
@@ -187,7 +187,7 @@ const onLocaleChange = (locale: string) => {
 }
 
 const onLogout = (response: any) => {
-  modelStore.setInterface(response.interfaces[0], {});
+  modelStore.setStructure(response.structures[0], {});
   userDataLoaded.value = false;
   if (autoload) {
     updateRoute('demo', 'home', 'en-US');
@@ -213,9 +213,9 @@ const onApplyJsonContent = (json: any) => {
   setUserData(json);
 }
 
-const onInterfaceModelChange = (model: IInterface) => {
-  resetInterface();
-  modelStore.setInterface(model, {});
+const onStructureChange = (model: IStructure) => {
+  resetStructure();
+  modelStore.setStructure(model, {});
   userDataLoaded.value = false;
   if (autoload) {
     updateRoute(model.hash, getAvailableSection(), getAvailableLocale());
@@ -225,13 +225,13 @@ const onInterfaceModelChange = (model: IInterface) => {
   }
 }
 
-const onInterfaceContentChange = (content: string) => {
-  interfaceModel.value.content = content;
+const onStructureContentChange = (content: string) => {
+  structure.value.content = content;
   setUserData(modelStore.userData)
 }
 
-watch(() => globalStore.admin.interface, () => {
-  if (globalStore.admin.interface && globalStore.admin.drawer && layoutSize.value.drawer.temporary) {
+watch(() => globalStore.admin.structure, () => {
+  if (globalStore.admin.structure && globalStore.admin.drawer && layoutSize.value.drawer.temporary) {
     globalStore.admin.drawer = false;
   }
 })
@@ -250,12 +250,12 @@ const refreshUserData = (): Promise<any> => {
 
 const checkRoute = (to: RouteLocationNormalizedGeneric, from: RouteLocationNormalizedGeneric) => {
   const validHashes = ['demo', 'new'];
-  const interfaceFound = globalStore.session.interfaces.find(item => item.hash === to.params.hash);
+  const structureFound = globalStore.session.structures.find(item => item.hash === to.params.hash);
 
-  // Check if the interface is found or if the hash is one of the valid hashes
-  if (!interfaceFound && !validHashes.includes(to.params.hash.toString())) {
+  // Check if the structure is found or if the hash is one of the valid hashes
+  if (!structureFound && !validHashes.includes(to.params.hash.toString())) {
     updateRoute('demo', getAvailableSection(), getAvailableLocale());
-  } else if (!interfaceHasSection(to.params.section.toString()) || !interfaceHasLocale(to.params.locale.toString())) {
+  } else if (!structureHasSection(to.params.section.toString()) || !structureHasLocale(to.params.locale.toString())) {
     updateRoute(to.params.hash, getAvailableSection(), getAvailableLocale());
   }
 
@@ -263,14 +263,14 @@ const checkRoute = (to: RouteLocationNormalizedGeneric, from: RouteLocationNorma
     tab.value = 'data';
   }
 
-  sitePreview.value?.interfaceEditor?.scrollToSection(getAvailableSection());
-  interfaceEditor.value?.scrollToSection(getAvailableSection());
+  sitePreview.value?.structureEditor?.scrollToSection(getAvailableSection());
+  structureEditor.value?.scrollToSection(getAvailableSection());
 }
 router.afterEach(checkRoute);
 checkRoute(currentRoute, currentRoute);
 
 useShortcut({
-  onCreate: onCreateInterface,
+  onCreate: onCreateStructure,
   onSave: onSaveUserData,
   onSiteRefresh: onRefreshPreview,
 }).listen();
@@ -278,8 +278,8 @@ initLayout();
 
 setUserData({}, true);
 onMounted(() => {
-  sitePreview.value?.interfaceEditor?.scrollToSection(getAvailableSection());
-  interfaceEditor.value?.scrollToSection(getAvailableSection());
+  sitePreview.value?.structureEditor?.scrollToSection(getAvailableSection());
+  structureEditor.value?.scrollToSection(getAvailableSection());
 })
 if (autoload) {
   refreshUserData();
@@ -290,32 +290,32 @@ if (autoload) {
 
   <!-- TOOLBAR -->
   <Toolbar
-    v-model="interfaceModel"
-    :interfaces="interfaces"
-    :interface-data="interfaceParsedData"
+    v-model="structure"
+    :structures="structures"
+    :structure-data="structureParsedData"
     :default-locale="getAvailableLocale()"
     @refresh="onRefreshPreview"
-    @create="onCreateInterface"
-    @save="onSaveInterface"
-    @delete="onDeleteInterface"
+    @create="onCreateStructure"
+    @save="onSaveStructure"
+    @delete="onDeleteStructure"
     @locale="onLocaleChange"
     @edit-json="onEditJson"
     @migrate-data="onMigrateData"
     @show-typings="onShowTypings"
-    @update:model-value="onInterfaceModelChange"
+    @update:model-value="onStructureChange"
     @logout="onLogout"
   />
 
-  <!-- NEW INTERFACE MODAL -->
-  <NewInterfaceModal
-    v-model="showNewInterfaceModal"
-    @apply="onApplyNewInterface"
+  <!-- NEW STRUCTURE MODAL -->
+  <NewStructureModal
+    v-model="showNewStructureModal"
+    @apply="onApplyNewStructure"
   />
 
   <!-- SIDEBAR -->
   <Sidebar
-    v-model="interfaceModel"
-    :interface-data="interfaceParsedData"
+    v-model="structure"
+    :structure-data="structureParsedData"
     :user-data="modelStore.userData"
   />
 
@@ -334,13 +334,13 @@ if (autoload) {
     disable-route-watcher
   >
     <v-card class="w-100 fill-height d-flex flex-column pa-2 pl-0" theme="dark">
-      <InterfaceEditor
-        ref="interfaceEditor"
-        v-model="interfaceModel"
+      <StructureEditor
+        ref="structureEditor"
+        v-model="structure"
         style="flex: 1"
-        @save="onSaveInterfaceContent"
-        @create="onCreateInterface"
-        @change="onInterfaceContentChange"
+        @save="onSaveStructureContent"
+        @create="onCreateStructure"
+        @change="onStructureContentChange"
       />
     </v-card>
   </v-navigation-drawer>
@@ -348,12 +348,12 @@ if (autoload) {
   <!-- PREVIEW -->
   <SitePreview
     ref="sitePreview"
-    v-model="interfaceModel"
-    :interface-data="interfaceParsedData"
+    v-model="structure"
+    :structure-data="structureParsedData"
     :user-data="modelStore.userData"
-    @save="onSaveInterfaceContent"
-    @create="onCreateInterface"
-    @change="onInterfaceContentChange"
+    @save="onSaveStructureContent"
+    @create="onCreateStructure"
+    @change="onStructureContentChange"
   />
 
   <!-- DATA -->
@@ -363,7 +363,7 @@ if (autoload) {
       class="fill-height"
     >
       <v-expand-transition group>
-        <div v-if="globalStore.admin.interface">
+        <div v-if="globalStore.admin.structure">
           <v-tabs v-model="tab" grow>
             <v-tab value="data">
               <v-icon icon="mdi-pencil" start />
@@ -372,7 +372,7 @@ if (autoload) {
             <v-tab value="settings">
               <v-icon start icon="mdi-cog" />
               Settings
-              <v-icon v-if="interfaceHasSettingsError" color="warning" class="ml-3">
+              <v-icon v-if="structureHasSettingsError" color="warning" class="ml-3">
                 mdi-alert
               </v-icon>
             </v-tab>
@@ -387,8 +387,8 @@ if (autoload) {
         <v-tabs-window-item value="data" class="fill-height">
           <DataEditor
             ref="dataEditor"
-            v-model="interfaceModel"
-            :interface-data="interfaceParsedData"
+            v-model="structure"
+            :structure-data="structureParsedData"
             :user-data="modelStore.userData"
             :server-settings="serverSettings"
             :loading="userDataLoading"
@@ -396,9 +396,9 @@ if (autoload) {
         </v-tabs-window-item>
         <v-tabs-window-item value="settings">
           <Settings
-            v-model="interfaceModel"
+            v-model="structure"
             :demo="!globalStore.session.loggedIn"
-            :disabled="interfaceModel.type !== 'owner'"
+            :disabled="structure.type !== 'owner'"
           />
         </v-tabs-window-item>
         <v-tabs-window-item value="docs">
@@ -426,12 +426,12 @@ if (autoload) {
   <!-- MIGRATION DIALOG -->
   <MigrationDialog
     v-model:visible="showMigrationDialog"
-    :interfaces="interfaces"
+    :structures="structures"
   />
 
   <!-- TYPINGS MODAL -->
   <TypingsModal
-    v-model="interfaceModel"
+    v-model="structure"
     v-model:visible="showTypings"
     :user-data="modelStore.userData"
   />
@@ -459,7 +459,7 @@ if (autoload) {
 
   <!-- FILE MANAGER -->
   <FileManager
-    v-model="interfaceModel"
+    v-model="structure"
     :selected="globalStore.fileManager.selected"
     :can-select="globalStore.fileManager.canSelect"
     :can-upload="globalStore.session.loggedIn"

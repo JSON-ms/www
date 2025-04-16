@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import type {ISession, IPrompt, IError, ISnack, IAdmin, IInterface, IFileManager, IFile} from '@/interfaces';
+import type {ISession, IPrompt, IError, ISnack, IAdmin, IStructure, IFileManager, IFile} from '@/interfaces';
 
 export const mimeTypes = {
   images: [
@@ -60,7 +60,7 @@ export const useGlobalStore = defineStore('global', {
     },
     admin: {
       drawer: window.innerWidth >= 1300,
-      interface: window.innerWidth >= 1400,
+      structure: window.innerWidth >= 1400,
       previewMode: window.innerWidth >= 1400 ? 'desktop' : 'mobile',
       tab: 'data',
     },
@@ -75,7 +75,7 @@ export const useGlobalStore = defineStore('global', {
         createdAt: null,
       },
       googleOAuthSignInUrl: '',
-      interfaces: [],
+      structures: [],
       webhooks: [],
     },
     fileManager: {
@@ -139,22 +139,22 @@ export const useGlobalStore = defineStore('global', {
       this.fileManager.accept = accept;
       this.fileManager.callback = callback;
     },
-    addInterface(item: IInterface) {
-      if (!this.session.interfaces.find(inter => inter.uuid === item.uuid)) {
-        this.session.interfaces.push(item);
+    addStructure(item: IStructure) {
+      if (!this.session.structures.find(inter => inter.uuid === item.uuid)) {
+        this.session.structures.push(item);
       }
     },
-    removeInterface(item: IInterface) {
-      const filteredItems = this.session.interfaces.filter(child => child.uuid !== item.uuid);
-      this.session.interfaces.length = 0;
-      Array.prototype.push.apply(this.session.interfaces, filteredItems);
+    removeStructure(item: IStructure) {
+      const filteredItems = this.session.structures.filter(child => child.uuid !== item.uuid);
+      this.session.structures.length = 0;
+      Array.prototype.push.apply(this.session.structures, filteredItems);
     },
-    updateInterface(item: IInterface) {
-      const index = this.session.interfaces.findIndex(child => child.uuid === item.uuid);
+    updateStructure(item: IStructure) {
+      const index = this.session.structures.findIndex(child => child.uuid === item.uuid);
       if (index >= 0) {
-        this.session.interfaces[index] = item;
+        this.session.structures[index] = item;
       } else {
-        this.addInterface(item);
+        this.addStructure(item);
       }
     },
   },

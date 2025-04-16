@@ -1,29 +1,29 @@
 <script setup lang="ts">
 import {useGlobalStore} from '@/stores/global';
-import type {IInterface, IInterfaceData, ISection} from '@/interfaces';
+import type {IStructure, IStructureData, ISection} from '@/interfaces';
 import {computed} from 'vue';
 import {useRoute} from 'vue-router';
 import router from '@/router';
 import {useUserData} from '@/composables/user-data';
 import {useLayout} from '@/composables/layout';
-import {useInterface} from '@/composables/interface';
+import {useStructure} from '@/composables/structure';
 
-const interfaceModel = defineModel<IInterface>({ required: true });
-const { interfaceData } = defineProps<{
-  interfaceData: IInterfaceData,
+const structure = defineModel<IStructure>({ required: true });
+const { structureData } = defineProps<{
+  structureData: IStructureData,
 }>();
 const { layoutSize } = useLayout();
 const globalStore = useGlobalStore();
 const currentRoute = useRoute();
 const { getUserDataErrors, userDataLoading } = useUserData();
-const { interfaceParsedData } = useInterface();
+const { structureParsedData } = useStructure();
 
 const selectedSectionKey = computed((): string => {
   return currentRoute.params.section.toString();
 })
 
 const hasSections = computed((): boolean => {
-  return Object.keys(interfaceData.sections).length > 0;
+  return Object.keys(structureData.sections).length > 0;
 })
 
 const goToSection = (section: string = '') => {
@@ -36,7 +36,7 @@ const goToSection = (section: string = '') => {
 
 const getErrors = (section: ISection, sectionKey: string | number): { i18n: string[], currentI18n: string[], general: string[] } => {
   const locale = currentRoute.params.locale.toString();
-  const locales = interfaceParsedData.value.locales;
+  const locales = structureParsedData.value.locales;
   const allErrors = Object.keys(getUserDataErrors(section.fields, sectionKey.toString()));
   const i18n = allErrors.filter(item => Object.keys(locales).find(subLocale => item.endsWith(subLocale)));
   return {
@@ -48,7 +48,7 @@ const getErrors = (section: ISection, sectionKey: string | number): { i18n: stri
 
 const getErrorMsg = (section: ISection, sectionKey: string | number): string | null => {
   const errors = getErrors(section, sectionKey);
-  const locales = interfaceParsedData.value.locales;
+  const locales = structureParsedData.value.locales;
   if (errors.general.length > 0) {
     const path = errors.general[0];
     return `Field path "${path}" has an issue`
@@ -94,7 +94,7 @@ const version = JSON.parse(process.env.APP_VERSION);
     <v-list v-else v-model="selectedSectionKey" nav>
       <v-list-subheader>Sections</v-list-subheader>
       <template
-        v-for="(section, sectionKey) in interfaceData.sections"
+        v-for="(section, sectionKey) in structureData.sections"
         :key="sectionKey"
       >
         <v-divider v-if="sectionKey === 'separator'" class="my-2" />

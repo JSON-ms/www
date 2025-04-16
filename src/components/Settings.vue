@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import {computed, ref, watch} from 'vue';
 import { useDisplay } from 'vuetify';
-import type {IInterface} from '@/interfaces';
-import {useInterface} from '@/composables/interface';
+import type {IStructure} from '@/interfaces';
+import {useStructure} from '@/composables/structure';
 import {useGlobalStore} from '@/stores/global';
 import WebhookManagerModal from '@/components/WebhookManagerModal.vue';
 import {useUserData} from "@/composables/user-data";
@@ -10,8 +10,8 @@ import {useUserData} from "@/composables/user-data";
 // Definitions
 const globalStore = useGlobalStore();
 const formIsValid = ref(false);
-const interfaceModel = defineModel<IInterface>({ required: true });
-const { secretKey, cypherKey, adminUrl, canOpenAdminUrl, serverSettings, computedServerSecretKey, computedCypherKey, interfaceStates, getInterfaceRules, getSecretKey, getCypherKey } = useInterface();
+const structure = defineModel<IStructure>({ required: true });
+const { secretKey, cypherKey, adminUrl, canOpenAdminUrl, serverSettings, computedServerSecretKey, computedCypherKey, structureStates, getStructureRules, getSecretKey, getCypherKey } = useStructure();
 const { fetchUserData, setUserData } = useUserData();
 const copied = ref(false);
 const { smAndDown } = useDisplay()
@@ -44,14 +44,14 @@ const select = () => {
 
 const server = computed({
   get(): string | null {
-    return interfaceModel.value.webhook ?? null;
+    return structure.value.webhook ?? null;
   },
   set(value: string) {
-    interfaceModel.value.webhook = value;
+    structure.value.webhook = value;
     const webhook = globalStore.session.webhooks.find(webhook => webhook.uuid === value);
     if (webhook) {
-      interfaceModel.value.server_url = webhook.url;
-      interfaceModel.value.server_secret = webhook.secret;
+      structure.value.server_url = webhook.url;
+      structure.value.server_secret = webhook.secret;
     }
 
     globalStore.setPrompt({
@@ -79,17 +79,17 @@ const manageWebhooks = () => {
   showWebhookManager.value = true;
 }
 
-watch(() => interfaceModel.value.webhook, () => {
+watch(() => structure.value.webhook, () => {
   secretKey.value = '';
   cypherKey.value = '';
-  interfaceStates.value.secretKeyLoaded = false;
-  interfaceStates.value.cypherKeyLoaded = false;
+  structureStates.value.secretKeyLoaded = false;
+  structureStates.value.cypherKeyLoaded = false;
 })
-watch(() => interfaceModel.value.hash, () => {
+watch(() => structure.value.hash, () => {
   secretKey.value = '';
   cypherKey.value = '';
-  interfaceStates.value.secretKeyLoaded = false;
-  interfaceStates.value.cypherKeyLoaded = false;
+  structureStates.value.secretKeyLoaded = false;
+  structureStates.value.cypherKeyLoaded = false;
 })
 </script>
 
@@ -109,7 +109,7 @@ watch(() => interfaceModel.value.hash, () => {
       variant="elevated"
     >
       <span v-if="demo">You are currently in demo mode. Please log in to your account to make any changes.</span>
-      <span v-else-if="disabled">Only the owner of this interface is allowed to modify the settings.</span>
+      <span v-else-if="disabled">Only the owner of this structure is allowed to modify the settings.</span>
     </v-alert>
 
     <v-card tile flat>
@@ -198,8 +198,8 @@ watch(() => interfaceModel.value.hash, () => {
         <!-- SERVER SECRET -->
         <v-text-field
           v-model="computedServerSecretKey"
-          :type="interfaceStates.secretKeyLoaded ? 'text' : 'password'"
-          :disabled="!server || demo || disabled || !interfaceModel.uuid"
+          :type="structureStates.secretKeyLoaded ? 'text' : 'password'"
+          :disabled="!server || demo || disabled || !structure.uuid"
           prepend-inner-icon="mdi-key-chain"
           hide-details="auto"
           label="API Server Secret"
@@ -209,10 +209,10 @@ watch(() => interfaceModel.value.hash, () => {
           name="server_secret"
           autocomplete="new-password"
         >
-          <template v-if="!interfaceStates.secretKeyLoaded" #append-inner>
+          <template v-if="!structureStates.secretKeyLoaded" #append-inner>
             <v-btn
-              :disabled="!interfaceModel.uuid"
-              :loading="interfaceStates.loadingSecretKey"
+              :disabled="!structure.uuid"
+              :loading="structureStates.loadingSecretKey"
               variant="outlined"
               size="small"
               @click="getSecretKey"
@@ -225,8 +225,8 @@ watch(() => interfaceModel.value.hash, () => {
         <!-- CYPHER KEY -->
         <v-text-field
           v-model="computedCypherKey"
-          :type="interfaceStates.cypherKeyLoaded ? 'text' : 'password'"
-          :disabled="!server || demo || disabled || !interfaceModel.uuid"
+          :type="structureStates.cypherKeyLoaded ? 'text' : 'password'"
+          :disabled="!server || demo || disabled || !structure.uuid"
           prepend-inner-icon="mdi-script-text-key-outline"
           hide-details="auto"
           label="API Cypher Key"
@@ -236,10 +236,10 @@ watch(() => interfaceModel.value.hash, () => {
           name="cypher_key"
           autocomplete="new-password"
         >
-          <template v-if="!interfaceStates.cypherKeyLoaded" #append-inner>
+          <template v-if="!structureStates.cypherKeyLoaded" #append-inner>
             <v-btn
-              :disabled="!interfaceModel.uuid"
-              :loading="interfaceStates.loadingCypherKey"
+              :disabled="!structure.uuid"
+              :loading="structureStates.loadingCypherKey"
               variant="outlined"
               size="small"
               @click="getCypherKey"
@@ -256,14 +256,14 @@ watch(() => interfaceModel.value.hash, () => {
           No emails will be sent to users. Please ensure that the Google account email addresses entered match the accounts that users are connected with when accessing the application.
         </v-alert>
         <v-combobox
-          v-model="interfaceModel.permission_interface"
+          v-model="structure.permission_structure"
           :disabled="demo || disabled"
           :items="[]"
-          :rules="getInterfaceRules('permission_interface')"
+          :rules="getStructureRules('permission_structure')"
           prepend-inner-icon="mdi-account-multiple-check"
-          label="Interface User(s)"
+          label="Structure User(s)"
           hide-details="auto"
-          hint="This field contains a list of Google email accounts who have permission to edit the YAML interface used to generate the admin panel, ensuring that only authorized individuals can make changes to the interface."
+          hint="This field contains a list of Google email accounts who have permission to edit the YAML structure used to generate the admin panel, ensuring that only authorized individuals can make changes to the structure."
           persistent-hint
           clearable
           chips
@@ -271,10 +271,10 @@ watch(() => interfaceModel.value.hash, () => {
           multiple
         />
         <v-combobox
-          v-model="interfaceModel.permission_admin"
+          v-model="structure.permission_admin"
           :disabled="demo || disabled"
           :items="[]"
-          :rules="getInterfaceRules('permission_admin')"
+          :rules="getStructureRules('permission_admin')"
           prepend-inner-icon="mdi-account-multiple-check"
           label="Admin User(s)"
           hide-details="auto"

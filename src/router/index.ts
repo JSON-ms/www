@@ -8,18 +8,18 @@
 import { createRouter, createWebHistory } from 'vue-router/auto'
 import ErrorPage from '@/components/ErrorPage.vue'
 import MainView from '@/views/MainView.vue';
-import {useInterface} from '@/composables/interface';
+import {useStructure} from '@/composables/structure';
 import {useGlobalStore} from '@/stores/global';
 import type {RouteLocationGeneric} from 'vue-router';
 import {useModelStore} from '@/stores/model';
 
-const getValidInterfaceRoute = (route:  RouteLocationGeneric): string => {
+const getValidStructureRoute = (route:  RouteLocationGeneric): string => {
   const globalStore = useGlobalStore();
-  const foundInterface = globalStore.session.interfaces.find(item => item.hash === route.params.hash);
-  if (foundInterface) {
+  const foundStructure = globalStore.session.structures.find(item => item.hash === route.params.hash);
+  if (foundStructure) {
     const modelStore = useModelStore();
-    modelStore.setInterface(foundInterface);
-    const { getAvailableSection, getAvailableLocale } = useInterface();
+    modelStore.setStructure(foundStructure);
+    const { getAvailableSection, getAvailableLocale } = useStructure();
     const splitPath = window.location.pathname.split('/');
     return `/admin/${route.params.hash}/${getAvailableSection(undefined, splitPath[3])}/${getAvailableLocale(undefined, splitPath[4])}`;
   }
@@ -29,9 +29,9 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: '/', redirect: '/admin/demo/home/en-US' },
-    { path: '/admin/:hash/', redirect: getValidInterfaceRoute },
+    { path: '/admin/:hash/', redirect: getValidStructureRoute },
     { path: '/admin/:hash/:section?/:locale?', name: 'admin', beforeEnter: (to, from, next) => {
-      const url = getValidInterfaceRoute(to);
+      const url = getValidStructureRoute(to);
       if (to.fullPath !== url) {
         next(url);
       } else {

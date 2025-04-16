@@ -1,8 +1,8 @@
-import type {IField, IFile, IInterface, IInterfaceData} from '@/interfaces';
+import type {IField, IFile, IStructure, IStructureData} from '@/interfaces';
 import {Services} from '@/services';
 import {computed, ref} from 'vue';
 import {useGlobalStore} from '@/stores/global';
-import {useInterface} from '@/composables/interface';
+import {useStructure} from '@/composables/structure';
 import {
   deepToRaw,
   getDataByPath,
@@ -30,7 +30,7 @@ const saved = ref(false);
 export function useUserData() {
   const globalStore = useGlobalStore();
   const modelStore = useModelStore();
-  const { interfaceParsedData, interfaceIsPristine, interfaceHasError, getParsedInterfaceData } = useInterface();
+  const { structureParsedData, structureIsPristine, structureHasError, getParsedStructureData } = useStructure();
 
   const canFetchUserData = computed((): boolean => {
     return globalStore.session.loggedIn
@@ -38,9 +38,9 @@ export function useUserData() {
   })
 
   const canInteractWithServer = computed((): boolean => {
-    return !!(modelStore.interface.server_url)
-      && !!(modelStore.interface.hash)
-      && !interfaceHasError('server_url');
+    return !!(modelStore.structure.server_url)
+      && !!(modelStore.structure.hash)
+      && !structureHasError('server_url');
   })
 
   const userDataHasChanged = computed((): boolean => objectsAreDifferent(modelStore.userData, modelStore.originalUserData));
@@ -51,14 +51,14 @@ export function useUserData() {
       && canInteractWithServer.value
       // && !userDataHasError.value
       && userDataHasChanged.value
-      && interfaceIsPristine.value;
+      && structureIsPristine.value;
   })
 
   const userDataHasError = computed((): boolean => {
     return Object.keys(getUserDataErrors()).length > 0;
   })
 
-  const getUserDataErrors = (obj: {[key: string]: IField} = interfaceParsedData.value.sections as unknown as {[key: string]: IField}, prefix = ''): { [key: string]: string } => {
+  const getUserDataErrors = (obj: {[key: string]: IField} = structureParsedData.value.sections as unknown as {[key: string]: IField}, prefix = ''): { [key: string]: string } => {
     const errors: { [key: string]: string } = {};
     const dig = (fields: { [key: string]: IField }, parentPath = '', parent?: IField) => {
       Object.keys(fields).forEach(key => {
@@ -83,7 +83,7 @@ export function useUserData() {
               dig(field.fields, fieldPath, field);
             }
             if (isFieldType(field, 'i18n')) {
-              Object.keys(interfaceParsedData.value.locales).forEach(localeKey => {
+              Object.keys(structureParsedData.value.locales).forEach(localeKey => {
                 checkError(field, val[key] && val[key][localeKey], '[' + index + '].' + localeKey);
               })
             } else {
@@ -92,7 +92,7 @@ export function useUserData() {
           })
         }
         else if (isFieldType(field, 'i18n')) {
-          Object.keys(interfaceParsedData.value.locales).forEach(localeKey => {
+          Object.keys(structureParsedData.value.locales).forEach(localeKey => {
             checkError(field, value && value[localeKey], '.' + localeKey);
           })
         } else {
@@ -104,22 +104,22 @@ export function useUserData() {
     return errors;
   }
 
-  const fetchUserDataSimple = (interfaceModel: IInterface = modelStore.interface): Promise<any> => {
-    const path = (interfaceModel.server_url + '/data/' + (interfaceModel.hash) || '');
+  const fetchUserDataSimple = (structure: IStructure = modelStore.structure): Promise<any> => {
+    const path = (structure.server_url + '/data/' + (structure.hash) || '');
     return Services.get(path, {
       'Content-Type': 'application/json',
-      'X-Jms-Api-Key': interfaceModel.server_secret,
+      'X-Jms-Api-Key': structure.server_secret,
     })
   }
 
-  const fetchUserData = (interfaceModel: IInterface = modelStore.interface): Promise<any> => {
+  const fetchUserData = (structure: IStructure = modelStore.structure): Promise<any> => {
     return new Promise((resolve, reject) => {
-      if (interfaceModel.hash && interfaceModel.server_url) {
+      if (structure.hash && structure.server_url) {
         loading.value = true;
-        fetchUserDataSimple(interfaceModel).then(response => {
+        fetchUserDataSimple(structure).then(response => {
           loaded.value = true;
-          const parsedInterface = getParsedInterfaceData(interfaceModel);
-          response.data = getParsedUserData(parsedInterface, response.data);
+          const parsedStructure = getParsedStructureData(structure);
+          response.data = getParsedUserData(parsedStructure, response.data);
           resolve(response);
           return response;
         })
@@ -132,10 +132,10 @@ export function useUserData() {
     })
   }
 
-  const getUserFiles = (interfaceModel: IInterface = modelStore.interface, data: any = modelStore.userData): IFile[] => {
-    const parsedInterface = getParsedInterfaceData(interfaceModel);
+  const getUserFiles = (structure: IStructure = modelStore.structure, data: any = modelStore.userData): IFile[] => {
+    const parsedStructure = getParsedStructureData(structure);
     const files: IFile[] = [];
-    const sections = parsedInterface.sections as unknown as { [key: string]: IField; };
+    const sections = parsedStructure.sections as unknown as { [key: string]: IField; };
     loopThroughFields(sections, (field, path, data) => {
       if (isFieldType(field, 'file')) {
         if (Array.isArray(data)) {
@@ -154,13 +154,13 @@ export function useUserData() {
   }
 
   const changeServerUrlInContent = (
-    interfaceModel: IInterface = modelStore.interface,
+    structure: IStructure = modelStore.structure,
     data: any,
     fromServerUrl: string,
     toServerUrl: string
   ): any => {
-    const parsedInterface = getParsedInterfaceData(interfaceModel);
-    const sections = parsedInterface.sections as unknown as { [key: string]: IField; };
+    const parsedStructure = getParsedStructureData(structure);
+    const sections = parsedStructure.sections as unknown as { [key: string]: IField; };
     const newData = structuredClone(data);
 
     loopThroughFields(sections, (field, path, fieldData) => {
@@ -196,35 +196,35 @@ export function useUserData() {
   }
 
   const downloadUserData = () => {
-    const files = getUserFiles().map(file => modelStore.interface.server_url + '/file/read/' + file.path);
+    const files = getUserFiles().map(file => modelStore.structure.server_url + '/file/read/' + file.path);
     downloading.value = true;
-    const path = (modelStore.interface.server_url + '/data/' + modelStore.interface.hash) || ''
+    const path = (modelStore.structure.server_url + '/data/' + modelStore.structure.hash) || ''
     return Services.get(path, {
       'Content-Type': 'application/json',
-      'X-Jms-Api-Key': modelStore.interface.server_secret,
+      'X-Jms-Api-Key': modelStore.structure.server_secret,
     }, true)
       .then(response => {
-        return downloadFilesAsZip(files, response, modelStore.interface.label);
+        return downloadFilesAsZip(files, response, modelStore.structure.label);
       })
       .catch(globalStore.catchError)
       .finally(() => downloading.value = false);
   }
 
   const saveUserDataSimple = async (
-    interfaceModel: IInterface = modelStore.interface,
+    structure: IStructure = modelStore.structure,
     data: any = modelStore.userData,
     serverUrl?: string,
     serverSecret?: string,
   ): Promise<any> => {
-    serverUrl = serverUrl ? serverUrl : interfaceModel.server_url;
-    serverSecret = serverSecret ? serverSecret : interfaceModel.server_secret;
-    const path = (serverUrl + '/data/' + (interfaceModel.hash) || '');
-    const parsedInterface = getParsedInterfaceData(interfaceModel);
-    const parsedData = getParsedUserData(parsedInterface, data, true);
+    serverUrl = serverUrl ? serverUrl : structure.server_url;
+    serverSecret = serverSecret ? serverSecret : structure.server_secret;
+    const path = (serverUrl + '/data/' + (structure.hash) || '');
+    const parsedStructure = getParsedStructureData(structure);
+    const parsedData = getParsedUserData(parsedStructure, data, true);
     return Services.post(path, {
-      hash: interfaceModel.hash,
+      hash: structure.hash,
       data: parsedData,
-      interface: parsedInterface,
+      structure: parsedStructure,
     }, {
       'Content-Type': 'application/json',
       'X-Jms-Api-Key': serverSecret,
@@ -232,11 +232,11 @@ export function useUserData() {
   }
 
   const saveUserData = async (
-    interfaceModel: IInterface = modelStore.interface,
+    structure: IStructure = modelStore.structure,
     data: any = modelStore.userData,
   ): Promise<any> => {
     saving.value = true;
-    return saveUserDataSimple(interfaceModel, data).then(response => {
+    return saveUserDataSimple(structure, data).then(response => {
       setUserData(response.data, true);
       saved.value = true;
       setTimeout(() => saved.value = false, 1000);
@@ -246,13 +246,13 @@ export function useUserData() {
   }
 
   const setUserData = (data: any, setOriginal = false) => {
-    const parsedData = getParsedUserData(interfaceParsedData.value, structuredClone(deepToRaw(data)));
+    const parsedData = getParsedUserData(structureParsedData.value, structuredClone(deepToRaw(data)));
     modelStore.setUserData(parsedData, setOriginal);
   }
 
   const resetUserData = () => {
     const originalData = deepToRaw(modelStore.originalUserData);
-    const parsedData = getParsedUserData(interfaceParsedData.value, structuredClone(originalData));
+    const parsedData = getParsedUserData(structureParsedData.value, structuredClone(originalData));
     modelStore.setUserData(parsedData, true);
   }
 
@@ -260,8 +260,8 @@ export function useUserData() {
 
     const clonedFields = structuredClone(fields);
     const result: any = clean
-      ? parseFields(clonedFields, locales, interfaceParsedData.value.schemas)
-      : Object.assign({}, override, parseFields(clonedFields, locales, interfaceParsedData.value.schemas));
+      ? parseFields(clonedFields, locales, structureParsedData.value.schemas)
+      : Object.assign({}, override, parseFields(clonedFields, locales, structureParsedData.value.schemas));
 
     const processCallback = (parent: any, key: string, path: string) => {
       const field = getFieldByPath(fields, path);
@@ -340,7 +340,7 @@ export function useUserData() {
     return result;
   }
 
-  const getParsedUserData = (data: IInterfaceData = interfaceParsedData.value, override: any = {}, clean = false): any => {
+  const getParsedUserData = (data: IStructureData = structureParsedData.value, override: any = {}, clean = false): any => {
     const result: any = {};
     for (const key in data?.sections) {
       if (data?.sections[key]?.fields) {

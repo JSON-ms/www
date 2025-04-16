@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import interfaceMd from '@/docs/interface.md'
+import structureMd from '@/docs/structure.md'
 import settingsMd from '@/docs/settings.md'
 import { marked } from 'marked';
 import { onMounted } from 'vue';
@@ -53,7 +53,7 @@ onMounted(() => {
       <v-col cols="12">
         <v-card tile flat>
           <v-card-text class="d-flex flex-column" style="gap: 2rem">
-            <div v-html="parsedHtml(interfaceMd)" />
+            <div v-html="parsedHtml(structureMd)" />
             <div v-html="parsedHtml(settingsMd)" />
           </v-card-text>
         </v-card>

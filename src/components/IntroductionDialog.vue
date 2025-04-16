@@ -33,7 +33,7 @@ const close = () => {
         allowfullscreen
       />
       <v-card-text>
-        <p>Unlock the power of seamless admin panel generation with our intuitive YAML interface. JSON.ms enables you to create dynamic admin panels that save user inputs directly in JSON format to YOUR server through RESTful API calls.</p>
+        <p>Unlock the power of seamless admin panel generation with our intuitive YAML structure. JSON.ms enables you to create dynamic admin panels that save user inputs directly in JSON format to YOUR server through RESTful API calls.</p>
       </v-card-text>
       <template #actions>
         <v-btn

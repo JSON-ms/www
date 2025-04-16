@@ -1,5 +1,5 @@
-import exampleInterface from '@/assets/example-interface.yaml'
-import type {IInterface, IField, IFile, TSchema, TRule} from '@/interfaces';
+import exampleStructure from '@/assets/example-structure.yaml'
+import type {IStructure, IField, IFile, TSchema, TRule} from '@/interfaces';
 import type {Ref} from 'vue';
 import {isRef, toRaw} from 'vue';
 import JSZip from 'jszip';
@@ -72,13 +72,13 @@ export const getFieldType = (field: IField): string => {
   return typeof field?.type === 'string' ? field.type : 'unknown'
 }
 
-export const getInterface = (content: string = getDefaultInterfaceContent()): IInterface => {
+export const getStructure = (content: string = getDefaultStructureContent()): IStructure => {
   return {
     label: 'Untitled',
     hash: 'new',
     content,
     webhook: null,
-    permission_interface: [],
+    permission_structure: [],
     permission_admin: [],
     type: 'owner',
   }
@@ -98,9 +98,9 @@ export const valueToString = (value: any) => {
   }
 }
 
-export const getDefaultInterfaceContent = (): string => {
-  return (exampleInterface as string)
-    .replace('[INTERFACE_EDITOR_URL]', window.location.origin);
+export const getDefaultStructureContent = (): string => {
+  return (exampleStructure as string)
+    .replace('[STRUCTURE_EDITOR_URL]', window.location.origin);
 }
 
 export const parseFields = (fields: any = {}, locales = {}, schemas: TSchema = {}) => {
@@ -188,6 +188,19 @@ export const processObject = (
   } else if (parentKey) {
     callback(parent, parentKey, path);
   }
+}
+
+export function updateObjectByPath(obj: any, path: string, value: any) {
+  const keys = path.split(/\.|\[|\]/).filter(Boolean) as any[];
+  let current: any = obj;
+  for (let i = 0; i < keys.length - 1; i++) {
+    const key = keys[i];
+    if (!current[key]) {
+      current[key] = isNaN(Number(keys[i + 1])) ? {} : [];
+    }
+    current = current[key];
+  }
+  current[keys[keys.length - 1]] = value;
 }
 
 export const getDataByPath = (obj: any, path = '', defaultValue?: any) => {
@@ -383,7 +396,7 @@ export async function downloadFilesAsZip(urls: string[], jsonData: object | fals
     }
 
     // Fetch each URL and add it as a blob to the zip
-    const files = await urlsToBlobArray(urls, modelStore.interface.server_secret);
+    const files = await urlsToBlobArray(urls, modelStore.structure.server_secret);
     files.forEach(file => {
       zip.file(file.filename, file.blob);
     })

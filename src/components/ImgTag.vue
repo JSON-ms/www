@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type {IFile, IServerSettings} from "@/interfaces";
+import type {IFile, IServerSettings} from '@/interfaces';
 
 const file = defineModel<IFile>({ required: true });
 const {

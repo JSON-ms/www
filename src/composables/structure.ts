@@ -1,6 +1,6 @@
 import {computed, ref} from 'vue';
 import {
-  getInterface,
+  getStructure,
   isNativeObject,
   objectsAreDifferent,
   isFieldType,
@@ -8,12 +8,12 @@ import {
   valueToString,
   parseStringValue, getFieldSchemaKey
 } from '@/utils';
-import type {IField, IInterface, IInterfaceData, IServerSettings, IWebhook} from '@/interfaces';
+import type {IField, IStructure, IStructureData, IServerSettings, IWebhook} from '@/interfaces';
 import Rules from '@/rules';
 import {useGlobalStore} from '@/stores/global';
 import {Services} from '@/services';
 import {useRoute} from 'vue-router';
-import defaultInterfaceStructure from '@/assets/default-interface-structure.json';
+import defaultStructure  from '@/assets/default-structure.json';
 import {Composer, Parser, LineCounter, Document} from 'yaml'
 import merge from 'ts-deepmerge';
 import {useModelStore} from '@/stores/model';
@@ -27,7 +27,7 @@ export interface EditorAnnotation {
 }
 const siteCompatible = ref(false);
 const siteNotCompatibleSnack = ref(false);
-const interfaceStates = ref({
+const structureStates = ref({
   saving: false,
   saved: false,
   deleting: false,
@@ -43,7 +43,7 @@ const serverSettings = ref<IServerSettings>({
   uploadMaxSize: '2M',
 })
 
-export function useInterface() {
+export function useStructure() {
 
   const globalStore = useGlobalStore();
   const modelStore = useModelStore();
@@ -56,28 +56,28 @@ export function useInterface() {
 
   const canOpenAdminUrl = computed((): boolean => {
     const globalStore = useGlobalStore();
-    return !!(modelStore.interface.uuid) || !globalStore.session.loggedIn;
+    return !!(modelStore.structure.uuid) || !globalStore.session.loggedIn;
   })
   const adminUrl = computed((): string => {
-    return adminBaseUrl.value + '/admin/' + (modelStore.interface.hash || 'demo');
+    return adminBaseUrl.value + '/admin/' + (modelStore.structure.hash || 'demo');
   })
   const webhook = computed((): IWebhook | null => {
-    return globalStore.session.webhooks.find(webhook => webhook.uuid === modelStore.interface.webhook) ?? null;
+    return globalStore.session.webhooks.find(webhook => webhook.uuid === modelStore.structure.webhook) ?? null;
   })
   const computedServerSecretKey = computed((): string => {
-    return interfaceStates.value.secretKeyLoaded
+    return structureStates.value.secretKeyLoaded
       ? secretKey.value
       : webhook.value?.secret || '';
   })
   const computedCypherKey = computed((): string => {
-    return interfaceStates.value.cypherKeyLoaded
+    return structureStates.value.cypherKeyLoaded
       ? cypherKey.value
       : webhook.value?.cypher || '';
   })
 
-  const interfaceIsPristine = computed((): boolean => {
-    return !objectsAreDifferent(modelStore.interface, modelStore.originalInterface, [
-      'label', 'logo', 'content', 'permission_admin', 'permission_interface', 'webhook'
+  const structureIsPristine = computed((): boolean => {
+    return !objectsAreDifferent(modelStore.structure, modelStore.originalStructure, [
+      'label', 'logo', 'content', 'permission_admin', 'permission_structure', 'webhook'
     ])
   })
 
@@ -196,7 +196,7 @@ export function useInterface() {
     return false;
   }
 
-  const getParsedInterface = (data: IInterface = getInterface()): IInterfaceData | null => {
+  const getParsedStructure = (data: IStructure = getStructure()): IStructureData | null => {
     let parseData: any = {};
     try {
       const lineCounter = new LineCounter();
@@ -213,13 +213,13 @@ export function useInterface() {
         return null;
       }
       if (json === undefined) {
-        return defaultInterfaceStructure as IInterfaceData;
+        return defaultStructure  as IStructureData;
       }
-      const mergedInterface: any = merge(defaultInterfaceStructure as IInterfaceData, json);
-      if (Object.keys(mergedInterface.locales).length === 0) {
-        mergedInterface.locales = { 'en-US': 'English (US)' };
+      const mergedStructure: any = merge(defaultStructure  as IStructureData, json);
+      if (Object.keys(mergedStructure.locales).length === 0) {
+        mergedStructure.locales = { 'en-US': 'English (US)' };
       }
-      parseData = mergedInterface as IInterfaceData;
+      parseData = mergedStructure as IStructureData;
     } catch (e: any) {
       console.error(e);
       return null;
@@ -274,9 +274,9 @@ export function useInterface() {
     return parseData;
   }
 
-  let lastParsedData: IInterfaceData | null;
-  const getParsedInterfaceData = (value: IInterface = modelStore.interface): IInterfaceData => {
-    const parsedData = getParsedInterface(value);
+  let lastParsedData: IStructureData | null;
+  const getParsedStructureData = (value: IStructure = modelStore.structure): IStructureData => {
+    const parsedData = getParsedStructure(value);
     if (parsedData) {
       lastParsedData = parsedData;
       return parsedData;
@@ -284,75 +284,75 @@ export function useInterface() {
     if (lastParsedData) {
       return lastParsedData;
     }
-    return defaultInterfaceStructure;
+    return defaultStructure ;
   }
 
-  const interfaceHasSection = (section: string, data: IInterfaceData = interfaceParsedData.value) => {
+  const structureHasSection = (section: string, data: IStructureData = structureParsedData.value) => {
     const keys = Object.keys(data.sections);
     return !!(keys.find(key => key === section));
   }
 
-  const getAvailableSection = (data: IInterfaceData = interfaceParsedData.value, section = currentRoute.params.section): string => {
+  const getAvailableSection = (data: IStructureData = structureParsedData.value, section = currentRoute.params.section): string => {
     const keys = Object.keys(data.sections);
     const found = keys.find(item => item === section);
     return found ?? keys[0] ?? 'home';
   }
 
-  const getAvailableLocale = (data: IInterfaceData = interfaceParsedData.value, locale = currentRoute.params.locale): string => {
+  const getAvailableLocale = (data: IStructureData = structureParsedData.value, locale = currentRoute.params.locale): string => {
     const keys = Object.keys(data.locales);
     const found = keys.find(item => item === locale);
     const shortFound = keys.find(item => item.substring(0, 2) === locale?.toString().substring(0, 2));
     return found ?? shortFound ?? keys[0] ?? 'en-US';
   }
 
-  const interfaceHasLocale = (locale: string, data: IInterfaceData = interfaceParsedData.value) => {
+  const structureHasLocale = (locale: string, data: IStructureData = structureParsedData.value) => {
     const keys = Object.keys(data.locales);
     return !!(keys.find(key => key === locale));
   }
 
-  const interfaceParsedData = computed((): IInterfaceData => {
-    return getParsedInterfaceData();
+  const structureParsedData = computed((): IStructureData => {
+    return getParsedStructureData();
   })
 
   const applyTemplate = (template: string, hash?: string, updateLabel = true) => {
     if (hash === 'new') {
-      modelStore.interface = getInterface();
+      modelStore.structure = getStructure();
     }
-    modelStore.interface.content = template;
-    modelStore.interface.hash = hash ?? modelStore.interface.hash;
+    modelStore.structure.content = template;
+    modelStore.structure.hash = hash ?? modelStore.structure.hash;
 
     if (hash === 'new') { // Needs to be after... do not merge with hash === new condition upstairs
       if (updateLabel) {
-        modelStore.interface.content = modelStore.interface.content.replace('title: Dynamic Admin Panel Example', 'title: Untitled');
+        modelStore.structure.content = modelStore.structure.content.replace('title: Dynamic Admin Panel Example', 'title: Untitled');
       }
-      modelStore.interface.label = 'Untitled';
-      modelStore.interface.logo = undefined;
+      modelStore.structure.label = 'Untitled';
+      modelStore.structure.logo = undefined;
     } else {
-      modelStore.interface.label = interfaceParsedData.value.global.title ?? '';
-      modelStore.interface.logo = interfaceParsedData.value.global.logo ?? '';
+      modelStore.structure.label = structureParsedData.value.global.title ?? '';
+      modelStore.structure.logo = structureParsedData.value.global.logo ?? '';
     }
 
-    modelStore.interface.content = template;
-    modelStore.setOriginalInterface(modelStore.interface)
+    modelStore.structure.content = template;
+    modelStore.setOriginalStructure(modelStore.structure)
   }
 
-  const resetInterfaceSettings = () => {
+  const resetStructureSettings = () => {
     settingsKeys.forEach(key => {
       // @ts-expect-error keys are defined
-      modelStore.interface[key] = structuredClone(modelStore.originalInterface[key]);
+      modelStore.structure[key] = structuredClone(modelStore.originalStructure[key]);
     })
   }
 
-  const resetInterface = () => {
+  const resetStructure = () => {
     siteCompatible.value = false;
     siteNotCompatibleSnack.value = false;
-    modelStore.setOriginalInterface(modelStore.interface);
+    modelStore.setOriginalStructure(modelStore.structure);
     serverSettings.value = {
       postMaxSize: '8M',
       publicUrl: '',
       uploadMaxSize: '2M',
     };
-    interfaceStates.value = {
+    structureStates.value = {
       saving: false,
       saved: false,
       deleting: false,
@@ -364,27 +364,27 @@ export function useInterface() {
     }
   }
 
-  const getInterfaceRules = (key: string | null = null): ((value: any) => (string | boolean))[] => {
+  const getStructureRules = (key: string | null = null): ((value: any) => (string | boolean))[] => {
     const rules = [];
     if ([null, 'server_url'].includes(key)) {
       rules.push((value: string) => !value || Rules.isUrl(value) || 'This field must contain a valid URL');
       rules.push((value: string) => Rules.maxLength(value, 255) || 'This field must contain 255 characters or fewer.');
     }
-    if ([null, 'permission_admin', 'permission_interface'].includes(key)) {
+    if ([null, 'permission_admin', 'permission_structure'].includes(key)) {
       rules.push((items: string[]) => (items || []).every(value => Rules.email(value)) || 'All items from this list must be valid email addresses.');
     }
     return rules;
   }
 
-  const getInterfaceErrors = (keys: string | string[] = Object.keys(modelStore.interface)): { key: string, value: string }[] => {
+  const getStructureErrors = (keys: string | string[] = Object.keys(modelStore.structure)): { key: string, value: string }[] => {
     const errors: { key: string, value: string }[] = [];
     keys = Array.isArray(keys) ? keys : [keys];
     keys.forEach(key => {
-      const rules = getInterfaceRules(key);
+      const rules = getStructureRules(key);
       for (const index in rules) {
         const rule = rules[index];
         // @ts-expect-error I don't know why...
-        const result = rule(modelStore.interface[key]);
+        const result = rule(modelStore.structure[key]);
         if (typeof result === 'string') {
           errors.push({ key, value: result });
         }
@@ -396,14 +396,14 @@ export function useInterface() {
   const settingsKeys = [
     'server_url',
     'permission_admin',
-    'permission_interface',
+    'permission_structure',
   ]
-  const interfaceHasSettingsError = computed((): boolean => {
-    return getInterfaceErrors(settingsKeys).length > 0;
+  const structureHasSettingsError = computed((): boolean => {
+    return getStructureErrors(settingsKeys).length > 0;
   });
 
-  const interfaceHasError = (keys: string | string[] = Object.keys(modelStore.interface)): boolean => {
-    return getInterfaceErrors(keys).length > 0;
+  const structureHasError = (keys: string | string[] = Object.keys(modelStore.structure)): boolean => {
+    return getStructureErrors(keys).length > 0;
   }
 
   const getSecretKeySimple = async (webhookUuid: string): Promise<string> => {
@@ -412,31 +412,31 @@ export function useInterface() {
 
   const getSecretKey = async (): Promise<string> => {
     const globalStore = useGlobalStore();
-    interfaceStates.value.loadingSecretKey = true;
-    interfaceStates.value.secretKeyLoaded = false;
+    structureStates.value.loadingSecretKey = true;
+    structureStates.value.secretKeyLoaded = false;
     return getSecretKeySimple(webhook.value?.uuid || '')
       .then(response => secretKey.value = response)
       .catch(error => globalStore.catchError(error))
       .finally(() => {
-        interfaceStates.value.loadingSecretKey = false;
-        interfaceStates.value.secretKeyLoaded = true;
+        structureStates.value.loadingSecretKey = false;
+        structureStates.value.secretKeyLoaded = true;
       })
   }
 
   const getCypherKey = async (): Promise<string> => {
     const globalStore = useGlobalStore();
-    interfaceStates.value.loadingCypherKey = true;
-    interfaceStates.value.cypherKeyLoaded = false;
+    structureStates.value.loadingCypherKey = true;
+    structureStates.value.cypherKeyLoaded = false;
     return Services.get(import.meta.env.VITE_SERVER_URL + '/webhook/cypher-key/' + webhook.value?.uuid)
       .then(response => cypherKey.value = response)
       .catch(error => globalStore.catchError(error))
       .finally(() => {
-        interfaceStates.value.loadingCypherKey = false;
-        interfaceStates.value.cypherKeyLoaded = true;
+        structureStates.value.loadingCypherKey = false;
+        structureStates.value.cypherKeyLoaded = true;
       })
   }
 
-  const createInterface = (): Promise<IInterface> => {
+  const createStructure = (): Promise<IStructure> => {
     return new Promise((resolve) => {
       const globalStore = useGlobalStore();
       globalStore.setPrompt({
@@ -448,53 +448,55 @@ export function useInterface() {
         btnIcon: 'mdi-plus',
         btnColor: 'secondary',
         callback: () => new Promise(promptResolve => {
-          resolve(modelStore.interface);
+          resolve(modelStore.structure);
           promptResolve();
         })
       })
     })
   }
 
-  const saveInterfaceSimple = (
-    interfaceModel: IInterface = modelStore.interface,
-  ): Promise<IInterface> => {
-    return Services.post(import.meta.env.VITE_SERVER_URL + '/interface' + (interfaceModel.uuid ? '/' + interfaceModel.uuid : ''), interfaceModel)
+  const saveStructureSimple = (
+    structure: IStructure = modelStore.structure,
+  ): Promise<IStructure> => {
+    return Services.post(import.meta.env.VITE_SERVER_URL + '/structure' + (structure.uuid ? '/' + structure.uuid : ''), {
+      structure
+    })
   }
 
-  const saveInterface = (interfaceModel: IInterface = modelStore.interface): Promise<IInterface> => {
+  const saveStructure = (structure: IStructure = modelStore.structure): Promise<IStructure> => {
     const body = {
-      ...interfaceModel,
-      label: interfaceParsedData.value.global.title ?? 'Untitled',
-      logo: interfaceParsedData.value.global.logo ?? null,
+      ...structure,
+      label: structureParsedData.value.global.title ?? 'Untitled',
+      logo: structureParsedData.value.global.logo ?? null,
     };
     return new Promise((resolve, reject) => {
-      if (!canSaveInterface.value) {
-        resolve(interfaceModel);
+      if (!canSaveStructure.value) {
+        resolve(structure);
       }
 
-      interfaceStates.value.saving = true;
+      structureStates.value.saving = true;
       const globalStore = useGlobalStore();
-      saveInterfaceSimple(body)
-        .then((response: IInterface) => {
-          modelStore.setInterface(response);
-          modelStore.setOriginalInterface(response);
-          globalStore.updateInterface(response);
-          interfaceStates.value.saved = true;
-          setTimeout(() => interfaceStates.value.saved = false, 2000);
-          resolve(modelStore.interface);
+      saveStructureSimple(body)
+        .then((response: IStructure) => {
+          modelStore.setStructure(response);
+          modelStore.setOriginalStructure(response);
+          globalStore.updateStructure(response);
+          structureStates.value.saved = true;
+          setTimeout(() => structureStates.value.saved = false, 2000);
+          resolve(modelStore.structure);
         })
         .catch(error => {
           globalStore.catchError(error);
           reject(error);
           return error;
         })
-        .finally(() => interfaceStates.value.saving = false);
+        .finally(() => structureStates.value.saving = false);
     })
   }
 
-  const deleteInterface = (): Promise<boolean> => {
+  const deleteStructure = (): Promise<boolean> => {
     return new Promise((resolve, reject) => {
-      if (!canDeleteInterface.value) {
+      if (!canDeleteStructure.value) {
         resolve(false);
       }
 
@@ -502,17 +504,17 @@ export function useInterface() {
       globalStore.setPrompt({
         ...globalStore.prompt,
         visible: true,
-        title: 'Delete interface',
-        body: 'By proceeding, you will delete your interface and your users won\'t be able to access this admin panel anymore. Are you sure you want to continue?',
+        title: 'Delete structure',
+        body: 'By proceeding, you will delete your structure and your users won\'t be able to access this admin panel anymore. Are you sure you want to continue?',
         btnText: 'Delete',
         btnIcon: 'mdi-delete-outline',
         btnColor: 'error',
         callback: () => new Promise(promptResolve => {
-          interfaceStates.value.deleting = true;
-          Services.delete(import.meta.env.VITE_SERVER_URL + '/interface/' + modelStore.interface.uuid)
+          structureStates.value.deleting = true;
+          Services.delete(import.meta.env.VITE_SERVER_URL + '/structure/' + modelStore.structure.uuid)
             .then(response => {
-              interfaceStates.value.deleted = true;
-              setTimeout(() => interfaceStates.value.deleting = false, 2000);
+              structureStates.value.deleted = true;
+              setTimeout(() => structureStates.value.deleting = false, 2000);
               resolve(true);
               return response;
             })
@@ -523,23 +525,23 @@ export function useInterface() {
             })
             .finally(() => {
               promptResolve();
-              interfaceStates.value.deleting = false
+              structureStates.value.deleting = false
             });
         })
       })
     })
   }
 
-  const canSaveInterface = computed(() => {
-    return !interfaceStates.value.saving
-      && !interfaceStates.value.saved
+  const canSaveStructure = computed(() => {
+    return !structureStates.value.saving
+      && !structureStates.value.saved
       && globalStore.session.loggedIn
-      && !interfaceIsPristine.value
-      && !interfaceHasSettingsError.value
+      && !structureIsPristine.value
+      && !structureHasSettingsError.value
   })
 
-  const canDeleteInterface = computed((): boolean => {
-    return !!(modelStore.interface.uuid);
+  const canDeleteStructure = computed((): boolean => {
+    return !!(modelStore.structure.uuid);
   })
 
   return {
@@ -548,31 +550,31 @@ export function useInterface() {
     adminUrl,
     computedServerSecretKey,
     computedCypherKey,
-    interfaceParsedData,
-    interfaceStates,
-    interfaceIsPristine,
+    structureParsedData,
+    structureStates,
+    structureIsPristine,
     getAvailableSection,
     getAvailableLocale,
-    interfaceHasSection,
-    interfaceHasLocale,
-    canSaveInterface,
-    canDeleteInterface,
-    getParsedInterfaceData,
-    getInterfaceRules,
-    getInterfaceErrors,
-    interfaceHasSettingsError,
+    structureHasSection,
+    structureHasLocale,
+    canSaveStructure,
+    canDeleteStructure,
+    getParsedStructureData,
+    getStructureRules,
+    getStructureErrors,
+    structureHasSettingsError,
     serverSettings,
     yamlException,
-    interfaceHasError,
+    structureHasError,
     getSecretKey,
     getCypherKey,
-    createInterface,
-    saveInterfaceSimple,
-    saveInterface,
-    deleteInterface,
+    createStructure,
+    saveStructureSimple,
+    saveStructure,
+    deleteStructure,
     applyTemplate,
-    resetInterface,
-    resetInterfaceSettings,
+    resetStructure,
+    resetStructureSettings,
     secretKey,
     cypherKey,
     isFieldVisible,

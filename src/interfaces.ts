@@ -24,7 +24,7 @@ export interface IPrompt {
 
 export interface IAdmin {
   drawer: boolean,
-  interface: boolean,
+  structure: boolean,
   previewMode: 'mobile' | 'desktop' | null,
   tab: 'data' | 'settings' | 'docs',
 }
@@ -67,7 +67,7 @@ export interface IFileManager {
   accept: string | null,
 }
 
-export interface IInterface {
+export interface IStructure {
   uuid?: string
   hash?: string
   label: string
@@ -76,9 +76,9 @@ export interface IInterface {
   server_url?: string
   server_secret?: string
   webhook: string | null
-  type: 'owner' | 'interface' | 'admin',
+  type: 'owner' | 'structure' | 'admin',
   owner_name?: string,
-  permission_interface: string[],
+  permission_structure: string[],
   permission_admin: string[],
   created_by?: number
   created_at?: string
@@ -106,7 +106,7 @@ export interface ISession {
     createdAt: string | null,
   }
   googleOAuthSignInUrl: string,
-  interfaces: IInterface[],
+  structures: IStructure[],
   webhooks: IWebhook[],
 }
 
@@ -151,7 +151,7 @@ export interface ISection {
   fields: {[key: string]: IField}
 }
 
-export interface IInterfaceData {
+export interface IStructureData {
   global: {
     title?: string
     logo?: string

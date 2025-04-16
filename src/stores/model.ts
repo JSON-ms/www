@@ -1,32 +1,32 @@
 import { defineStore } from 'pinia';
-import type {IInterface} from '@/interfaces';
-import {deepToRaw, getDefaultInterfaceContent, getInterface, isNativeObject} from '@/utils';
+import type {IStructure} from '@/interfaces';
+import {deepToRaw, getDefaultStructureContent, getStructure, isNativeObject} from '@/utils';
 
-const defaultInterfaceContent = getDefaultInterfaceContent();
-const defaultInterface = getInterface(defaultInterfaceContent);
+const defaultStructureContent = getDefaultStructureContent();
+const defaultStructure = getStructure(defaultStructureContent);
 
 export const useModelStore = defineStore('model', {
   state: (): {
-    interface: IInterface,
-    originalInterface: IInterface,
+    structure: IStructure,
+    originalStructure: IStructure,
     userData: any,
     originalUserData: any,
   } => ({
-    interface: defaultInterface,
-    originalInterface: defaultInterface,
+    structure: defaultStructure,
+    originalStructure: defaultStructure,
     userData: {},
     originalUserData: {},
   }),
   actions: {
-    setInterface(model: IInterface, data?: any) {
-      this.interface = model;
-      this.setOriginalInterface(model);
+    setStructure(model: IStructure, data?: any) {
+      this.structure = model;
+      this.setOriginalStructure(model);
       if (isNativeObject(data)) {
         this.setUserData(data, true);
       }
     },
-    setOriginalInterface(model: IInterface) {
-      this.originalInterface = structuredClone(deepToRaw(model));
+    setOriginalStructure(model: IStructure) {
+      this.originalStructure = structuredClone(deepToRaw(model));
     },
     setUserData(data: any, setOriginal = false) {
       this.userData = data;

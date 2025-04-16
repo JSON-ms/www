@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import blankInterface from '@/assets/blank-interface.yaml';
-import { getDefaultInterfaceContent } from '@/utils';
+import blankStructure from '@/assets/blank-structure.yaml';
+import { getDefaultStructureContent } from '@/utils';
 import { useDisplay } from 'vuetify';
 
 const emit = defineEmits(['apply']);
 const { smAndDown } = useDisplay()
-const defaultInterface = getDefaultInterfaceContent();
+const defaultStructure = getDefaultStructureContent();
 const visible = defineModel<boolean>({ default: false });
 
 const applyTemplate = (template: string) => {
@@ -13,8 +13,8 @@ const applyTemplate = (template: string) => {
   visible.value = false;
 }
 const items: any[] = [
-  { icon: 'mdi-checkbox-blank-outline', label: 'Blank', body: 'Just an empty interface', template: blankInterface },
-  { icon: 'mdi-list-box-outline', label: 'Ready-to-roll', body: 'Everything to kickstart', template: defaultInterface },
+  { icon: 'mdi-checkbox-blank-outline', label: 'Blank', body: 'Just an empty structure', template: blankStructure },
+  { icon: 'mdi-list-box-outline', label: 'Ready-to-roll', body: 'Everything to kickstart', template: defaultStructure },
 ]
 </script>
 

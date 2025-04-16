@@ -1,4 +1,4 @@
-import type {IFile, IInterface} from "@/interfaces";
+import type {IFile, IStructure} from "@/interfaces";
 import {computed, ref} from "vue";
 import {useUserData} from "@/composables/user-data";
 import {urlsToBlobArray} from "@/utils";
@@ -10,13 +10,13 @@ export function useMigration() {
   const globalStore = useGlobalStore();
   const { fetchUserDataSimple, saveUserDataSimple, getUserFiles, testServer, changeServerUrlInContent } = useUserData();
 
-  const interfaceModel = ref<IInterface | null>(null);
+  const structure = ref<IStructure | null>(null);
   const fromWebhook = ref<string | null>(null);
   const toWebhook = ref<string | null>(null);
-  const structure = ref<boolean>(false);
-  const userData = ref<boolean>(true);
+  const includeStructure = ref<boolean>(false);
+  const includeUserData = ref<boolean>(true);
   const userDataContent = ref<any>('');
-  const files = ref<boolean>(false);
+  const includeFiles = ref<boolean>(false);
   const fileList = ref<IFile[]>([]);
 
   const downloadTestState = ref<number>(0);
@@ -63,18 +63,18 @@ export function useMigration() {
 
   const canMigrate = computed((): boolean => {
     return !migrating.value
-      && interfaceModel.value !== null
+      && structure.value !== null
       && fromWebhook.value !== null
       && toWebhook.value !== null
       && fromWebhook.value !== toWebhook.value
       && (
-        structure.value
-        || userData.value
-        || files.value
+        includeStructure.value
+        || includeUserData.value
+        || includeFiles.value
       );
   })
 
-  const migrateUserData = (interfaceModel: IInterface): Promise<void> => {
+  const migrateUserData = (structure: IStructure): Promise<void> => {
     return new Promise((resolve, reject) => {
 
       const fromServer = globalStore.session.webhooks.find(item => item.uuid === fromWebhook.value)
@@ -83,8 +83,8 @@ export function useMigration() {
         reject();
       }
 
-      const fromServerUrl = interfaceModel?.server_url || '';
-      const fromServerSecret = interfaceModel?.server_secret || '';
+      const fromServerUrl = structure?.server_url || '';
+      const fromServerSecret = structure?.server_secret || '';
       const toServerUrl = toServer?.url || '';
       const toServerSecret = toServer?.secret || '';
 
@@ -96,13 +96,13 @@ export function useMigration() {
       // Executed at the end of every call to determine if everything has been migrated or not...
       const callback = () => {
         let completedSteps = 0;
-        if (!structure.value || (downloadStructureState.value === 2 && uploadStructureState.value === 2)) {
+        if (!includeStructure.value || (downloadStructureState.value === 2 && uploadStructureState.value === 2)) {
           completedSteps++;
         }
-        if (!userData.value || (downloadUserDataState.value === 2 && uploadUserDataState.value === 2)) {
+        if (!includeUserData.value || (downloadUserDataState.value === 2 && uploadUserDataState.value === 2)) {
           completedSteps++;
         }
-        if (!files.value || (downloadFilesState.value === 2 && uploadFilesState.value === 2)) {
+        if (!includeFiles.value || (downloadFilesState.value === 2 && uploadFilesState.value === 2)) {
           completedSteps++;
         }
         if (completedSteps === 3) {
@@ -116,15 +116,15 @@ export function useMigration() {
         reject(reason);
       }
 
-      // Download/Upload interface structure
-      // if (structure.value) {
+      // Download/Upload structure structure
+      // if (includeStructure.value) {
       //   downloadStructureState.value = 2;
-      //   downloadBytesProgress.value += interfaceModel.content.length;
+      //   downloadBytesProgress.value += structure.content.length;
       //
       //   uploadStructureState.value = 1;
-      //   saveInterfaceSimple(interfaceModel).then(() => {
+      //   saveStructureSimple(structure).then(() => {
       //     uploadStructureState.value = 2;
-      //     uploadBytesProgress.value += interfaceModel.content.length;
+      //     uploadBytesProgress.value += structure.content.length;
       //     callback();
       //   }).catch(reason => {
       //     uploadStructureState.value = -1;
@@ -141,16 +141,16 @@ export function useMigration() {
           uploadTestState.value = 2;
 
           // Download/Upload user data
-          if (userData.value) {
+          if (includeUserData.value) {
             downloadUserDataState.value = 1;
-            fetchUserDataSimple(interfaceModel).then(response => {
-              const newData = changeServerUrlInContent(interfaceModel, response.data, fromServerUrl, toServerUrl);
+            fetchUserDataSimple(structure).then(response => {
+              const newData = changeServerUrlInContent(structure, response.data, fromServerUrl, toServerUrl);
               const userDataLength = JSON.stringify(response.data).length;
               downloadUserDataState.value = 2;
               downloadBytesProgress.value += userDataLength;
 
               uploadUserDataState.value = 1;
-              saveUserDataSimple(interfaceModel, newData, toServerUrl, toServerSecret).then(() => {
+              saveUserDataSimple(structure, newData, toServerUrl, toServerSecret).then(() => {
                 uploadUserDataState.value = 2;
                 uploadBytesProgress.value += userDataLength;
                 callback();
@@ -160,10 +160,10 @@ export function useMigration() {
               })
 
               // Download/Upload files
-              if (files.value) {
+              if (includeFiles.value) {
                 downloadFilesState.value = 1;
                 let totalUploadedFiles = 0;
-                const files = getUserFiles(interfaceModel, response.data);
+                const files = getUserFiles(structure, response.data);
                 const urls = files.map(file => fromServerUrl + '/file/read/' + file.path);
                 if (urls.length === 0) {
                   uploadFilesState.value = 2;
@@ -182,7 +182,7 @@ export function useMigration() {
                   }
                   const file = new File([item.blob], item.filename, { type: item.blob.type });
                   nextUploadBytes.value += files[index].meta.size;
-                  Services.upload(toServerUrl + '/file/upload/' + interfaceModel.hash, file, undefined, {
+                  Services.upload(toServerUrl + '/file/upload/' + structure.hash, file, undefined, {
                     'X-Jms-Api-Key': toServerSecret,
                   })
                     .then(() => {
@@ -224,13 +224,13 @@ export function useMigration() {
 
   const totalSize = computed((): number => {
     let size = 0;
-    if (structure.value && interfaceModel.value) {
-      size += interfaceModel.value.content.length;
+    if (includeStructure.value && structure.value) {
+      size += structure.value.content.length;
     }
-    if (userData.value && userDataContent.value) {
+    if (includeUserData.value && userDataContent.value) {
       size += JSON.stringify(userDataContent.value).length;
     }
-    if (files.value) {
+    if (includeFiles.value) {
       size += fileList.value.reduce((acc: number, file: IFile) => acc + file.meta.size, 0);
     }
     return size;
@@ -251,13 +251,13 @@ export function useMigration() {
   })
 
   return {
-    interfaceModel,
+    structure,
     fromWebhook,
     toWebhook,
-    structure,
-    userData,
+    includeStructure,
+    includeUserData,
     userDataContent,
-    files,
+    includeFiles,
     fileList,
     migrating,
     downloadBytesProgress,

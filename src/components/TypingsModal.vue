@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import {VAceEditor} from 'vue3-ace-editor';
 import {computed, ref, watch} from 'vue';
-import type {IInterface} from '@/interfaces';
+import type {IStructure} from '@/interfaces';
 import {useTypings} from '@/composables/typings';
 
-const interfaceModel = defineModel<IInterface>({ required: true });
+const structure = defineModel<IStructure>({ required: true });
 const visible = defineModel<boolean>('visible');
 
 const language = ref<'typescript' | 'php'>('typescript')
@@ -23,8 +23,8 @@ const sync = async () => {
 }
 
 const unsync = async () => {
-  if (interfaceModel.value.hash) {
-    const instance = typingFileHandle.value[interfaceModel.value.hash];
+  if (structure.value.hash) {
+    const instance = typingFileHandle.value[structure.value.hash];
     if (instance) {
       instance[language.value] = null;
     }
@@ -44,8 +44,8 @@ const updateContent = () => {
 }
 
 const handle = computed((): FileSystemFileHandle | null => {
-  if (interfaceModel.value.hash) {
-    const instance = typingFileHandle.value[interfaceModel.value.hash];
+  if (structure.value.hash) {
+    const instance = typingFileHandle.value[structure.value.hash];
     if (instance) {
       return instance[language.value] || null;
     }

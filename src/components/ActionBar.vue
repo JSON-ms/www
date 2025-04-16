@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {useUserData} from '@/composables/user-data';
-import {useInterface} from '@/composables/interface';
+import {useStructure} from '@/composables/structure';
 import {useLayout} from '@/composables/layout';
 import {useGlobalStore} from '@/stores/global';
 
@@ -9,7 +9,7 @@ const { tab = 'data' } = defineProps<{
 }>();
 
 const globalStore = useGlobalStore();
-const { interfaceHasError, interfaceIsPristine } = useInterface();
+const { structureHasError, structureIsPristine } = useStructure();
 const { windowWidth, layoutSize } = useLayout();
 const { saveUserData, resetUserData, userDataHasChanged, canInteractWithServer, userDataSaving, userDataSaved, userDataLoaded, canSave, userDataHasError } = useUserData();
 
@@ -31,13 +31,13 @@ const reset = () => {
     <div
       v-if="globalStore.session.loggedIn"
       :class="{
-        'pr-3': !interfaceIsPristine || interfaceHasError() || userDataHasError
+        'pr-3': !structureIsPristine || structureHasError() || userDataHasError
       }"
       style="gap: 1rem"
     >
       <v-scroll-y-transition group hide-on-leave>
-        <div v-if="!interfaceIsPristine">
-          <v-tooltip v-if="layoutSize.data < 850" location="top" text="Please save your interface before continuing.">
+        <div v-if="!structureIsPristine">
+          <v-tooltip v-if="layoutSize.data < 850" location="top" text="Please save your structure before continuing.">
             <template #activator="{ props }">
               <v-btn icon color="error" variant="tonal" style="cursor: default">
                 <v-icon v-bind="props" icon="mdi-alert" />
@@ -55,7 +55,7 @@ const reset = () => {
             </div>
           </v-alert>
         </div>
-<!--        <div v-else-if="userDataLoaded && (interfaceHasError() || userDataHasError)">-->
+<!--        <div v-else-if="userDataLoaded && (structureHasError() || userDataHasError)">-->
 <!--          <v-tooltip v-if="layoutSize.data < 850" location="top" text="Please correct the errors in the form before submitting.">-->
 <!--            <template #activator="{ props }">-->
 <!--              <v-btn icon color="warning" variant="tonal" style="cursor: default">-->

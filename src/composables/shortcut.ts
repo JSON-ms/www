@@ -29,7 +29,7 @@ export function useShortcut(options: {
 
       event.preventDefault();
       globalStore.setAdmin({
-        interface: !globalStore.admin.interface,
+        structure: !globalStore.admin.structure,
       })
     }
   }, {

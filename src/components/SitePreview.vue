@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import {useGlobalStore} from '@/stores/global';
 import {defineExpose, nextTick, onMounted, onUnmounted, ref, watch} from 'vue';
-import type {IInterface, IInterfaceData} from '@/interfaces';
+import type {IStructure, IStructureData} from '@/interfaces';
 import {useLayout} from '@/composables/layout';
-import InterfaceEditor from '@/components/InterfaceEditor.vue';
+import StructureEditor from '@/components/StructureEditor.vue';
 import {useIframe} from '@/composables/iframe';
 import router from '@/router';
 import {useUserData} from '@/composables/user-data';
 import {useModelStore} from '@/stores/model';
 
-const interfaceModel = defineModel<IInterface>({ required: true });
+const structure = defineModel<IStructure>({ required: true });
 const emit = defineEmits(['save', 'create', 'change'])
 const props = defineProps<{
-  interfaceData: IInterfaceData,
+  structureData: IStructureData,
 }>();
 
-const interfaceEditor = ref<InstanceType<typeof InterfaceEditor> | null>();
+const structureEditor = ref<InstanceType<typeof StructureEditor> | null>();
 const modelStore = useModelStore();
 const globalStore = useGlobalStore();
 const demoPreviewUrl = ref(import.meta.env.VITE_DEMO_PREVIEW_URL);
@@ -39,18 +39,18 @@ const refresh = () => {
   }
 }
 
-const onSaveInterfaceContent = (model: IInterface) => {
+const onSaveStructureContent = (model: IStructure) => {
   emit('save', model);
 }
-const onCreateInterface = (model: IInterface) => {
+const onCreateStructure = (model: IStructure) => {
   emit('create', model);
 }
-const onInterfaceContentChange = (content: string) => {
+const onStructureContentChange = (content: string) => {
   emit('change', content);
 }
 
 let loadingIframeTimeout: any;
-let checkIframeInterface: any;
+let checkIframeStructure: any;
 const onIframeLoad = () => {
   let intervalCount = 0;
   loading.value = true;
@@ -60,13 +60,13 @@ const onIframeLoad = () => {
   loadingIframeTimeout = setTimeout(() => {
     loading.value = false;
   }, 1000)
-  clearInterval(checkIframeInterface);
-  checkIframeInterface = setInterval(() => {
+  clearInterval(checkIframeStructure);
+  checkIframeStructure = setInterval(() => {
     if (siteCompatible.value) {
-      clearInterval(checkIframeInterface);
+      clearInterval(checkIframeStructure);
       reloading.value = false;
     } else if (intervalCount >= 5000) {
-      clearInterval(checkIframeInterface);
+      clearInterval(checkIframeStructure);
       siteNotCompatibleSnack.value = true;
       reloading.value = false;
       setTimeout(() => {
@@ -82,27 +82,27 @@ const onIframeLoad = () => {
 }
 
 let sitePreviewUrlTimeout: any;
-const sitePreviewUrl = ref(props.interfaceData.global.preview);
+const sitePreviewUrl = ref(props.structureData.global.preview);
 watch(() => globalStore.admin.previewMode, () => {
   if (globalStore.admin.previewMode !== null) {
-    sitePreviewUrl.value = props.interfaceData.global.preview;
+    sitePreviewUrl.value = props.structureData.global.preview;
     if (!loaded.value) {
       onIframeLoad();
     }
     loaded.value = true;
   }
 });
-watch(() => props.interfaceData.global.preview, () => {
+watch(() => props.structureData.global.preview, () => {
   if (globalStore.admin.previewMode !== null) {
     loaded.value = true;
     loading.value = true;
     clearTimeout(sitePreviewUrlTimeout);
     sitePreviewUrlTimeout = setTimeout(() => {
-      sitePreviewUrl.value = props.interfaceData.global.preview;
+      sitePreviewUrl.value = props.structureData.global.preview;
       onIframeLoad();
     }, 300)
   }
-}, { immediate: !!props.interfaceData.global.preview })
+}, { immediate: !!props.structureData.global.preview })
 
 watch(() => modelStore.userData, () => {
   if (siteCompatible.value && globalStore.admin.previewMode !== null) {
@@ -129,7 +129,7 @@ onUnmounted(() => {
 
 defineExpose({
   refresh,
-  interfaceEditor,
+  structureEditor,
 });
 </script>
 
@@ -146,7 +146,7 @@ defineExpose({
     <div
       :class="[{
         'iframe-container fill-height w-100 pa-4 d-flex align-center justify-center': true,
-      }, globalStore.admin.previewMode, globalStore.admin.interface ? 'has-interface' : undefined]"
+      }, globalStore.admin.previewMode, globalStore.admin.structure ? 'has-structure' : undefined]"
     >
       <v-card
         class="w-100 fill-height"
@@ -157,7 +157,7 @@ defineExpose({
         }"
       >
         <v-empty-state
-          v-if="!interfaceData.global.preview"
+          v-if="!structureData.global.preview"
           icon="mdi-eye-off-outline"
           title="No preview URL found"
           text="No preview attribute has been defined in the global section of your YAML template. To view the preview website, please ensure that the preview attribute is defined."
@@ -174,7 +174,7 @@ defineExpose({
             <v-progress-circular color="primary" :size="globalStore.admin.previewMode === 'mobile' ? 96 : 128" indeterminate />
           </v-overlay>
           <iframe
-            v-if="interfaceData.global.preview && !killIframe && loaded"
+            v-if="structureData.global.preview && !killIframe && loaded"
             id="iframe"
             :src="sitePreviewUrl"
             title="Preview"
@@ -182,7 +182,7 @@ defineExpose({
               border: 0,
               float: 'left',
               opacity: reloading || loading ? 0.01 : 1,
-              zoom: interfaceData.global.preview === demoPreviewUrl ? layoutPx(1) : layoutSize.preview.zoom,
+              zoom: structureData.global.preview === demoPreviewUrl ? layoutPx(1) : layoutSize.preview.zoom,
             }"
             class="w-100 fill-height"
             @error="() => iframeErrorMsg = 'Unable to load website.'"
@@ -203,15 +203,15 @@ defineExpose({
     </div>
     <template #append>
       <v-expand-transition>
-        <div v-show="globalStore.admin.previewMode === 'desktop' && globalStore.admin.interface">
+        <div v-show="globalStore.admin.previewMode === 'desktop' && globalStore.admin.structure">
           <v-card :height="windowHeight - layoutSize.preview.height - 96" class="pa-2 pl-0" tile flat theme="dark">
-            <InterfaceEditor
-              ref="interfaceEditor"
-              v-model="interfaceModel"
+            <StructureEditor
+              ref="structureEditor"
+              v-model="structure"
               style="flex: 1"
-              @save="onSaveInterfaceContent"
-              @create="onCreateInterface"
-              @change="onInterfaceContentChange"
+              @save="onSaveStructureContent"
+              @create="onCreateStructure"
+              @change="onStructureContentChange"
             />
           </v-card>
         </div>

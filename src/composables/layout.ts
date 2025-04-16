@@ -35,7 +35,7 @@ export function useLayout() {
   const editor = {
     temporary: false,
     width: mobileFrameWidth.value,
-    memory: globalStore.admin.interface,
+    memory: globalStore.admin.structure,
   };
 
   // Preview
@@ -57,7 +57,7 @@ export function useLayout() {
     // If preview mode is desktop, let some space for the editor if opened
     let _mobileFrameWidth = mobileFrameWidth.value;
     let _mobileFrameHeight = mobileFrameHeight.value;
-    if (globalStore.admin.previewMode === 'desktop' && globalStore.admin.interface) {
+    if (globalStore.admin.previewMode === 'desktop' && globalStore.admin.structure) {
       _mobileFrameHeight -= (_mobileFrameHeight) / 3.5;
       _mobileFrameWidth = _mobileFrameHeight / 1.777;
     }
@@ -74,7 +74,7 @@ export function useLayout() {
     const getDataWidth = () => {
       // Total
       const drawerWidth = (!drawer.temporary && globalStore.admin.drawer ? drawer.width : 0);
-      const editorWidth = (!editor.temporary && globalStore.admin.interface ? editor.width : 0);
+      const editorWidth = (!editor.temporary && globalStore.admin.structure ? editor.width : 0);
       let total = drawerWidth + editorWidth;
 
       // Preview: Width
@@ -99,7 +99,7 @@ export function useLayout() {
         width = _mobileFrameWidth;
         if (!editor.temporary) {
           editor.temporary = true;
-          editor.memory = globalStore.admin.interface;
+          editor.memory = globalStore.admin.structure;
           return getDataWidth();
         } else if (!drawer.temporary) {
           drawer.temporary = true;

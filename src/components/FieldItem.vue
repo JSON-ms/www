@@ -3,12 +3,12 @@ import ListBuilder from '@/components/ListBuilder.vue';
 import FieldHeader from '@/components/FieldHeader.vue';
 import FileFieldItem from '@/components/FileFieldItem.vue';
 import FieldItemErrorTooltip from '@/components/FieldItemErrorTooltip.vue';
-import type {IInterfaceData, IField, IServerSettings, IInterface, IFile} from '@/interfaces';
+import type {IStructureData, IField, IServerSettings, IStructure, IFile} from '@/interfaces';
 import Rules from '@/rules';
 import {deepToRaw, parseFields, getFieldType, isFieldType, isNativeObject, isFieldI18n, getFieldRules} from '@/utils';
 import {computed, ref, watch} from 'vue';
 import { useGlobalStore } from '@/stores/global';
-import {useInterface} from "@/composables/interface";
+import {useStructure} from "@/composables/structure";
 
 const globalStore = useGlobalStore();
 const value = defineModel<any>({ required: true });
@@ -18,8 +18,8 @@ const {
   locale,
   locales,
   structure,
+  structureData,
   serverSettings,
-  interface: interfaceModel,
   disabled = false,
   loading = false,
 } = defineProps<{
@@ -27,14 +27,14 @@ const {
   fieldKey: string,
   locale: string,
   locales: { [key: string]: string; },
-  structure: IInterfaceData,
-  interface: IInterface,
+  structure: IStructure,
+  structureData: IStructureData,
   serverSettings: IServerSettings,
   disabled?: boolean,
   loading?: boolean,
 }>();
 
-const { isFieldVisible } = useInterface();
+const { isFieldVisible } = useStructure();
 
 const showDatePicker = ref(false);
 const showColorPicker = ref(false);
@@ -69,7 +69,7 @@ const optionItems = computed((): { title: string, value: string }[] => {
   }
   if (field.items?.toString().startsWith('enums.')) {
     const enumType = field.items?.toString().split('enums.')[1];
-    const enumData = structure.enums[enumType];
+    const enumData = structureData.enums[enumType];
     if (enumData) {
       if (Array.isArray(enumData)) {
         return enumData.map(title => ({ title, value: title }));
@@ -100,7 +100,7 @@ const computedReadOnlyDate = computed((): string => {
 });
 
 const getDefaultItem = () => {
-  return parseFields(structuredClone(deepToRaw(fields.value) || {}), locales, structure.schemas);
+  return parseFields(structuredClone(deepToRaw(fields.value) || {}), locales, structureData.schemas);
 }
 
 const fields = computed((): {[key: string]: IField } => {
@@ -767,7 +767,7 @@ watch(() => field.collapsed, () => {
             :locale="locale"
             :locales="locales"
             :structure="structure"
-            :interface="interfaceModel"
+            :structure-data="structureData"
             :server-settings="serverSettings"
             :disabled="disabled"
             :loading="loading"
@@ -780,7 +780,7 @@ watch(() => field.collapsed, () => {
             :locale="locale"
             :locales="locales"
             :structure="structure"
-            :interface="interfaceModel"
+            :structure-data="structureData"
             :server-settings="serverSettings"
             :disabled="disabled"
             :loading="loading"
@@ -826,7 +826,7 @@ watch(() => field.collapsed, () => {
                 :locale="locale"
                 :locales="locales"
                 :structure="structure"
-                :interface="interfaceModel"
+                :structure-data="structureData"
                 :server-settings="serverSettings"
                 :loading="loading"
               />
@@ -838,7 +838,7 @@ watch(() => field.collapsed, () => {
                 :locale="locale"
                 :locales="locales"
                 :structure="structure"
-                :interface="interfaceModel"
+                :structure-data="structureData"
                 :server-settings="serverSettings"
                 :loading="loading"
               />
@@ -867,7 +867,7 @@ watch(() => field.collapsed, () => {
             :locale="locale"
             :locales="locales"
             :structure="structure"
-            :interface="interfaceModel"
+            :structure-data="structureData"
             :server-settings="serverSettings"
             :loading="loading"
           />
@@ -879,7 +879,7 @@ watch(() => field.collapsed, () => {
             :locale="locale"
             :locales="locales"
             :structure="structure"
-            :interface="interfaceModel"
+            :structure-data="structureData"
             :server-settings="serverSettings"
             :loading="loading"
           />
@@ -899,7 +899,7 @@ watch(() => field.collapsed, () => {
     <v-chip size="x-small" label>
       {{ fieldType }}
     </v-chip>
-    is not supported. Check and adjust your YAML interface accordingly.
+    is not supported. Check and adjust your YAML structure accordingly.
   </v-alert>
 
   <!-- APPEND -->

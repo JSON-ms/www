@@ -3,24 +3,24 @@ import Logo from '@/components/Logo.vue';
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
 import SessionPanel from '@/components/SessionPanel.vue';
 import GoogleSignInButton from '@/components/GoogleSignInButton.vue';
-import InterfaceSelector from '@/components/InterfaceSelector.vue';
+import StructureSelector from '@/components/StructureSelector.vue';
 import {useDisplay} from 'vuetify';
 import {useGlobalStore} from '@/stores/global';
 import {computed, ref, watch} from 'vue';
-import type {IField, IInterface, IInterfaceData} from '@/interfaces';
+import type {IField, IStructure, IStructureData} from '@/interfaces';
 import {useUserData} from '@/composables/user-data';
 import {useRoute} from 'vue-router';
-import {useInterface} from '@/composables/interface';
+import {useStructure} from '@/composables/structure';
 import type {VAppBar} from 'vuetify/components';
 import {useLayout} from '@/composables/layout';
 import {useTypings} from '@/composables/typings';
 import {useIframe} from '@/composables/iframe';
 import {useModelStore} from "@/stores/model";
 
-const interfaceModel = defineModel<IInterface>({ required: true });
-const { interfaceData, interfaces = [], defaultLocale = 'en-US' } = defineProps<{
-  interfaceData: IInterfaceData,
-  interfaces: IInterface[],
+const structure = defineModel<IStructure>({ required: true });
+const { structureData, structures = [], defaultLocale = 'en-US' } = defineProps<{
+  structureData: IStructureData,
+  structures: IStructure[],
   defaultLocale?: string,
 }>();
 
@@ -30,14 +30,14 @@ const globalStore = useGlobalStore();
 const modelStore = useModelStore();
 const { smAndDown } = useDisplay();
 const { windowWidth, layoutSize } = useLayout();
-const { serverSettings, createInterface } = useInterface()
+const { serverSettings, createStructure } = useStructure()
 const { downloadUserData, migrating, downloading, userDataLoading, setUserData, fetchUserData, canFetchUserData, canInteractWithServer, getUserDataErrors } = useUserData();
 const { hasSyncEnabled } = useTypings()
 const { reloading } = useIframe()
 const emit = defineEmits(['locale', 'preview', 'refresh', 'update:model-value', 'create', 'save', 'delete', 'edit-json', 'show-typings', 'migrate-data', 'logout'])
 
 const locales = computed(() => {
-  return Object.entries(interfaceData.locales).map(item => ({ value: item[0], title: item[1] }));
+  return Object.entries(structureData.locales).map(item => ({ value: item[0], title: item[1] }));
 })
 
 const showLocaleSwitcher = computed((): boolean => {
@@ -49,11 +49,11 @@ const showSitePreview = computed((): boolean => {
 })
 
 const sitePreviewUrl = computed((): string | null => {
-  return interfaceData.global.preview || null;
+  return structureData.global.preview || null;
 })
 
 const userDataErrorList = computed((): {[key: string]: string} => {
-  return getUserDataErrors(interfaceData.sections as unknown as { [key: string]: IField; });
+  return getUserDataErrors(structureData.sections as unknown as { [key: string]: IField; });
 })
 
 const onEditJson = () => {
@@ -68,17 +68,17 @@ const onShowTypings = () => {
   emit('show-typings');
 }
 
-const onCreateInterface = (model: IInterface) => {
-  createInterface().then(() => {
+const onCreateStructure = (model: IStructure) => {
+  createStructure().then(() => {
     emit('create', model);
   })
 }
 
-const onSaveInterface = (model: IInterface) => {
+const onSaveStructure = (model: IStructure) => {
   emit('save', model);
 }
 
-const onDeleteInterface = (model: IInterface) => {
+const onDeleteStructure = (model: IStructure) => {
   emit('delete', model);
 }
 
@@ -86,13 +86,13 @@ const onRefreshPreview = () => {
   emit('refresh');
 }
 
-const onInterfaceSelectorInput = (model: IInterface) => {
-  modelStore.setOriginalInterface(model);
+const onStructureSelectorInput = (model: IStructure) => {
+  modelStore.setOriginalStructure(model);
 }
 
 const onPreviewModeChange = (mode: null | 'mobile' | 'desktop') => {
-  if (layoutSize.value.editor.temporary && globalStore.admin.interface && mode === 'mobile') {
-    globalStore.admin.interface = false;
+  if (layoutSize.value.editor.temporary && globalStore.admin.structure && mode === 'mobile') {
+    globalStore.admin.structure = false;
   }
 
   globalStore.admin.previewMode = mode === undefined ? null : mode;
@@ -162,13 +162,13 @@ watch(() => currentRoute.params.locale, () => {
     <div v-else class="mr-4" />
 
     <div class="d-flex align-center" style="gap: 1rem; flex: 75">
-      <InterfaceSelector
+      <StructureSelector
         v-if="globalStore.session.loggedIn"
-        v-model="interfaceModel"
-        :interfaces="interfaces"
+        v-model="structure"
+        :structures="structures"
         :actions="windowWidth > 900"
         :show-icon="windowWidth > 450"
-        :original-interface="modelStore.originalInterface"
+        :original-structure="modelStore.originalStructure"
         :style="{
           width: 'min-content',
           maxWidth: windowWidth < 1000 ? 'auto' : '25rem'
@@ -178,18 +178,18 @@ watch(() => currentRoute.params.locale, () => {
         variant="solo-filled"
         flat
         large-text
-        @update:model-value="onInterfaceSelectorInput"
-        @create="onCreateInterface"
-        @save="onSaveInterface"
-        @delete="onDeleteInterface"
+        @update:model-value="onStructureSelectorInput"
+        @create="onCreateStructure"
+        @save="onSaveStructure"
+        @delete="onDeleteStructure"
       />
 
       <v-btn-toggle
         v-if="windowWidth > 900"
-        v-model="globalStore.admin.interface"
+        v-model="globalStore.admin.structure"
         color="primary"
         variant="text"
-        @update:model-value="value => globalStore.admin.interface = !!value"
+        @update:model-value="value => globalStore.admin.structure = !!value"
       >
         <v-tooltip
           text="Advanced (CTRL+A)"

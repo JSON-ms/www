@@ -4,13 +4,13 @@ import {useGlobalStore} from '@/stores/global';
 import {computed, ref, watch} from 'vue';
 import type {IWebhook} from '@/interfaces';
 import {deepToRaw} from '@/utils';
-import {useInterface} from '@/composables/interface';
+import {useStructure} from '@/composables/structure';
 import Rules from '@/rules';
 import {useWebhooks} from "@/composables/webhooks";
 
 const globalStore = useGlobalStore();
 const visible = defineModel<boolean>({ default: false });
-const { getInterfaceRules } = useInterface();
+const { getStructureRules } = useStructure();
 const { saveWebhooks, deleteWebhook, saving } = useWebhooks();
 
 const save = () => {
@@ -95,7 +95,7 @@ watch(visible, () => {
           <template #default="{ item }">
             <v-text-field
               v-model="item.url"
-              :rules="getInterfaceRules('server_url')"
+              :rules="getStructureRules('server_url')"
               clearable
               required
               persistent-hint

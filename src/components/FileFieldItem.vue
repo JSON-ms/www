@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {getFileIcon} from "@/utils";
-import type {IField, IFile, IServerSettings} from "@/interfaces";
+import type {IField, IFile, IServerSettings} from '@/interfaces';
 import {ref} from "vue";
 import {useDisplay} from "vuetify";
 import {useGlobalStore} from "@/stores/global";

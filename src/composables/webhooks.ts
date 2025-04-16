@@ -1,5 +1,5 @@
 import {useGlobalStore} from '@/stores/global';
-import type {IWebhook} from "@/interfaces";
+import type {IWebhook} from '@/interfaces';
 import {Services} from "@/services";
 import {ref} from "vue";
 
