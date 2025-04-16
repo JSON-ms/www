@@ -266,6 +266,9 @@ export function useInterface() {
         }
       })
     }
+    if (!isNativeObject(parseData.sections)) {
+      parseData.sections = {};
+    }
     checkFields(parseData.sections);
 
     return parseData;

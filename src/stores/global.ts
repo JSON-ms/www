@@ -126,7 +126,7 @@ export const useGlobalStore = defineStore('global', {
       this.session = session;
     },
     showFileManager(
-      selected = [],
+      selected: IFile[] = [],
       canSelect = false,
       multiple = false,
       callback?: (files?: IFile | IFile[]) => Promise<boolean>,
