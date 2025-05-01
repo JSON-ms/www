@@ -9,17 +9,20 @@ export const useModelStore = defineStore('model', {
   state: (): {
     structure: IStructure,
     originalStructure: IStructure,
+    temporaryContent: string,
     userData: any,
     originalUserData: any,
   } => ({
     structure: defaultStructure,
     originalStructure: defaultStructure,
+    temporaryContent: '',
     userData: {},
     originalUserData: {},
   }),
   actions: {
     setStructure(model: IStructure, data?: any) {
       this.structure = model;
+      this.temporaryContent = model.content;
       this.setOriginalStructure(model);
       if (isNativeObject(data)) {
         this.setUserData(data, true);
@@ -27,6 +30,11 @@ export const useModelStore = defineStore('model', {
     },
     setOriginalStructure(model: IStructure) {
       this.originalStructure = structuredClone(deepToRaw(model));
+    },
+    // Using this to compare with isPristine in composables/structure since StructureEditor
+    // does not update model.content right away when live update is not enabled.
+    setTemporaryContent(content: string) {
+      this.temporaryContent = content;
     },
     setUserData(data: any, setOriginal = false) {
       this.userData = data;

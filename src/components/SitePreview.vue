@@ -33,6 +33,7 @@ const refresh = () => {
     reloading.value = true;
     sendMessageToIframe('reload');
   } else {
+    reloading.value = true;
     killIframe.value = true;
     nextTick(() => killIframe.value = false);
     onIframeLoad();
@@ -111,13 +112,15 @@ watch(() => modelStore.userData, () => {
 }, { deep: true })
 
 router.afterEach((to, from) => {
-  if (to.params.section.toString() !== from.params.section.toString()) {
-    const sectionKey = to.params.section.toString();
-    const paths = getPathsFromSectionKey(sectionKey);
-    sendMessageToIframe('section', JSON.stringify({
-      name: sectionKey,
-      paths: paths,
-    }));
+  if (to.params.section !== from.params.section) {
+    const sectionKey = to.params.section;
+    if (typeof sectionKey === 'string') {
+      const paths = getPathsFromSectionKey(sectionKey);
+      sendMessageToIframe('section', JSON.stringify({
+        name: sectionKey,
+        paths: paths,
+      }));
+    }
   }
 })
 onMounted(() => {
@@ -137,6 +140,7 @@ defineExpose({
   <v-navigation-drawer
     v-model="layoutSize.preview.active"
     :width="layoutSize.preview.width"
+    :location="globalStore.userSettings.data.layoutSitePreviewLocation"
     scrim
     color="transparent"
     border="0"
@@ -145,14 +149,17 @@ defineExpose({
   >
     <div
       :class="[{
-        'iframe-container fill-height w-100 pa-4 d-flex align-center justify-center': true,
+        'iframe-container fill-height w-100 d-flex align-center justify-center': true,
+        'pa-4': globalStore.userSettings.data.layoutSitePreviewPadding
       }, globalStore.admin.previewMode, globalStore.admin.structure ? 'has-structure' : undefined]"
     >
       <v-card
         class="w-100 fill-height"
+        :flat="!globalStore.userSettings.data.layoutSitePreviewPadding"
+        :tile="!globalStore.userSettings.data.layoutSitePreviewPadding"
         :style="{
           backgroundColor: 'white',
-          height: layoutSize.preview.height + 'px !important',
+          height: globalStore.userSettings.data.layoutSitePreviewKeepRatio ? (layoutSize.preview.height + 'px !important') : undefined,
           width: layoutSize.preview.width + 'px !important',
         }"
       >
@@ -204,11 +211,12 @@ defineExpose({
     <template #append>
       <v-expand-transition>
         <div v-show="globalStore.admin.previewMode === 'desktop' && globalStore.admin.structure">
-          <v-card :height="windowHeight - layoutSize.preview.height - 96" class="pa-2 pl-0" tile flat theme="dark">
+          <v-card :height="windowHeight - layoutSize.preview.height - (globalStore.userSettings.data.layoutSitePreviewPadding ? 96 : 63)" tile flat theme="dark">
             <StructureEditor
               ref="structureEditor"
               v-model="structure"
-              style="flex: 1"
+              class="fill-height"
+              columns
               @save="onSaveStructureContent"
               @create="onCreateStructure"
               @change="onStructureContentChange"

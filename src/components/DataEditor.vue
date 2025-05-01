@@ -19,12 +19,20 @@ const { structureData, serverSettings, loading = false } = defineProps<{
 const currentRoute = useRoute();
 const { isFieldVisible } = useStructure();
 
+const currentLocale = computed((): string => {
+  return currentRoute.params.locale?.toString() ?? 'en-US';
+})
+
+const currentSection = computed((): string => {
+  return currentRoute.params.section?.toString() ?? 'home';
+})
+
 const userDataSection = computed(() => {
-  return modelStore.userData[currentRoute.params.section.toString()];
+  return modelStore.userData[currentSection.value];
 })
 
 const selectedSection = computed(() => {
-  return structureData.sections[currentRoute.params.section.toString()] || {};
+  return structureData.sections[currentSection.value] || {};
 })
 
 const showContent = computed((): boolean => {
@@ -86,11 +94,11 @@ const canEditData = computed((): boolean => {
       :key="key"
     >
       <FieldItem
-        v-if="isFieldI18n(field) && userDataSection"
-        v-model="userDataSection[key][currentRoute.params.locale.toString()]"
+        v-if="isFieldI18n(field) && userDataSection && userDataSection[key]"
+        v-model="userDataSection[key][currentLocale]"
         :field="field"
-        :field-key="currentRoute.params.section + '.' + key"
-        :locale="currentRoute.params.locale.toString()"
+        :field-key="currentSection + '.' + key"
+        :locale="currentLocale"
         :locales="structureData.locales"
         :structure="structure"
         :structure-data="structureData"
@@ -101,8 +109,8 @@ const canEditData = computed((): boolean => {
         v-else-if="userDataSection"
         v-model="userDataSection[key]"
         :field="field"
-        :field-key="currentRoute.params.section.toString() + '.' + key"
-        :locale="currentRoute.params.locale.toString()"
+        :field-key="currentSection + '.' + key"
+        :locale="currentLocale"
         :locales="structureData.locales"
         :structure="structure"
         :structure-data="structureData"

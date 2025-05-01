@@ -13,9 +13,9 @@ import {useRoute} from 'vue-router';
 import {useStructure} from '@/composables/structure';
 import type {VAppBar} from 'vuetify/components';
 import {useLayout} from '@/composables/layout';
-import {useTypings} from '@/composables/typings';
 import {useIframe} from '@/composables/iframe';
 import {useModelStore} from "@/stores/model";
+import {useMigration} from "@/composables/migration";
 
 const structure = defineModel<IStructure>({ required: true });
 const { structureData, structures = [], defaultLocale = 'en-US' } = defineProps<{
@@ -31,10 +31,10 @@ const modelStore = useModelStore();
 const { smAndDown } = useDisplay();
 const { windowWidth, layoutSize } = useLayout();
 const { serverSettings, createStructure } = useStructure()
-const { downloadUserData, migrating, downloading, userDataLoading, setUserData, fetchUserData, canFetchUserData, canInteractWithServer, getUserDataErrors } = useUserData();
-const { hasSyncEnabled } = useTypings()
+const { migrating } = useMigration()
+const { downloadUserData, downloading, userDataLoading, setUserData, fetchUserData, canFetchUserData, canInteractWithServer, getUserDataErrors } = useUserData();
 const { reloading } = useIframe()
-const emit = defineEmits(['locale', 'preview', 'refresh', 'update:model-value', 'create', 'save', 'delete', 'edit-json', 'show-typings', 'migrate-data', 'logout'])
+const emit = defineEmits(['locale', 'preview', 'refresh', 'update:model-value', 'create', 'save', 'delete', 'edit-json', 'migrate-data', 'logout'])
 
 const locales = computed(() => {
   return Object.entries(structureData.locales).map(item => ({ value: item[0], title: item[1] }));
@@ -64,10 +64,6 @@ const onMigrateData = () => {
   emit('migrate-data');
 }
 
-const onShowTypings = () => {
-  emit('show-typings');
-}
-
 const onCreateStructure = (model: IStructure) => {
   createStructure().then(() => {
     emit('create', model);
@@ -84,6 +80,14 @@ const onDeleteStructure = (model: IStructure) => {
 
 const onRefreshPreview = () => {
   emit('refresh');
+}
+
+const onUserSettings = () => {
+  globalStore.setUserSettingsVisible(true);
+}
+
+const onOpenSiteInNewTab = () => {
+  window.open(structureData.global.preview, '_blank');
 }
 
 const onStructureSelectorInput = (model: IStructure) => {
@@ -203,6 +207,17 @@ watch(() => currentRoute.params.locale, () => {
           </template>
         </v-tooltip>
       </v-btn-toggle>
+
+      <v-alert
+        v-if="!globalStore.session.loggedIn && windowWidth > 1700"
+        density="comfortable"
+        style="max-width: max-content"
+        variant="tonal"
+        type="info"
+        icon="mdi-information-outline"
+      >
+        Free and open-source, with data securely hosted on your server.
+      </v-alert>
     </div>
 
     <div class="d-flex align-center mx-3" :style="{ gap: smAndDown ? 0 : '1rem'}">
@@ -252,13 +267,31 @@ watch(() => currentRoute.params.locale, () => {
           </template>
         </v-tooltip>
       </v-btn-toggle>
+      <v-tooltip
+        v-if="windowWidth > 1000"
+        text="Open site in new tab"
+        location="bottom"
+      >
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            :disabled="reloading || !structureData.global.preview"
+            icon
+            class="ml-n2"
+            @click="onOpenSiteInNewTab"
+          >
+            <v-icon icon="mdi-open-in-new" size="small" />
+          </v-btn>
+        </template>
+      </v-tooltip>
 
       <LocaleSwitcher
-        v-if="showLocaleSwitcher"
+        v-if="showLocaleSwitcher && !smAndDown"
         v-model="selectedLocale"
         :locales="locales"
         :dense="windowWidth < 1300"
         :disabled="userDataLoading"
+        label="Locale"
         style="width: 14rem"
         @update:model-value="onLocaleChange"
       >
@@ -276,6 +309,26 @@ watch(() => currentRoute.params.locale, () => {
           :show-username="windowWidth > 1500"
           @logout="onLogout"
         >
+          <div v-if="showLocaleSwitcher && smAndDown" class="px-4 pt-2">
+            <LocaleSwitcher
+              v-model="selectedLocale"
+              :locales="locales"
+              :disabled="userDataLoading"
+              variant="filled"
+              style="width: 100%"
+              @click.stop
+              @update:model-value="onLocaleChange"
+            >
+              <template v-if="!userDataLoading" #prepend-inner-selection>
+                <v-icon v-if="Object.keys(userDataErrorList).find(key => key.endsWith(selectedLocale))" icon="mdi-alert" color="warning" />
+                <v-icon v-else-if="Object.keys(userDataErrorList).find(key => locales.find(locale => key.endsWith(locale.value)))" icon="mdi-alert-outline" color="warning" />
+              </template>
+              <template v-if="!userDataLoading" #prepend-inner-item="{ item }">
+                <v-icon v-if="Object.keys(userDataErrorList).find(key => key.endsWith(item.value))" icon="mdi-alert" color="warning" class="mr-n4" />
+              </template>
+            </LocaleSwitcher>
+            <v-divider class="my-1 mt-4" />
+          </div>
           <v-list-item
             title="Edit JSON"
             prepend-icon="mdi-code-json"
@@ -308,21 +361,10 @@ watch(() => currentRoute.params.locale, () => {
           />
           <v-divider class="my-1" />
           <v-list-item
-            title="Typings"
-            prepend-icon="mdi-language-typescript"
-            @click="onShowTypings"
-          >
-            <template #append>
-              <v-chip
-                v-if="hasSyncEnabled"
-                variant="tonal"
-                label
-                size="x-small"
-                color="success"
-                class="ml-4"
-              >Synced!</v-chip>
-            </template>
-          </v-list-item>
+            prepend-icon="mdi-tune"
+            title="Settings"
+            @click="onUserSettings"
+          />
         </SessionPanel>
       </template>
       <template v-else>

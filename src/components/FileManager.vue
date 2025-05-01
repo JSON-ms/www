@@ -34,11 +34,11 @@ const getFilesByType = (type: string): IFile[] => {
   if (type === 'all') {
     return acceptedFiles.value;
   } else if (type === 'image') {
-    return acceptedFiles.value.filter((file: IFile) => file.meta.type.startsWith('image'));
+    return acceptedFiles.value.filter((file: IFile) => file.meta.type?.startsWith('image'));
   } else if (type === 'video') {
-    return acceptedFiles.value.filter((file: IFile) => file.meta.type.startsWith('video'));
+    return acceptedFiles.value.filter((file: IFile) => file.meta.type?.startsWith('video'));
   } else if (type === 'document') {
-    return acceptedFiles.value.filter((file: IFile) => !file.meta.type.startsWith('image') && !file.meta.type.startsWith('video'));
+    return acceptedFiles.value.filter((file: IFile) => !file.meta.type?.startsWith('image') && !file.meta.type?.startsWith('video'));
   }
   return [];
 }
@@ -73,7 +73,7 @@ const acceptedFiles = computed((): IFile[] => {
 })
 const filteredFiles = computed((): IFile[] => {
   const words = (search.value || '').toLowerCase().split(/\s+/);
-  return getFilesByType(filter.value).filter(item => !search.value || words.every(word => item.meta.originalFileName.toLowerCase().includes(word))).sort((a, b) => {
+  return getFilesByType(filter.value).filter(item => !search.value || words.every(word => item.meta.originalFileName?.toLowerCase().includes(word))).sort((a, b) => {
     if ((a.meta[sortBy.value] || 0) < (b.meta[sortBy.value] || 0)) {
       return sortOrder.value === 'asc' ? -1 : 1;
     }
@@ -96,13 +96,15 @@ const onFileClick = (file: IFile) => {
     } else {
       selectedFiles.value.splice(index, 1);
     }
-  } else {
+  } else if (!selectedFiles.value.includes(file)) {
     selectedFiles.value = [file];
+  } else {
+    selectedFiles.value = [];
   }
 }
 
 const load = () => {
-  if (structure.value.webhook) {
+  if (structure.value.endpoint) {
     loading.value = true;
     return Services.get(structure.value.server_url + '/file/list/' + structure.value.hash, {
       'Content-Type': 'application/json',
@@ -214,7 +216,7 @@ const select = () => {
 const download = () => {
   downloading.value = true;
   nextTick(() => {
-    downloadFilesAsZip(selectedFiles.value.map(item => serverSettings.publicUrl + item.path), false, 'jsonms-file-download.zip');
+    downloadFilesAsZip(selectedFiles.value.map(item => serverSettings.publicUrl + item.path), false, 'jsonms-file-download.zip', globalStore.userSettings.data.editorTabSize);
     downloading.value = false;
   })
 }
@@ -268,13 +270,13 @@ watch(() => globalStore.fileManager.visible, () => {
           <v-tab value="all">
             All ({{ getFilesByType('all').length }})
           </v-tab>
-          <v-tab value="image" :disabled="getFilesByType('image').length === 0">
+          <v-tab v-if="getFilesByType('image').length > 0" value="image">
             Images ({{ getFilesByType('image').length }})
           </v-tab>
-          <v-tab value="video" :disabled="getFilesByType('video').length === 0">
+          <v-tab v-if="getFilesByType('video').length > 0" value="video">
             Videos ({{ getFilesByType('video').length }})
           </v-tab>
-          <v-tab value="document" :disabled="getFilesByType('document').length === 0">
+          <v-tab v-if="getFilesByType('document').length > 0" value="document">
             Document ({{ getFilesByType('document').length }})
           </v-tab>
         </v-tabs>
@@ -330,7 +332,7 @@ watch(() => globalStore.fileManager.visible, () => {
         @dragover.prevent.stop="onDragEnter"
         @dragleave.prevent.stop="onDragLeave"
       >
-        <div v-if="loading || filteredFiles.length === 0 || !structure.webhook" class="d-flex align-center justify-center text-center" style="height: 33vh">
+        <div v-if="loading || filteredFiles.length === 0 || !structure.endpoint" class="d-flex align-center justify-center text-center" style="height: 33dvh">
           <v-progress-circular
             v-if="loading"
             size="96"
@@ -338,14 +340,14 @@ watch(() => globalStore.fileManager.visible, () => {
             indeterminate
           />
           <v-card
-            v-else-if="(filteredFiles.length === 0 && !canUpload) || !structure.webhook"
+            v-else-if="(filteredFiles.length === 0 && !canUpload) || !structure.endpoint"
             color="transparent"
             class="w-100 fill-height"
             tile
             flat
           >
             <v-empty-state
-              v-if="structure.webhook"
+              v-if="structure.endpoint"
               icon="mdi-file-hidden"
               title="Empty"
               text="No files available yet."
@@ -354,7 +356,7 @@ watch(() => globalStore.fileManager.visible, () => {
               v-else
               icon="mdi-help-network-outline"
               title="No endpoint detected"
-              text="Files cannot be loaded without a properly configured webhook. Please check your project's settings in advanced mode."
+              text="Files cannot be loaded without a properly configured endpoint. Please check your project's settings in advanced mode."
             />
           </v-card>
           <v-card
@@ -372,7 +374,7 @@ watch(() => globalStore.fileManager.visible, () => {
             />
           </v-card>
         </div>
-        <div v-else class="pa-4" style="min-height: 33vh">
+        <div v-else class="pa-4" style="min-height: 33dvh">
           <masonry-wall :items="filteredFiles" :ssr-columns="1" :column-width="200" :gap="16">
             <template #default="{ item }">
               <v-card
@@ -384,15 +386,13 @@ watch(() => globalStore.fileManager.visible, () => {
                 </div>
                 <div class="bg-blue-grey-lighten-4">
                   <ImgTag
-                    v-if="item.meta.type.startsWith('image')"
-                    :model-value="item"
-                    :server-settings="serverSettings"
+                    v-if="item.meta.type?.startsWith('image')"
+                    :src="serverSettings.publicUrl + item.path"
                     :aspect-ratio="(item.meta.width || 1) / (item.meta.height || 1)"
                   />
                   <VideoPlayer
-                    v-else-if="item.meta.type.startsWith('video')"
-                    :model-value="item"
-                    :server-settings="serverSettings"
+                    v-else-if="item.meta.type?.startsWith('video')"
+                    :src="serverSettings.publicUrl + item.path"
                     :aspect-ratio="(item.meta.width || 1) / (item.meta.height || 1)"
                   />
                   <v-sheet v-else>
@@ -401,21 +401,35 @@ watch(() => globalStore.fileManager.visible, () => {
                     </v-responsive>
                   </v-sheet>
                 </div>
+                <v-card-title
+                  :class="{
+                    'pb-0': showInfo,
+                  }"
+                >
+                  {{ item.meta.originalFileName }}
+                </v-card-title>
                 <template v-if="showInfo">
-                  <v-card-title class="pb-0">
-                    {{ item.meta.originalFileName }}
-                  </v-card-title>
                   <v-card-subtitle class="pb-3">
-                    <div>Size: {{ $formatBytes(item.meta.size) }}</div>
-                    <div>Dimension: {{ item.meta.width }} x {{ item.meta.height }}</div>
-                    <template v-if="item.meta.type.startsWith('video/')">
-                      <div v-if="item.meta.duration">Duration: {{ $formatSeconds(item.meta.duration) }}</div>
-                      <div v-if="item.meta.frameRate">Frame rate: {{ item.meta.frameRate }}</div>
+                    <div v-if="item.meta.size">
+                      Size: {{ $formatBytes(item.meta.size) }}
+                    </div>
+                    <div v-if="item.meta.width && item.meta.height">
+                      Dimension: {{ item.meta.width }} x {{ item.meta.height }}
+                    </div>
+                    <template v-if="item.meta.type?.startsWith('video/')">
+                      <div v-if="item.meta.duration">
+                        Duration: {{ $formatSeconds(item.meta.duration) }}
+                      </div>
+                      <div v-if="item.meta.frameRate">
+                        Frame rate: {{ item.meta.frameRate }}
+                      </div>
                     </template>
-                    <div class="text-capitalize">
+                    <div v-if="item.meta.type" class="text-capitalize">
                       Type: {{ item.meta.type.split('/')[0] }}/{{ item.meta.type.split('/')[1].toUpperCase() }}
                     </div>
-                    <div>Date: {{ $formatTimestamp(item.meta.timestamp, 'YYYY-MM-DD HH:mm:ss') }}</div>
+                    <div v-if="item.meta.timestamp">
+                      Date: {{ $formatTimestamp(item.meta.timestamp, 'YYYY-MM-DD HH:mm:ss') }}
+                    </div>
                   </v-card-subtitle>
                 </template>
               </v-card>
@@ -441,7 +455,7 @@ watch(() => globalStore.fileManager.visible, () => {
               v-if="!canSelect || globalStore.fileManager.multiple"
               v-bind="props"
               :disabled="loading || selectedFiles.length === 0"
-              variant="outlined"
+              variant="text"
             >
               Bulk Actions
               <v-icon icon="mdi-chevron-up" end />

@@ -11,8 +11,8 @@ export function useMigration() {
   const { fetchUserDataSimple, saveUserDataSimple, getUserFiles, testServer, changeServerUrlInContent } = useUserData();
 
   const structure = ref<IStructure | null>(null);
-  const fromWebhook = ref<string | null>(null);
-  const toWebhook = ref<string | null>(null);
+  const fromEndpoint = ref<string | null>(null);
+  const toEndpoint = ref<string | null>(null);
   const includeStructure = ref<boolean>(false);
   const includeUserData = ref<boolean>(true);
   const userDataContent = ref<any>('');
@@ -64,9 +64,9 @@ export function useMigration() {
   const canMigrate = computed((): boolean => {
     return !migrating.value
       && structure.value !== null
-      && fromWebhook.value !== null
-      && toWebhook.value !== null
-      && fromWebhook.value !== toWebhook.value
+      && fromEndpoint.value !== null
+      && toEndpoint.value !== null
+      && fromEndpoint.value !== toEndpoint.value
       && (
         includeStructure.value
         || includeUserData.value
@@ -77,8 +77,8 @@ export function useMigration() {
   const migrateUserData = (structure: IStructure): Promise<void> => {
     return new Promise((resolve, reject) => {
 
-      const fromServer = globalStore.session.webhooks.find(item => item.uuid === fromWebhook.value)
-      const toServer = globalStore.session.webhooks.find(item => item.uuid === toWebhook.value)
+      const fromServer = globalStore.session.endpoints.find(item => item.uuid === fromEndpoint.value)
+      const toServer = globalStore.session.endpoints.find(item => item.uuid === toEndpoint.value)
       if (!fromServer || !toServer) {
         reject();
       }
@@ -116,7 +116,7 @@ export function useMigration() {
         reject(reason);
       }
 
-      // Download/Upload structure structure
+      // Download/Upload structure
       // if (includeStructure.value) {
       //   downloadStructureState.value = 2;
       //   downloadBytesProgress.value += structure.content.length;
@@ -170,7 +170,7 @@ export function useMigration() {
                   callback();
                 }
                 urlsToBlobArray(urls, toServerSecret, (item, index) => {
-                  downloadBytesProgress.value += files[index].meta.size;
+                  downloadBytesProgress.value += files[index].meta.size ?? 0;
 
                   if (uploadFilesState.value === -1) {
                     return;
@@ -181,14 +181,14 @@ export function useMigration() {
                     uploadFilesState.value = 1;
                   }
                   const file = new File([item.blob], item.filename, { type: item.blob.type });
-                  nextUploadBytes.value += files[index].meta.size;
+                  nextUploadBytes.value += files[index].meta.size ?? 0;
                   Services.upload(toServerUrl + '/file/upload/' + structure.hash, file, undefined, {
                     'X-Jms-Api-Key': toServerSecret,
                   })
                     .then(() => {
-                      nextUploadBytes.value -= files[index].meta.size;
+                      nextUploadBytes.value -= files[index].meta.size ?? 0;
                       totalUploadedFiles++;
-                      uploadBytesProgress.value += files[index].meta.size;
+                      uploadBytesProgress.value += files[index].meta.size ?? 0;
                       if (totalUploadedFiles === files.length) {
                         uploadFilesState.value = 2;
                       }
@@ -198,7 +198,7 @@ export function useMigration() {
                     rejectCallback(reason);
                   })
                 }, (url, index) => {
-                  nextDownloadBytes.value = fileList.value[index].meta.size;
+                  nextDownloadBytes.value = fileList.value[index].meta.size ?? 0;
                 }).then(() => {
                   downloadFilesState.value = 2;
                 }).catch(reason => {
@@ -231,7 +231,7 @@ export function useMigration() {
       size += JSON.stringify(userDataContent.value).length;
     }
     if (includeFiles.value) {
-      size += fileList.value.reduce((acc: number, file: IFile) => acc + file.meta.size, 0);
+      size += fileList.value.reduce((acc: number, file: IFile) => acc + (file.meta.size ?? 0), 0);
     }
     return size;
   })
@@ -252,8 +252,8 @@ export function useMigration() {
 
   return {
     structure,
-    fromWebhook,
-    toWebhook,
+    fromEndpoint,
+    toEndpoint,
     includeStructure,
     includeUserData,
     userDataContent,

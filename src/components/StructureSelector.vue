@@ -40,22 +40,22 @@ const computedStructures = computed((): (IStructure | { header: string })[] => {
   if (hasBoth && ownerStructures.length > 0) {
     if (ownerStructures.length > 0) {
       results.push({
-        header: 'Your template' + (ownerStructures.length === 1 ? '' : 's')
+        header: 'My project' + (ownerStructures.length === 1 ? '' : 's')
       })
     }
   }
   if (ownerStructures.length > 0) {
-    results.push(...ownerStructures.map(item => deepToRaw(item)))
+    results.push(...ownerStructures.map(item => deepToRaw(item)).sort((a, b) => a.label > b.label ? 1 : -1))
   }
   if (hasBoth && sharedStructures.length > 0) {
     if (sharedStructures.length > 0) {
       results.push({
-        header: 'Shared template' + (sharedStructures.length === 1 ? '' : 's')
+        header: 'Shared with me'
       })
     }
   }
   if (sharedStructures.length > 0) {
-    results.push(...sharedStructures.map(item => deepToRaw(item)))
+    results.push(...sharedStructures.map(item => deepToRaw(item)).sort((a, b) => a.label > b.label ? 1 : -1))
   }
   return results;
 })
@@ -130,7 +130,7 @@ const computedStructure = computed((): IStructure => {
             v-if="structure"
             v-bind="props"
             :loading="structureStates.saving"
-            :disabled="!canSaveStructure"
+            :disabled="!canSaveStructure || structureStates.saving || structureStates.saved"
             variant="text"
             color="primary"
             size="small"
@@ -178,7 +178,11 @@ const computedStructure = computed((): IStructure => {
         :active="item.value === computedStructure.hash"
       >
         <template #prepend>
-          <v-icon v-if="!item.raw.logo" :icon="item.raw.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'" />
+          <v-icon
+            v-if="!item.raw.logo"
+            :icon="item.raw.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'"
+            size="24"
+          />
           <v-img
             v-else
             :src="item.raw.logo"
@@ -188,7 +192,9 @@ const computedStructure = computed((): IStructure => {
           />
         </template>
 
-        <v-list-item-subtitle>{{ item.raw.updated_at }}</v-list-item-subtitle>
+        <v-list-item-subtitle>
+          {{ globalStore.session.endpoints.find(endpoint => endpoint.uuid === item.raw.endpoint)?.url ?? 'No endpoint yet' }}
+        </v-list-item-subtitle>
       </v-list-item>
     </template>
   </v-select>

@@ -219,9 +219,9 @@ const onClickOutsideColor = () => {
   }
 }
 
-const onWysiwygContentChange = (content: any) => {
-  console.log(content);
-}
+// const onWysiwygContentChange = (content: any) => {
+//   console.log(content);
+// }
 
 const expanded = ref(field.collapsed === true ? null : 0);
 watch(() => field.collapsed, () => {
@@ -311,30 +311,30 @@ watch(() => field.collapsed, () => {
   </v-number-input>
 
   <!-- WYSIWYG -->
-  <div v-else-if="isFieldType(field, 'wysiwyg')">
-    <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
-    <v-input
-      v-if="value !== null"
-      v-model="value"
-      :hint="field.hint"
-      :persistent-hint="!!field.hint"
-      :required="field.required"
-      :rules="getRules(field)"
-      :disabled="disabled"
-      hide-details="auto"
-    >
-      <div class="w-100 mb-12">
-        <QuillEditor
-          v-model="computedStringValue"
-          theme="snow"
-          style="height: 33vh"
-          @text-change="onWysiwygContentChange"
-          @selection-change="onWysiwygContentChange"
-          @editor-change="onWysiwygContentChange"
-        />
-      </div>
-    </v-input>
-  </div>
+<!--  <div v-else-if="isFieldType(field, 'wysiwyg')">-->
+<!--    <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />-->
+<!--    <v-input-->
+<!--      v-if="value !== null"-->
+<!--      v-model="value"-->
+<!--      :hint="field.hint"-->
+<!--      :persistent-hint="!!field.hint"-->
+<!--      :required="field.required"-->
+<!--      :rules="getRules(field)"-->
+<!--      :disabled="disabled"-->
+<!--      hide-details="auto"-->
+<!--    >-->
+<!--      <div class="w-100 mb-12">-->
+<!--        <QuillEditor-->
+<!--          v-model="computedStringValue"-->
+<!--          theme="snow"-->
+<!--          style="height: 33dvh"-->
+<!--          @text-change="onWysiwygContentChange"-->
+<!--          @selection-change="onWysiwygContentChange"-->
+<!--          @editor-change="onWysiwygContentChange"-->
+<!--        />-->
+<!--      </div>-->
+<!--    </v-input>-->
+<!--  </div>-->
 
   <!-- MARKDOWN -->
   <div v-else-if="isFieldType(field, 'markdown')">
@@ -736,16 +736,18 @@ watch(() => field.collapsed, () => {
       v-model="value"
       :default-item="getDefaultItem()"
       :disabled="disabled"
+      :collapsable="!(field.collapsable === false)"
       :on-collapsable-header="onCollapsableHeader"
       :min="field.min"
       :max="field.max"
       class="d-flex flex-column"
       style="gap: 0.5rem"
-      collapsable
     >
       <template #actions="{ index }">
         <FieldItemErrorTooltip
           v-model="value"
+          :root="structureData"
+          :parent="field"
           :fields="fields"
           :field-key="fieldKey"
           :locales="locales"
@@ -802,6 +804,8 @@ watch(() => field.collapsed, () => {
             </div>
             <FieldItemErrorTooltip
               v-model="value"
+              :root="structureData"
+              :parent="field"
               :fields="fields"
               :field-key="fieldKey"
               :locales="locales"
@@ -913,7 +917,7 @@ watch(() => field.collapsed, () => {
 .v-checkbox .v-selection-control { min-height: 0 !important; }
 .vue-easymde-editor .CodeMirror-scroll {
   min-height: 6rem !important;
-  max-height: 40vh !important;
+  max-height: 40dvh !important;
 }
 .handle {
    cursor: grabbing;

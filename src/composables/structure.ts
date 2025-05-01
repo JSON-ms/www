@@ -6,17 +6,24 @@ import {
   isFieldType,
   getDataByPath,
   valueToString,
-  parseStringValue, getFieldSchemaKey
+  parseStringValue,
+  getFieldSchemaKey,
+  loopThroughFields,
+  isValidField,
+  deepToRaw,
+  isFieldI18n, dataToFieldPath
 } from '@/utils';
-import type {IField, IStructure, IStructureData, IServerSettings, IWebhook} from '@/interfaces';
+import type {IField, IStructure, IStructureData, IServerSettings, IEndpoint} from '@/interfaces';
 import Rules from '@/rules';
 import {useGlobalStore} from '@/stores/global';
 import {Services} from '@/services';
 import {useRoute} from 'vue-router';
 import defaultStructure  from '@/assets/default-structure.json';
-import {Composer, Parser, LineCounter, Document} from 'yaml'
+import {Composer, Parser, LineCounter, Document } from 'yaml'
 import merge from 'ts-deepmerge';
 import {useModelStore} from '@/stores/model';
+import {useTypings} from "@/composables/typings";
+import {parseYamlAndFindPaths, type PathValue} from "@/composables/yaml";
 
 export interface EditorAnnotation {
   row: number,
@@ -41,6 +48,7 @@ const serverSettings = ref<IServerSettings>({
   postMaxSize: '8M',
   publicUrl: '',
   uploadMaxSize: '2M',
+  version: '',
 })
 
 export function useStructure() {
@@ -55,30 +63,29 @@ export function useStructure() {
   const cypherKey = ref('');
 
   const canOpenAdminUrl = computed((): boolean => {
-    const globalStore = useGlobalStore();
     return !!(modelStore.structure.uuid) || !globalStore.session.loggedIn;
   })
   const adminUrl = computed((): string => {
     return adminBaseUrl.value + '/admin/' + (modelStore.structure.hash || 'demo');
   })
-  const webhook = computed((): IWebhook | null => {
-    return globalStore.session.webhooks.find(webhook => webhook.uuid === modelStore.structure.webhook) ?? null;
+  const endpoint = computed((): IEndpoint | null => {
+    return globalStore.session.endpoints.find(endpoint => endpoint.uuid === modelStore.structure.endpoint) ?? null;
   })
   const computedServerSecretKey = computed((): string => {
     return structureStates.value.secretKeyLoaded
       ? secretKey.value
-      : webhook.value?.secret || '';
+      : endpoint.value?.secret || '';
   })
   const computedCypherKey = computed((): string => {
     return structureStates.value.cypherKeyLoaded
       ? cypherKey.value
-      : webhook.value?.cypher || '';
+      : endpoint.value?.cypher || '';
   })
 
   const structureIsPristine = computed((): boolean => {
     return !objectsAreDifferent(modelStore.structure, modelStore.originalStructure, [
-      'label', 'logo', 'content', 'permission_admin', 'permission_structure', 'webhook'
-    ])
+      'label', 'logo', 'content', 'permission_admin', 'permission_structure', 'endpoint'
+    ]) && modelStore.structure.content === modelStore.temporaryContent;
   })
 
   const getYamlItemByPath = (doc: Document.Parsed<any>, path: string, lineCounter: LineCounter): any => {
@@ -351,6 +358,7 @@ export function useStructure() {
       postMaxSize: '8M',
       publicUrl: '',
       uploadMaxSize: '2M',
+      version: '',
     };
     structureStates.value = {
       saving: false,
@@ -406,15 +414,14 @@ export function useStructure() {
     return getStructureErrors(keys).length > 0;
   }
 
-  const getSecretKeySimple = async (webhookUuid: string): Promise<string> => {
-    return Services.get(import.meta.env.VITE_SERVER_URL + '/webhook/secret-key/' + webhookUuid);
+  const getSecretKeySimple = async (endpointUuid: string): Promise<string> => {
+    return Services.get(import.meta.env.VITE_SERVER_URL + '/endpoint/secret-key/' + endpointUuid);
   }
 
   const getSecretKey = async (): Promise<string> => {
-    const globalStore = useGlobalStore();
     structureStates.value.loadingSecretKey = true;
     structureStates.value.secretKeyLoaded = false;
-    return getSecretKeySimple(webhook.value?.uuid || '')
+    return getSecretKeySimple(endpoint.value?.uuid || '')
       .then(response => secretKey.value = response)
       .catch(error => globalStore.catchError(error))
       .finally(() => {
@@ -424,10 +431,9 @@ export function useStructure() {
   }
 
   const getCypherKey = async (): Promise<string> => {
-    const globalStore = useGlobalStore();
     structureStates.value.loadingCypherKey = true;
     structureStates.value.cypherKeyLoaded = false;
-    return Services.get(import.meta.env.VITE_SERVER_URL + '/webhook/cypher-key/' + webhook.value?.uuid)
+    return Services.get(import.meta.env.VITE_SERVER_URL + '/endpoint/cypher-key/' + endpoint.value?.uuid)
       .then(response => cypherKey.value = response)
       .catch(error => globalStore.catchError(error))
       .finally(() => {
@@ -438,7 +444,6 @@ export function useStructure() {
 
   const createStructure = (): Promise<IStructure> => {
     return new Promise((resolve) => {
-      const globalStore = useGlobalStore();
       globalStore.setPrompt({
         ...globalStore.prompt,
         visible: true,
@@ -458,26 +463,43 @@ export function useStructure() {
   const saveStructureSimple = (
     structure: IStructure = modelStore.structure,
   ): Promise<IStructure> => {
-    return Services.post(import.meta.env.VITE_SERVER_URL + '/structure' + (structure.uuid ? '/' + structure.uuid : ''), {
-      structure
+    const parsedStructureData = getParsedStructure(structure);
+    const body = {
+      content: { ...structure },
+      data: {},
+    }
+    if (parsedStructureData) {
+      body.content.label = parsedStructureData.global.title ?? 'Untitled';
+      body.content.logo = parsedStructureData.global.logo ?? null;
+      body.data = parsedStructureData;
+    }
+    const promises = [
+      Services.post(import.meta.env.VITE_SERVER_URL + '/structure' + (structure.uuid ? '/' + structure.uuid : ''), body)
+    ];
+    if (structure.hash && structure.hash !== 'new' && structure.server_url) {
+      const path = (structure.server_url + '/structure/save/' + (structure.hash) || '');
+      promises.push(
+        Services.post(path, parsedStructureData, {
+          'Content-Type': 'application/json',
+          'X-Jms-Api-Key': structure.server_secret,
+        })
+      )
+    }
+    return Promise.all(promises).then(response => {
+      return response[0];
     })
   }
 
   const saveStructure = (structure: IStructure = modelStore.structure): Promise<IStructure> => {
-    const body = {
-      ...structure,
-      label: structureParsedData.value.global.title ?? 'Untitled',
-      logo: structureParsedData.value.global.logo ?? null,
-    };
     return new Promise((resolve, reject) => {
       if (!canSaveStructure.value) {
         resolve(structure);
       }
 
       structureStates.value.saving = true;
-      const globalStore = useGlobalStore();
-      saveStructureSimple(body)
-        .then((response: IStructure) => {
+      saveStructureSimple(structure)
+        .then(response => {
+          useTypings().syncToFolder(structure, 'typescript', ['structure', 'typings', 'default', 'settings', 'index']);
           modelStore.setStructure(response);
           modelStore.setOriginalStructure(response);
           globalStore.updateStructure(response);
@@ -500,7 +522,6 @@ export function useStructure() {
         resolve(false);
       }
 
-      const globalStore = useGlobalStore();
       globalStore.setPrompt({
         ...globalStore.prompt,
         visible: true,
@@ -532,10 +553,50 @@ export function useStructure() {
     })
   }
 
+  const setDefaultValues = (structure: IStructure, data: any): void => {
+    const parsedStructure = getParsedStructure(structure);
+    if (parsedStructure) {
+      const content = structure.content;
+      const fields = parsedStructure.sections as unknown as { [key: string]: IField; };
+      const pathsValues: PathValue[] = [];
+      loopThroughFields(fields, (field, path, fieldData) => {
+        if (isValidField(field)) {
+          const fullPath = dataToFieldPath(field, path);
+          const localeKeys = Object.keys(parsedStructure.locales);
+          const clonedData = structuredClone(deepToRaw(fieldData)) ?? {};
+          delete clonedData.default;
+          if (isFieldI18n(field) && isNativeObject(clonedData)) {
+            localeKeys.forEach(locale => {
+              if (!clonedData[locale]) {
+                delete clonedData[locale];
+              }
+            })
+            if (Object.keys(clonedData).length > 0) {
+              pathsValues.push({
+                path: fullPath,
+                value: clonedData,
+              });
+            }
+          } else if (clonedData && (!Array.isArray(clonedData) || clonedData.length > 0)) {
+            pathsValues.push({
+              path: fullPath,
+              value: clonedData,
+            });
+          }
+        }
+      }, data, false);
+      structure.content = parseYamlAndFindPaths(content, pathsValues, value => {
+        if (Array.isArray(value)) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          return value.map(({ hash, ...rest }) => rest); // Remove hash parameter
+        }
+        return value || undefined;
+      }, true);
+    }
+  }
+
   const canSaveStructure = computed(() => {
-    return !structureStates.value.saving
-      && !structureStates.value.saved
-      && globalStore.session.loggedIn
+    return globalStore.session.loggedIn
       && !structureIsPristine.value
       && !structureHasSettingsError.value
   })
@@ -579,5 +640,6 @@ export function useStructure() {
     cypherKey,
     isFieldVisible,
     getSecretKeySimple,
+    setDefaultValues,
   };
 }

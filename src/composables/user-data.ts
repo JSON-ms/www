@@ -2,7 +2,6 @@ import type {IField, IFile, IStructure, IStructureData} from '@/interfaces';
 import {Services} from '@/services';
 import {computed, ref} from 'vue';
 import {useGlobalStore} from '@/stores/global';
-import {useStructure} from '@/composables/structure';
 import {
   deepToRaw,
   getDataByPath,
@@ -17,9 +16,15 @@ import {
   isFieldArrayType,
   isNativeObject,
   updateObjectByPath,
+  getFieldDefaultValue,
+  isValidField,
+  isFieldI18n,
+  fieldHasChildren
 } from '@/utils';
 import Rules from '@/rules';
 import {useModelStore} from '@/stores/model';
+import {useTypings, isFolderSynced, lastStateTimestamp} from "@/composables/typings";
+import {useStructure} from "@/composables/structure";
 
 const loading = ref(false);
 const loaded = ref(false);
@@ -28,9 +33,10 @@ const saving = ref(false);
 const saved = ref(false);
 
 export function useUserData() {
+
   const globalStore = useGlobalStore();
   const modelStore = useModelStore();
-  const { structureParsedData, structureIsPristine, structureHasError, getParsedStructureData } = useStructure();
+  const { structureParsedData, structureHasError, structureIsPristine, getParsedStructureData } = useStructure();
 
   const canFetchUserData = computed((): boolean => {
     return globalStore.session.loggedIn
@@ -43,12 +49,17 @@ export function useUserData() {
       && !structureHasError('server_url');
   })
 
+  const canInteractWithSyncedFolder = computed((): boolean => {
+    // lastStateTimestamp is a hack to force digestion of typings
+    return lastStateTimestamp.value > 0 && isFolderSynced(modelStore.structure, 'typescript');
+  })
+
   const userDataHasChanged = computed((): boolean => objectsAreDifferent(modelStore.userData, modelStore.originalUserData));
 
   const canSave = computed((): boolean => {
     return !saving.value
       && globalStore.session.loggedIn
-      && canInteractWithServer.value
+      && (canInteractWithServer.value || canInteractWithSyncedFolder.value)
       // && !userDataHasError.value
       && userDataHasChanged.value
       && structureIsPristine.value;
@@ -58,7 +69,7 @@ export function useUserData() {
     return Object.keys(getUserDataErrors()).length > 0;
   })
 
-  const getUserDataErrors = (obj: {[key: string]: IField} = structureParsedData.value.sections as unknown as {[key: string]: IField}, prefix = ''): { [key: string]: string } => {
+  const getUserDataErrors = (obj: {[key: string]: IField} = structureParsedData.value.sections as unknown as {[key: string]: IField}, prefix = '', parent?: IField): { [key: string]: string } => {
     const errors: { [key: string]: string } = {};
     const dig = (fields: { [key: string]: IField }, parentPath = '', parent?: IField) => {
       Object.keys(fields).forEach(key => {
@@ -67,7 +78,7 @@ export function useUserData() {
           return;
         }
         const fieldPath = parentPath === '' ? key : parentPath + '.' + key;
-        if (field.fields) {
+        if (fieldHasChildren(field)) {
           dig(field.fields, fieldPath, field);
         }
 
@@ -79,7 +90,7 @@ export function useUserData() {
         const value = getFieldByPath(modelStore.userData, fieldPath);
         if (['array', 'i18n:array'].includes(parent?.type ?? '') && Array.isArray(value)) {
           value.forEach((val, index) => {
-            if (field.fields) {
+            if (fieldHasChildren(field)) {
               dig(field.fields, fieldPath, field);
             }
             if (isFieldType(field, 'i18n')) {
@@ -100,7 +111,7 @@ export function useUserData() {
         }
       })
     }
-    dig(obj as unknown as { [key: string]: IField }, prefix);
+    dig(obj as unknown as { [key: string]: IField }, prefix, parent);
     return errors;
   }
 
@@ -204,7 +215,7 @@ export function useUserData() {
       'X-Jms-Api-Key': modelStore.structure.server_secret,
     }, true)
       .then(response => {
-        return downloadFilesAsZip(files, response, modelStore.structure.label);
+        return downloadFilesAsZip(files, response, modelStore.structure.label, globalStore.userSettings.data.editorTabSize);
       })
       .catch(globalStore.catchError)
       .finally(() => downloading.value = false);
@@ -234,15 +245,37 @@ export function useUserData() {
   const saveUserData = async (
     structure: IStructure = modelStore.structure,
     data: any = modelStore.userData,
-  ): Promise<any> => {
-    saving.value = true;
-    return saveUserDataSimple(structure, data).then(response => {
-      setUserData(response.data, true);
-      saved.value = true;
-      setTimeout(() => saved.value = false, 1000);
+    onlyEndpoint = false,
+  ): Promise<IStructure> => {
+    return new Promise((resolve) => {
+      if (canInteractWithServer.value) {
+        saving.value = true;
+        return saveUserDataSimple(structure, data).then(response => {
+          setUserData(response.data, true);
+          if (!onlyEndpoint) {
+            useTypings().syncToFolder(structure, 'typescript', ['data']);
+          }
+          saved.value = true;
+          setTimeout(() => saved.value = false, 1000);
+          resolve(data);
+        })
+        .catch(reason => {
+          globalStore.catchError(reason);
+          if (canInteractWithSyncedFolder.value && !onlyEndpoint) {
+            useTypings().syncToFolder(structure, 'typescript', ['data']);
+            saved.value = true;
+            setTimeout(() => saved.value = false, 1000);
+          }
+        })
+        .finally(() => saving.value = false);
+      } else {
+        setUserData(data, true);
+        if (!onlyEndpoint) {
+          useTypings().syncToFolder(structure, 'typescript', ['data']);
+        }
+        resolve(data);
+      }
     })
-    .catch(globalStore.catchError)
-    .finally(() => saving.value = false);
   }
 
   const setUserData = (data: any, setOriginal = false) => {
@@ -259,16 +292,22 @@ export function useUserData() {
   const getParsedFields = (fields: {[key: string]: IField}, locales: {[key: string]: string}, override: any = {}, clean = false): any => {
 
     const clonedFields = structuredClone(fields);
+    const clonedParsedFields = parseFields(clonedFields, locales, structureParsedData.value.schemas);
     const result: any = clean
-      ? parseFields(clonedFields, locales, structureParsedData.value.schemas)
-      : Object.assign({}, override, parseFields(clonedFields, locales, structureParsedData.value.schemas));
+      ? clonedParsedFields
+      : Object.assign({}, override, clonedParsedFields);
 
-    const processCallback = (parent: any, key: string, path: string) => {
+    const processCallback = (parent: any, key: string, path: string, obj: any) => {
       const field = getFieldByPath(fields, path);
       if (!field) {
         return;
       }
-      const defaultValue = field.default ? field.default : undefined;
+
+      if (isFieldArrayType(field) && !isFieldI18n(field) && !Array.isArray(obj) && obj !== null) {
+        return parent[key] = [];
+      }
+
+      const defaultValue = getFieldDefaultValue(field, locales);
       const overrideValue = getDataByPath(override, path, defaultValue);
 
       // Node
@@ -295,28 +334,44 @@ export function useUserData() {
       // Array
       const isArray = isFieldArrayType(field);
       if (isArray || field.multiple) {
-        if (!overrideValue || !Array.isArray(overrideValue)) {
-          return;
+        const arrCallback = (parent: any, key: string, overrideValue: any): any => {
+          if (!overrideValue || !Array.isArray(overrideValue)) {
+            return;
+          }
+          if (isArray && field.fields && isFieldType(field, 'array')) {
+            parent[key] = [];
+            overrideValue.forEach(overrideItem => {
+              parent[key].push(getParsedFields(field.fields, locales, overrideItem));
+            })
+          } else if (field.items && Array.isArray(overrideValue)) {
+            return parent[key] = overrideValue;
+          }
+
+          // Make sure they all have hashes
+          if (isFieldType(field, 'array')) {
+            parent[key] = parent[key].map((item: any) => ({ ...item, hash: item.hash ?? generateHash(8) }))
+          }
+          // Otherwise just apply overridden value
+          else if (Array.isArray(overrideValue)) {
+            return parent[key] = overrideValue;
+          }
+
+          return parent[key];
         }
-        if (isArray && field.fields && isFieldType(field, 'array')) {
-          parent[key] = [];
-          overrideValue.forEach(overrideItem => {
-            parent[key].push(getParsedFields(field.fields, locales, overrideItem));
+        if (isFieldI18n(field)) {
+          const values: {[key: string]: any[]} = {};
+          Object.entries(locales).forEach(([locale]) => {
+            values[locale] = [];
+            if (isNativeObject(parent[key]) && parent[key][locale]) {
+              values[locale] = arrCallback(parent[key], locale, overrideValue[locale]);
+            } else {
+              values[locale] = parent[key] ?? [];
+            }
           })
-        } else if (field.items && Array.isArray(overrideValue)) {
-          return parent[key] = overrideValue;
+          return parent[key] = values;
+        } else {
+          return parent[key] = arrCallback(parent, key, overrideValue);
         }
-
-        // Make sure they all have hashes
-        if (isFieldType(field, 'array')) {
-          parent[key] = parent[key].map((item: any) => ({ ...item, hash: item.hash ?? generateHash(8) }))
-        }
-        // Otherwise just apply overridden value
-        else if (Array.isArray(overrideValue)) {
-          return parent[key] = overrideValue;
-        }
-
-        return parent[key];
       }
 
       // Number/String
@@ -330,12 +385,14 @@ export function useUserData() {
         return parent[key] = field.required && !overrideValue ? "" : overrideValue ?? null;
       }
     };
-    processObject(result, processCallback, undefined, undefined, undefined, path => {
+    processObject(result, processCallback, undefined, undefined, undefined, (path: string, obj: any) => {
       const field = getFieldByPath(fields, path);
-      if (isFieldType(field, 'file')) {
+
+      if (isFieldArrayType(field) && !Array.isArray(obj) && !isFieldI18n(field)) {
         return false;
       }
-      return true;
+
+      return !isValidField(field) && !isFieldI18n(field);
     });
     return result;
   }
@@ -361,6 +418,7 @@ export function useUserData() {
     userDataHasChanged,
     canFetchUserData,
     canInteractWithServer,
+    canInteractWithSyncedFolder,
     fetchUserData,
     fetchUserDataSimple,
     resetUserData,

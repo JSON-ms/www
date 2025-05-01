@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import {getFileIcon} from "@/utils";
 import type {IField, IFile, IServerSettings} from '@/interfaces';
-import {ref} from "vue";
+import {computed, ref} from "vue";
 import {useDisplay} from "vuetify";
 import {useGlobalStore} from "@/stores/global";
+import ImgTag from "@/components/ImgTag.vue";
+import VideoPlayer from "@/components/VideoPlayer.vue";
 
 const value = defineModel<any>({ required: true });
 const {
@@ -25,14 +27,16 @@ const thumbnailRatio = (file: IFile): number => {
   return file.meta.width && file.meta.height && (file.meta.width / file.meta.height) || 1;
 }
 const thumbnailSize = (file: IFile): { width: number, height: number } => {
+  const baseDesktop = 142;
+  const baseMobile = 92;
   const ratio = thumbnailRatio(file);
-  const maxWidth = smAndDown.value ? 96 : 128;
-  const maxHeight = smAndDown.value ? 128 : 128;
-  const width = file.meta.width ?? 128 > maxWidth ? maxWidth : file.meta.width ?? 128;
+  const maxWidth = smAndDown.value ? baseMobile : baseDesktop;
+  const maxHeight = smAndDown.value ? baseDesktop : baseDesktop;
+  const width = file.meta.width ?? baseDesktop > maxWidth ? maxWidth : file.meta.width ?? baseDesktop;
   const height = width / ratio > maxHeight ? maxHeight : width / ratio;
   return {
-    width,
-    height,
+    width: width < baseMobile ? baseMobile : width,
+    height: height < baseMobile ? baseMobile : height,
   };
 }
 const isImage = (file: IFile): boolean => {
@@ -41,14 +45,17 @@ const isImage = (file: IFile): boolean => {
 const isVideo = (file: IFile): boolean => {
   return file.meta.type.startsWith('video/');
 }
-const filePath = (file: IFile): string => {
+const src = computed((): string => {
+  if (file.path && (file.path.startsWith('http://') || file.path.startsWith('https://'))) {
+    return file.path;
+  }
   return serverSettings.publicUrl + file.path;
-}
+})
 
 const downloading = ref(false);
 const onDownloadFile = (file: IFile) => {
   downloading.value = true;
-  fetch(filePath(file))
+  fetch(src.value)
     .then(response => response.blob())
     .then(blob => {
       const link = document.createElement('a');
@@ -89,31 +96,23 @@ const onRemoveFile = (file: IFile) => {
     class="w-100"
   >
     <div class="d-flex align-center">
-      <div class="pl-3 d-flex text-center bg-surface align-center justify-center" :style="{ flex: 1, minWidth: thumbnailSize(file).width + 'px' }">
-        <v-avatar v-if="isImage(file)" size="100%" rounded="0">
-          <v-img :min-width="thumbnailSize(file).width" :min-height="thumbnailSize(file).height" :src="filePath(file)" cover>
-            <template #error>
-              <div class="d-flex px-2 align-center justify-center fill-height flex-column">
-                <v-icon color="warning" size="32" icon="mdi-alert-outline" />
-                <div class="text-caption text-disabled mt-1" style="line-height: 1rem">Unable to load image</div>
-              </div>
-            </template>
-            <template #placeholder>
-              <div class="d-flex align-center justify-center fill-height">
-                <v-progress-circular
-                  color="primary"
-                  indeterminate
-                  size="32"
-                  width="2"
-                />
-              </div>
-            </template>
-          </v-img>
-        </v-avatar>
-        <video v-else-if="isVideo(file)" :src="filePath(file)" :style="{ float: 'left', width: thumbnailSize(file).width + 'px', height: thumbnailSize(file).height + 'px' }" controls />
+      <div class="d-flex text-center bg-surface align-center justify-center" :style="{ flex: 1, minWidth: thumbnailSize(file).width + 'px' }">
+        <ImgTag
+          v-if="isImage(file)"
+          :src="src"
+          :min-width="thumbnailSize(file).width"
+          :min-height="thumbnailSize(file).height"
+        />
+        <VideoPlayer
+          v-else-if="isVideo(file)"
+          :src="src"
+          :aspect-ratio="(file.meta.width || 1) / (file.meta.height || 1)"
+          :style="{ float: 'left', width: thumbnailSize(file).width + 'px', height: thumbnailSize(file).height + 'px' }"
+          controls
+        />
         <v-icon v-else :icon="getFileIcon(file)" :size="smAndDown ? 48 : 64" />
       </div>
-      <div class="pa-3 pl-0 w-100">
+      <div class="w-100">
         <v-card-title
           :class="{
             'py-0 d-flex': true,
@@ -125,7 +124,7 @@ const onRemoveFile = (file: IFile) => {
           </div>
         </v-card-title>
         <v-card-subtitle class="py-0">
-          Size: {{ $formatBytes(file.meta.size) }}
+          Size: {{ file.meta.size && $formatBytes(file.meta.size) || 'Unknown' }}
           <br>Type: <span>{{ file.meta.type }}</span>
         </v-card-subtitle>
         <v-card-actions class="pb-0 flex-wrap" style="min-height: 0">

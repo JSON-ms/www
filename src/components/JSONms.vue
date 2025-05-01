@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import Toolbar from '@/components/Toolbar.vue';
 import Sidebar from '@/components/Sidebar.vue';
+import UserSettingsDialog from '@/components/UserSettingsDialog.vue';
 import StructureEditor from '@/components/StructureEditor.vue';
 import SitePreview from '@/components/SitePreview.vue';
 import MigrationDialog from '@/components/MigrationDialog.vue';
 import DataEditor from '@/components/DataEditor.vue';
 import JsonEditModal from '@/components/JsonEditModal.vue';
 import ActionBar from '@/components/ActionBar.vue';
-import TypingsModal from '@/components/TypingsModal.vue';
 import type {IStructure} from '@/interfaces';
 import {useIframe} from '@/composables/iframe';
 import {computed, nextTick, onMounted, ref, watch} from 'vue';
@@ -25,12 +25,13 @@ import type {VForm} from 'vuetify/components';
 import Settings from '@/components/Settings.vue';
 import Docs from '@/components/Docs.vue';
 import FileManager from '@/components/FileManager.vue';
+import Integration from '@/components/Integration.vue';
 import {useModelStore} from '@/stores/model';
+import structureMd from "../../docs/structure.md";
 
 // Model & Props
 const structure = defineModel<IStructure>({ required: true });
-const { structures = [], autoload = false } = defineProps<{
-  autoload?: boolean,
+const { structures = [] } = defineProps<{
   structures: IStructure[],
 }>();
 
@@ -39,7 +40,6 @@ const globalStore = useGlobalStore();
 const modelStore = useModelStore();
 const { layoutSize, init: initLayout, windowWidth, mobileFrameWidth } = useLayout();
 const showEditJson = ref(false);
-const showTypings = ref(false);
 const editJsonContent = ref('');
 const showMigrationDialog = ref(false);
 const showNewStructureModal = ref(false);
@@ -49,15 +49,26 @@ const dataEditor = ref<InstanceType<typeof DataEditor> | null>();
 const { serverSettings, structureParsedData, structureStates, structureHasSettingsError, getAvailableSection, deleteStructure, getAvailableLocale, structureHasSection, structureHasLocale, saveStructure, canSaveStructure, canDeleteStructure, resetStructure } = useStructure();
 const { fetchUserData, canSave, saveUserData, downloading, userDataLoaded, userDataLoading, setUserData } = useUserData();
 const { sendMessageToIframe } = useIframe();
-const { syncTypings } = useTypings();
+const { autoAskToSyncFolder, syncToFolder, unSyncFolder } = useTypings();
 
+globalStore.initUserSettings();
+
+const splitTabs = computed((): boolean => globalStore.admin.structure && globalStore.userSettings.data.layoutAutoSplit && layoutSize.value.data >= (mobileFrameWidth.value * 2));
 const tab = computed({
   get: () => {
-    return globalStore.admin.structure ? globalStore.admin.tab : 'data';
+    const advancedMode = globalStore.admin.structure && windowWidth.value > 900;
+    if (advancedMode && splitTabs.value) {
+      return globalStore.admin.dataTab === 'data'
+        ? 'docs'
+        : globalStore.admin.dataTab
+    }
+    return advancedMode
+      ? globalStore.admin.dataTab
+      : 'data';
   },
   set: (tab: any) => {
     globalStore.setAdmin({
-      tab,
+      dataTab: tab,
     })
   },
 })
@@ -150,7 +161,7 @@ const onSaveStructure = () => {
   if (canSaveStructure.value) {
     saveStructure().then(() => {
       bottomSheetData.value = { text: 'Structure saved!', color: 'success', icon: 'mdi-check' };
-      syncTypings();
+      syncToFolder(modelStore.structure, 'typescript', ['structure', 'default', 'typings', 'settings', 'index']);
       const newModel = modelStore.structure;
       globalStore.addStructure(newModel);
       updateRoute(newModel.hash, getAvailableSection(), getAvailableLocale()).then(() => {
@@ -189,7 +200,7 @@ const onLocaleChange = (locale: string) => {
 const onLogout = (response: any) => {
   modelStore.setStructure(response.structures[0], {});
   userDataLoaded.value = false;
-  if (autoload) {
+  if (globalStore.userSettings.data.userDataAutoFetch) {
     updateRoute('demo', 'home', 'en-US');
     refreshUserData();
     dataEditor.value?.resetValidation()
@@ -198,30 +209,34 @@ const onLogout = (response: any) => {
 
 const onEditJson = () => {
   showEditJson.value = true;
-  editJsonContent.value = JSON.stringify(deepToRaw(modelStore.userData), null, 2);
+  editJsonContent.value = JSON.stringify(deepToRaw(modelStore.userData), null, globalStore.userSettings.data.editorTabSize);
 }
 
 const onMigrateData = () => {
   showMigrationDialog.value = true;
 }
 
-const onShowTypings = () => {
-  showTypings.value = true;
-}
-
 const onApplyJsonContent = (json: any) => {
   setUserData(json);
 }
 
+let oldModel: IStructure | null = null;
 const onStructureChange = (model: IStructure) => {
+  if (oldModel) {
+    unSyncFolder(oldModel, 'typescript');
+  }
+  oldModel = model;
   resetStructure();
   modelStore.setStructure(model, {});
   userDataLoaded.value = false;
-  if (autoload) {
+  if (globalStore.userSettings.data.userDataAutoFetch) {
     updateRoute(model.hash, getAvailableSection(), getAvailableLocale());
     setUserData({}, true);
     refreshUserData();
     dataEditor.value?.resetValidation()
+  }
+  if (globalStore.session.loggedIn) {
+    autoAskToSyncFolder(model, 'typescript');
   }
 }
 
@@ -236,7 +251,7 @@ watch(() => globalStore.admin.structure, () => {
   }
 })
 
-const refreshUserData = (): Promise<any> => {
+const refreshUserData = async (): Promise<any> => {
   return fetchUserData().then((response: any) => {
     setUserData(response.data, true);
     serverSettings.value = response.settings;
@@ -281,8 +296,11 @@ onMounted(() => {
   sitePreview.value?.structureEditor?.scrollToSection(getAvailableSection());
   structureEditor.value?.scrollToSection(getAvailableSection());
 })
-if (autoload) {
+if (globalStore.userSettings.data.userDataAutoFetch) {
   refreshUserData();
+}
+if (globalStore.session.loggedIn) {
+  autoAskToSyncFolder(modelStore.structure, 'typescript');
 }
 </script>
 
@@ -301,7 +319,6 @@ if (autoload) {
     @locale="onLocaleChange"
     @edit-json="onEditJson"
     @migrate-data="onMigrateData"
-    @show-typings="onShowTypings"
     @update:model-value="onStructureChange"
     @logout="onLogout"
   />
@@ -314,18 +331,20 @@ if (autoload) {
 
   <!-- SIDEBAR -->
   <Sidebar
-    v-model="structure"
     :structure-data="structureParsedData"
     :user-data="modelStore.userData"
+    :server-settings="serverSettings"
   />
 
   <!-- EDITOR -->
   <v-navigation-drawer
     v-model="showEditor"
-    :width="showEditor ? layoutSize.editor.width : mobileFrameWidth"
+    :width="layoutSize.editor.width"
     :temporary="layoutSize.editor.temporary"
+    :permanent="showEditor && !layoutSize.editor.temporary"
+    :location="globalStore.userSettings.data.layoutEditorLocation"
     :scrim="false"
-    location="start"
+    floating
     color="transparent"
     border="0"
     flat
@@ -333,7 +352,7 @@ if (autoload) {
     disable-resize-watcher
     disable-route-watcher
   >
-    <v-card class="w-100 fill-height d-flex flex-column pa-2 pl-0" theme="dark">
+    <v-card class="w-100 fill-height d-flex flex-column" theme="dark" tile flat>
       <StructureEditor
         ref="structureEditor"
         v-model="structure"
@@ -363,18 +382,24 @@ if (autoload) {
       class="fill-height"
     >
       <v-expand-transition group>
-        <div v-if="globalStore.admin.structure">
+        <div v-if="globalStore.admin.structure && windowWidth > 900">
           <v-tabs v-model="tab" grow>
-            <v-tab value="data">
-              <v-icon icon="mdi-pencil" start />
-              Data
-            </v-tab>
+            <template v-if="!splitTabs">
+              <v-tab value="data">
+                <v-icon icon="mdi-pencil" start />
+                Data
+              </v-tab>
+            </template>
             <v-tab value="settings">
               <v-icon start icon="mdi-cog" />
               Settings
               <v-icon v-if="structureHasSettingsError" color="warning" class="ml-3">
                 mdi-alert
               </v-icon>
+            </v-tab>
+            <v-tab value="integration">
+              <v-icon start icon="mdi-download-circle-outline" />
+              Integration
             </v-tab>
             <v-tab value="docs">
               <v-icon start icon="mdi-book" />
@@ -383,7 +408,7 @@ if (autoload) {
           </v-tabs>
         </div>
       </v-expand-transition>
-      <v-tabs-window v-model="tab" class="fill-height">
+      <v-tabs-window v-model="tab" class="fill-height" style="flex: 1">
         <v-tabs-window-item value="data" class="fill-height">
           <DataEditor
             ref="dataEditor"
@@ -401,19 +426,59 @@ if (autoload) {
             :disabled="structure.type !== 'owner'"
           />
         </v-tabs-window-item>
+        <v-tabs-window-item value="integration">
+          <Integration
+            v-model="structure"
+          />
+        </v-tabs-window-item>
         <v-tabs-window-item value="docs">
-          <Docs />
+          <v-card tile flat>
+            <v-card-text>
+              <Docs v-model="structureMd" />
+            </v-card-text>
+          </v-card>
         </v-tabs-window-item>
       </v-tabs-window>
     </v-form>
   </v-card>
 
+  <v-navigation-drawer
+    v-if="splitTabs"
+    :width="layoutSize.data / 2"
+    location="start"
+    disable-resize-watcher
+    disable-route-watcher
+  >
+    <template #append>
+      <v-divider />
+      <div class="d-flex align-center justify-space-between pl-3" style="height: 4rem">
+        <ActionBar />
+      </div>
+    </template>
+
+    <DataEditor
+      ref="dataEditor"
+      v-model="structure"
+      :structure-data="structureParsedData"
+      :user-data="modelStore.userData"
+      :server-settings="serverSettings"
+      :loading="userDataLoading"
+    />
+  </v-navigation-drawer>
+
   <!-- ACTIONS -->
   <v-expand-transition>
-    <ActionBar
+    <v-app-bar
       v-if="showActionBar"
-      :tab="tab"
-    />
+      flat
+      location="bottom"
+      style="border-top: rgba(0, 0, 0, 0.1) solid 1px"
+      class="pl-3"
+    >
+      <div class="w-100 d-flex align-center justify-space-between">
+        <ActionBar />
+      </div>
+    </v-app-bar>
   </v-expand-transition>
 
   <!-- EDIT JSON MODAL -->
@@ -427,13 +492,6 @@ if (autoload) {
   <MigrationDialog
     v-model:visible="showMigrationDialog"
     :structures="structures"
-  />
-
-  <!-- TYPINGS MODAL -->
-  <TypingsModal
-    v-model="structure"
-    v-model:visible="showTypings"
-    :user-data="modelStore.userData"
   />
 
   <!-- DOWNLOAD DATA BOTTOM SHEET -->
@@ -466,6 +524,11 @@ if (autoload) {
     :can-delete="globalStore.session.loggedIn"
     :server-settings="serverSettings"
     can-download
+  />
+
+  <!-- USER SETTINGS -->
+  <UserSettingsDialog
+    v-model:visible="globalStore.userSettings.visible"
   />
 </template>
 

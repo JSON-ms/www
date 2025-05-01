@@ -41,7 +41,6 @@ const { locales, dense = false, disabled = false } = defineProps<{
     v-model="selectedLocale"
     :items="locales"
     :disabled="disabled"
-    label="Locale"
     hide-details
     width="10rem"
     density="compact"

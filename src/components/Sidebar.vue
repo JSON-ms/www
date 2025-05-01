@@ -1,21 +1,23 @@
 <script setup lang="ts">
 import {useGlobalStore} from '@/stores/global';
-import type {IStructure, IStructureData, ISection} from '@/interfaces';
-import {computed} from 'vue';
+import type {IStructureData, ISection, IServerSettings} from '@/interfaces';
+import {computed, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';
 import router from '@/router';
 import {useUserData} from '@/composables/user-data';
 import {useLayout} from '@/composables/layout';
 import {useStructure} from '@/composables/structure';
+import {useModelStore} from "@/stores/model";
 
-const structure = defineModel<IStructure>({ required: true });
-const { structureData } = defineProps<{
+const { structureData, serverSettings } = defineProps<{
   structureData: IStructureData,
+  serverSettings: IServerSettings,
 }>();
 const { layoutSize } = useLayout();
 const globalStore = useGlobalStore();
+const modelStore = useModelStore();
 const currentRoute = useRoute();
-const { getUserDataErrors, userDataLoading } = useUserData();
+const { getUserDataErrors, userDataLoading, canInteractWithServer } = useUserData();
 const { structureParsedData } = useStructure();
 
 const selectedSectionKey = computed((): string => {
@@ -74,6 +76,22 @@ const onFileManagerClick = () => {
 
 // @ts-expect-error Need to declare typings for process.env
 const version = JSON.parse(process.env.APP_VERSION);
+
+const lastDetails = ref({
+  hash: '',
+  version: '',
+  uploadMaxSize: '',
+});
+const updateLastDetails = () => {
+  lastDetails.value.hash = modelStore.structure.hash || 'Unknown';
+  lastDetails.value.version = serverSettings.version || 'Unknown';
+  lastDetails.value.uploadMaxSize = serverSettings.uploadMaxSize || 'Unknown';
+}
+watch(() => serverSettings.version, () => {
+  if (serverSettings.version) {
+    updateLastDetails();
+  }
+}, { immediate: true })
 </script>
 
 <template>
@@ -92,7 +110,7 @@ const version = JSON.parse(process.env.APP_VERSION);
       text="It appears that you have not created a section in your YAML template yet. Please ensure to define the necessary sections to avoid errors in your configuration."
     />
     <v-list v-else v-model="selectedSectionKey" nav>
-      <v-list-subheader>Sections</v-list-subheader>
+      <v-list-subheader title="Sections" />
       <template
         v-for="(section, sectionKey) in structureData.sections"
         :key="sectionKey"
@@ -132,14 +150,31 @@ const version = JSON.parse(process.env.APP_VERSION);
         </v-list-item>
       </template>
 
-      <v-divider class="my-2" />
-      <v-list-subheader>Tools</v-list-subheader>
+      <v-list-subheader title="Tools" />
       <v-list-item
         title="File Manager"
-        prepend-icon="mdi-file-multiple"
         color="primary"
+        subtitle="Organize Your Files"
+        prepend-icon="mdi-file-cabinet"
         @click="onFileManagerClick"
       />
+      <v-expand-transition>
+        <div v-if="globalStore.admin.structure && canInteractWithServer">
+          <v-list-subheader title="Advanced details" />
+          <v-list-item
+            title="Hash"
+            :subtitle="lastDetails.hash || 'Loading...'"
+          />
+          <v-list-item
+            title="Server version"
+            :subtitle="lastDetails.version || 'Loading...'"
+          />
+          <v-list-item
+            title="Upload max size"
+            :subtitle="lastDetails.uploadMaxSize || 'Loading...'"
+          />
+        </div>
+      </v-expand-transition>
     </v-list>
     <template #append>
       <v-divider />

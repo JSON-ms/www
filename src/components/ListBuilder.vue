@@ -3,6 +3,7 @@ import draggable from 'vuedraggable'
 import {generateHash} from '@/utils';
 import { useGlobalStore } from '@/stores/global';
 import {computed, ref} from 'vue';
+import ImgTag from "@/components/ImgTag.vue";
 
 const globalStore = useGlobalStore();
 const list = defineModel<any[]>({ required: true });
@@ -25,7 +26,7 @@ const {
   min?: number,
   max?: number,
   removeItemCallback?: (index: number, list: any[]) => void
-  onCollapsableHeader?: (item: any, index: number) => ({ title: string, thumbnail: string | boolean})
+  onCollapsableHeader?: (item: any, index: number) => ({ title?: string, thumbnail?: string})
 }>()
 
 const panel = ref<null | number>(null);
@@ -69,6 +70,11 @@ const removeItem = (index: number) => {
   }
 }
 
+const hasOnlyOneField = computed((): boolean => {
+  // Is lower than 2 because we inject {hash} property in the array.
+  return list.value.length > 0 && Object.keys(list.value[0]).length <= 2;
+})
+
 const formattedList = computed({
   get(): any[] {
     return list.value;
@@ -90,21 +96,27 @@ const formattedList = computed({
     class="draggable-list"
   >
     <template #item="{ index }">
-      <div class="d-flex align-start" style="gap: 1rem">
+      <div
+        :class="['d-flex', {
+          'align-center': hasOnlyOneField,
+          'align-start': !hasOnlyOneField,
+        }]"
+        style="gap: 1rem"
+      >
         <v-icon class="handle" icon="mdi-drag-vertical px-4 ml-n3" @mousedown.stop />
-
-        <slot
-          name="default"
-          :item="list[index]"
-          :index="index"
-        />
+        <div style="flex: 1">
+          <slot
+            name="default"
+            :item="list[index]"
+            :index="index"
+          />
+        </div>
 
         <v-btn
           :disabled="!computedCanRemove"
           :color="computedCanRemove ? 'error' : undefined"
           size="small"
           variant="text"
-          class="mt-3"
           icon
           @click.stop="() => removeItem(index)"
         >
@@ -140,32 +152,18 @@ const formattedList = computed({
             <div class="d-flex align-center justify-space-between w-100 pr-3" style="gap: 1rem">
               <div class="d-flex align-center justify-start" style="flex: 1; gap: 1rem">
                 <v-icon class="handle" icon="mdi-drag-vertical px-4 ml-n3" @mousedown.stop />
-                <v-img
+                <ImgTag
                   v-if="onCollapsableHeader(element, index).thumbnail"
                   :src="onCollapsableHeader(element, index).thumbnail || ''"
                   width="32"
                   height="32"
                   max-width="32"
-                  class="my-n3"
-                >
-                  <template #error>
-                    <div class="d-flex align-center justify-center fill-height flex-column">
-                      <v-icon color="warning" size="16" icon="mdi-alert-outline" />
-                    </div>
-                  </template>
-                  <template #placeholder>
-                    <div class="d-flex align-center justify-center fill-height">
-                      <v-progress-circular
-                        color="primary"
-                        indeterminate
-                        size="16"
-                        width="1"
-                      />
-                    </div>
-                  </template>
-                </v-img>
+                  class="my-n3 rounded"
+                />
                 <div class="d-flex" style="flex: 1; width: 0">
-                  <span class="text-truncate">{{ onCollapsableHeader(element, index).title }}</span>
+                  <span class="text-truncate">
+                    {{ onCollapsableHeader(element, index).title }}
+                  </span>
                 </div>
               </div>
 

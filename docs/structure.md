@@ -1,8 +1,6 @@
-# Interface
-
+# YAML Interface
 ---
-
-Let's get started on building your ideal admin interface with JSON.ms!
+Let's get started on building your ideal admin panel with JSON.ms!
 
 ## Global Configuration
 Let's start with the global configuration. You can copy paste and adjust the following code in your _YAML_ interface:
@@ -48,12 +46,12 @@ sections:
         label: Body
 ```
 
-#### Explanation:
-
-- `sections`: This is the top-level key that groups all the different sections of your admin panel.
-- `home`: This **customizable key** represents a specific section for your app. It will be used as the identifier in the payload when saving the field data in the admin panel.
-- `label`: The value associated with this key is the label that will be displayed in the sidebar of the admin panel.
-- `fields`: This key contains all the fields that will be displayed and editable by the user within this section.
+> Explanation:
+>
+> - `sections`: This is the top-level key that groups all the different sections of your admin panel.
+> - `home`: This **customizable key** represents a specific section for your app. It will be used as the identifier in the payload when saving the field data in the admin panel.
+> - `label`: The value associated with this key is the label that will be displayed in the sidebar of the admin panel.
+> - `fields`: This key contains all the fields that will be displayed and editable by the user within this section.
 
 ### Fields
 
@@ -85,33 +83,209 @@ For instance:
 - `i18n`: A translatable single-line text input.
 - `i18n:[TYPE]`: You can use any of the above types except `node` to make them translatable. For example, you can specify `i18n:string`, `i18n:markdown`, or even `i18n:file` to indicate that these fields should support multiple languages.
 
-#### All Field Properties:
+#### Generic Properties:
+
+> These properties are applicable to all fields.
+
 - `type`: Specifies a supported field type as defined earlier.
 - `label`: The title that will be displayed within the field.
-- `default`: A optional default value for the current field.
-- `multiple`: A boolean value that indicates whether the field can accept multiple values (e.g., for `select`, `checkbox` or `file` types).
 - `icon`: (Optional) An icon that will be displayed next to the menu item.
-- `accept`: For `file` field only. It takes as its value a comma-separated list of one or more file types. You can add file extensions `*.jpg,*.gif` or even mime types `application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document`.
-- `rules`: An optional list of rules (regex) to be applied to the field. See rules section for explanation.
+  - Make sure to prefix all icons with "mdi-". For instance: mdi-check will show the "check" icon.
+  - Documentation: https://pictogrammers.com/library/mdi/
+- `default`: A optional default value for the current field.
 - `prepend`: An optional string that will be displayed before the input field.
 - `append`: An optional string that will be displayed after the input field.
 - `prepend-inner`: An optional string that will be displayed inside and before the input field. Can be used with `string`, `number`, `select`, `textarea` and `date` fields.'
 - `append-inner`: An optional string that will be displayed inside and after the input field. Can be used with `string`, `number`, `select`, `textarea` and `date` fields.'
+- `rules`: An optional list of rules (regex) to be applied to the field. See rules section for explanation.
 - `hint`: An optional string that provides additional information or guidance to the user about the field, displayed below the field.
-  - Make sure to prefix all icons with "mdi-". For instance: mdi-check will show the "check" icon.
-  - Documentation: https://pictogrammers.com/library/mdi/
 - `required`: (Optional) It ensures that the user must provide a value, preventing the form from being submitted until the field is completed.
-- `fields`: This is applicable only for `array` and `node` types. You can use any supported type here, and you can nest sub-arrays as needed to create complex data structures and hierarchies.
-- `items`: This is applicable only for `select`, `checkbox` and `radio` types. You can list all available values or even use an enum.
-- `min`: An optional minimum number. Works with `array`, `number`, `slider` and `range` fields.
-- `max`: An optional maximum number. Works with `array`, `number`, `slider` and `range` fields.
-- `length`: An optional length amount of stars in `rating` field.
-- `step`: An optional incremental amount when using `number`, `slider` and `range` fields.
-- `half-increments`: (Optional) Allows half-increments of stars when using the `rating` field.
-- `swatches`: (Optional, false by default) Shows a palette of colors when expanding the `color` field.
-- `canvas`: (Optional, true by default) Shows a canvas to select a color when using the `color` field.
-- `sliders`: (Optional, true by default) Shows a slider to select a color when using the `color` field.
-- `inputs`: (Optional) Shows an input field to customize your color when using the `color` field.
+
+#### Field-Specific Properties:
+
+> ### Select
+> - `multiple`: A boolean value that indicates whether the field can accept multiple values.
+> - `items`: You can list all available values or even use an enum (key/value).
+>
+> #### Example:
+>
+> ```yaml
+>       type: 
+>         type: select
+>         label: Types
+>         multiple: true
+>         # items: enums.countries
+>         items:
+>           a: Type A
+>           b: Type B
+> ```
+
+> ### Checkbox
+> - `multiple`: A boolean value that indicates whether the field can accept multiple values.
+> - `items`: You can list all available values or even use an enum (key/value).
+>
+> #### Example:
+>
+> ```yaml
+>       type: 
+>         type: checkbox
+>         label: Types
+>         multiple: true
+>         # items: enums.countries
+>         items:
+>           a: Type A
+>           b: Type B
+> ```
+
+> ### Radio
+> - `items`: You can list all available values or even use an enum (key/value).
+>
+> #### Example:
+>
+> ```yaml
+>       type: 
+>         type: radio
+>         label: Types
+>         # items: enums.countries
+>         items:
+>           a: Type A
+>           b: Type B
+> ```
+
+> ### Array
+> - `fields`: You can use any supported type here, and you can nest sub-arrays as needed to create complex data structures and hierarchies.
+> - `min`: An optional minimum number.
+> - `max`: An optional maximum number.
+> - `collapsable`: (Optional, true by default) Makes array items collapsable/expandable.
+>
+> #### Example:
+>
+> ```yaml
+>       items: 
+>         type: array
+>         label: List of items
+>         min: 1 # User needs to set at least one item
+>         max: 5 # User can't add more than 5 items
+>         collapsable: true
+>         fields:
+>           title:
+>             type: string
+>             label: Title
+>           body:
+>             type: textarea
+>             label: Body
+> ```
+
+> ### Node
+> - `fields`: You can use any supported type here, and you can nest sub-arrays as needed to create complex data structures and hierarchies.
+> - `collapsable`: (Optional, false by default) Makes inner fields collapsable/expandable.
+> - `collapsed`: (Optional, false by default) Makes inner fields collapsed by default.
+> 
+> #### Example:
+> 
+> ```yaml
+>       cta: 
+>         type: node
+>         label: Call-to-action
+>         collapsable: true
+>         collapsed: true # Will be collapsed by default
+>         fields:
+>           label:
+>             type: string
+>             label: Label of the button
+>           url:
+>             type: string
+>             label: URL
+> ```
+
+> ### File
+> - `accept`: For `file` field only. It takes as its value a comma-separated list of one or more file types. You can add file extensions `*.jpg,*.gif` or even mime types `application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document`.
+> - `multiple`: A boolean value that indicates whether the field can accept multiple values.
+>
+> #### Example:
+>
+> ```yaml
+>       gallery: 
+>         type: file
+>         label: Gallery of images
+>         multiple: true # Will allow multiple files to be assigned to this field
+>         accept: image/* # Will only accept images (works with file extensions as well)
+> ```
+
+> ### Color
+> - `swatches`: (Optional, false by default) Shows a palette of colors.
+> - `canvas`: (Optional, true by default) Shows a canvas to select a color.
+> - `sliders`: (Optional, true by default) Shows a slider to select a color.
+> - `inputs`: (Optional, true by default) Shows an input field to customize your color.
+>
+> #### Example:
+>
+> ```yaml
+>       backgroundColor: 
+>         type: color
+>         label: Background color of the page
+>         swatches: true # Optional, false by default
+> ```
+
+> ### Rating
+> - `length`: An optional length amount of stars.
+> - `half-increments`: (Optional, false by default) Allows half-increments of stars.
+>
+> #### Example:
+>
+> ```yaml
+>       rating: 
+>         type: rating
+>         label: On a scale of 1 to 10, how are you satisfied?
+>         length: 10
+>         half-increments: true
+> ```
+
+> ### Number
+> - `step`: An optional incremental amount.
+> - `min`: An optional minimum number.
+> - `max`: An optional maximum number.
+>
+> #### Example:
+>
+> ```yaml
+>       amount: 
+>         type: number
+>         label: How many drink(s) do you want?
+>         min: 1 # At least 1
+>         max: 10 # No more than 10
+>         step: 2 # Because you always buy one for your partner as well
+> ```
+
+> ### Slider
+> - `step`: An optional incremental amount.
+> - `min`: (1 by default) An optional minimum number.
+> - `max`: (100 by default) An optional maximum number.
+>
+> #### Example:
+>
+> ```yaml
+>       amount: 
+>         type: slider
+>         label: On a scale of 1 to 10, how are you satisfied?
+>         min: 1 # At least 1
+>         max: 10 # No more than 10
+>         default: 5 # Default value to 5
+> ```
+
+> ### Range
+> - `step`: An optional incremental amount.
+> - `min`: (1 by default) An optional minimum number.
+> - `max`: (100 by default) An optional maximum number.
+>
+> #### Example:
+>
+> ```yaml
+>       amount: 
+>         type: range
+>         label: Choose a range between 1 and 100
+>         default: [25, 75] # Default the range to 25 <> 75
+> ```
 
 ### Rules
 
@@ -156,7 +330,7 @@ section:
       - about___.{2} 
 ```
 
-The {{locale}} variable will be replaced with the current locale of the website. In this scenario, all paths will be analysed. The first one has been defined as a full path, the second as a path name (in this case, the way Nuxt handles route names), the third one includes a wildcard and the last one is a regex.
+The `{{locale}}` variable will be replaced with the current locale of the website. In this scenario, all paths will be analysed. The first one has been defined as a full path, the second as a path name (in this case, the way Nuxt handles route names), the third one includes a wildcard and the last one is a regex.
 
 ### Conditional fields
 
@@ -248,9 +422,9 @@ You can later use these schemas as a field type like any other widget using the 
 Here's an example of a field using an schema:
 
 ```yaml
-      meta: 
+      metadata: 
         type: schemas.meta
-        label: Meta data # (Optional) A title for your collapsable group
+        label: Metadata # (Optional) A title for your collapsable group
         collapsable: true # Make it a collapsable group
         collapsed: true # Make it collapsed by default
 ```

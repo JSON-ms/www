@@ -20,6 +20,5 @@ if (currentRoute.params.hash) {
   <JSONms
     v-model="modelStore.structure"
     :structures="globalStore.session.structures"
-    autoload
   />
 </template>

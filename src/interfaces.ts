@@ -7,6 +7,7 @@ export interface IServerSettings {
   postMaxSize: PHPMegabyte,
   publicUrl: string,
   uploadMaxSize: PHPMegabyte,
+  version: string,
 }
 
 export interface IPrompt {
@@ -20,13 +21,15 @@ export interface IPrompt {
   btnIcon?: string | undefined,
   btnColor?: string | undefined,
   callback: () => Promise<void>,
+  cancelCallback?: () => Promise<void>,
 }
 
 export interface IAdmin {
   drawer: boolean,
   structure: boolean,
   previewMode: 'mobile' | 'desktop' | null,
-  tab: 'data' | 'settings' | 'docs',
+  dataTab: 'data' | 'settings' | 'docs',
+  editorTab: 'structure' | 'blueprints',
 }
 
 export interface ISnack {
@@ -47,15 +50,38 @@ export interface IError {
 export interface IFile {
   path: string | null,
   meta: {
-    type: string,
-    size: number,
-    width?: number,
-    height?: number,
+    type?: string,
+    size?: number | null,
+    width?: number | null,
+    height?: number | null,
     frameRate?: number,
     duration?: number,
-    timestamp: number,
-    originalFileName: string,
+    timestamp?: number,
+    originalFileName?: string,
   }
+}
+
+export interface IUserSettings {
+  editorFontSize: number
+  editorShowPrintMargin: boolean
+  editorTabSize: number
+  editorLiveUpdate: boolean
+  editorUpdateTimeout: number
+  userDataAutoFetch: boolean
+  layoutEditorLocation: 'start' | 'end'
+  layoutSitePreviewLocation: 'start' | 'end'
+  layoutSitePreviewPadding: boolean
+  layoutSitePreviewKeepRatio: boolean
+  layoutAutoSplit: boolean
+  blueprintsIncludeTypings: boolean
+  blueprintsReadFromData: boolean
+  blueprintsReadFromStructure: boolean
+  blueprintsWriteToData: boolean
+  blueprintsWriteToDefault: boolean
+  blueprintsWriteToIndex: boolean
+  blueprintsWriteToStructure: boolean
+  blueprintsWriteToTypings: boolean
+  blueprintsWriteToSettings: boolean
 }
 
 export interface IFileManager {
@@ -75,7 +101,7 @@ export interface IStructure {
   content: string
   server_url?: string
   server_secret?: string
-  webhook: string | null
+  endpoint: string | null
   type: 'owner' | 'structure' | 'admin',
   owner_name?: string,
   permission_structure: string[],
@@ -85,7 +111,7 @@ export interface IStructure {
   updated_at?: string
 }
 
-export interface IWebhook {
+export interface IEndpoint {
   uuid?: string
   url?: string
   secret?: string
@@ -107,7 +133,7 @@ export interface ISession {
   }
   googleOAuthSignInUrl: string,
   structures: IStructure[],
-  webhooks: IWebhook[],
+  endpoints: IEndpoint[],
 }
 
 export interface IField {

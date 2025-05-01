@@ -1,37 +1,15 @@
 import { defineStore } from 'pinia';
-import type {ISession, IPrompt, IError, ISnack, IAdmin, IStructure, IFileManager, IFile} from '@/interfaces';
-
-export const mimeTypes = {
-  images: [
-    "image/apng",
-    "image/avif",
-    "image/bmp",
-    "image/gif",
-    "image/heic",
-    "image/heif",
-    "image/jpeg",
-    "image/jpg",
-    "image/png",
-    "image/svg+xml",
-    "image/tiff",
-    "image/webp",
-    "image/x-icon"
-  ],
-  videos: [
-    "video/3gpp",
-    "video/3gpp2",
-    "video/avi",
-    "video/mp4",
-    "video/mpeg",
-    "video/ogg",
-    "video/quicktime",
-    "video/webm",
-    "video/x-flv",
-    "video/x-matroska",
-    "video/x-ms-wmv",
-    "video/x-msvideo"
-  ]
-};
+import type {
+  ISession,
+  IPrompt,
+  IError,
+  ISnack,
+  IAdmin,
+  IStructure,
+  IFileManager,
+  IFile,
+  IUserSettings
+} from '@/interfaces';
 
 export const useGlobalStore = defineStore('global', {
   state: (): {
@@ -42,6 +20,10 @@ export const useGlobalStore = defineStore('global', {
     prompt: IPrompt,
     session: ISession,
     fileManager: IFileManager,
+    userSettings: {
+      visible: boolean,
+      data: IUserSettings
+    },
   } => ({
     theme: 'light',
     prompt: {
@@ -62,7 +44,8 @@ export const useGlobalStore = defineStore('global', {
       drawer: window.innerWidth >= 1300,
       structure: window.innerWidth >= 1400,
       previewMode: window.innerWidth >= 1400 ? 'desktop' : 'mobile',
-      tab: 'data',
+      dataTab: 'data',
+      editorTab: 'structure',
     },
     session: {
       loggedIn: false,
@@ -76,7 +59,7 @@ export const useGlobalStore = defineStore('global', {
       },
       googleOAuthSignInUrl: '',
       structures: [],
-      webhooks: [],
+      endpoints: [],
     },
     fileManager: {
       visible: false,
@@ -85,7 +68,32 @@ export const useGlobalStore = defineStore('global', {
       canSelect: false,
       callback: () => new Promise(resolve => resolve(true)),
       accept: null,
-    }
+    },
+    userSettings: {
+      visible: false,
+      data: {
+        editorFontSize: 16,
+        editorLiveUpdate: true,
+        editorUpdateTimeout: 1000,
+        editorShowPrintMargin: false,
+        editorTabSize: 2,
+        userDataAutoFetch: true,
+        layoutEditorLocation: 'start',
+        layoutSitePreviewLocation: 'start',
+        layoutSitePreviewPadding: true,
+        layoutSitePreviewKeepRatio: true,
+        layoutAutoSplit: true,
+        blueprintsIncludeTypings: true,
+        blueprintsReadFromData: true,
+        blueprintsReadFromStructure: false,
+        blueprintsWriteToData: true,
+        blueprintsWriteToDefault: true,
+        blueprintsWriteToIndex: true,
+        blueprintsWriteToStructure: true,
+        blueprintsWriteToTypings: true,
+        blueprintsWriteToSettings: true,
+      }
+    },
   }),
   actions: {
     catchError(error: Error) {
@@ -105,7 +113,7 @@ export const useGlobalStore = defineStore('global', {
           icon: 'mdi-server-network-off',
           color: 'error',
           title: serverError ? 'Error Fetching Data' : 'Server Error',
-          body: serverError ? 'Please check your webhook URL or check your server settings.' : error.message,
+          body: serverError ? 'Please check your endpoint URL or check your server settings.' : error.message,
         };
       }
       throw error;
@@ -138,6 +146,35 @@ export const useGlobalStore = defineStore('global', {
       this.fileManager.canSelect = canSelect;
       this.fileManager.accept = accept;
       this.fileManager.callback = callback;
+    },
+    initUserSettings() {
+      try {
+        const jsonStr = localStorage.getItem('jsonms/global:user-settings');
+        if (jsonStr) {
+          const json = JSON.parse(jsonStr);
+          this.applyUserSettingsData(json);
+        }
+      } catch (e: any) {
+        console.warn('Unable to fetch user settings from local storage.', e)
+      }
+    },
+    applyUserSettingsData(data: any) {
+      const values: any = {};
+      Object.keys(this.userSettings.data).forEach(key => {
+        // @ts-expect-error Keys are fetched from this.userSettings, so it's all fine...
+        const item = this.userSettings.data[key];
+        if (data[key] !== undefined && typeof data[key] === typeof item) {
+          values[key] = data[key];
+        }
+      })
+      this.userSettings.data = values;
+    },
+    setUserSettingsVisible(visible: boolean) {
+      this.userSettings.visible = visible;
+    },
+    setUserSettings(userSettings: IUserSettings) {
+      this.applyUserSettingsData(userSettings);
+      localStorage.setItem('jsonms/global:user-settings', JSON.stringify(userSettings));
     },
     addStructure(item: IStructure) {
       if (!this.session.structures.find(inter => inter.uuid === item.uuid)) {

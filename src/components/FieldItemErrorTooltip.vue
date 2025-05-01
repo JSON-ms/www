@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import {useUserData} from "@/composables/user-data";
 import {computed, ref, watch} from "vue";
-import type {IField} from '@/interfaces';
+import type {IField, IStructureData} from '@/interfaces';
+import {getDataByPath, getFieldByPath} from "@/utils";
 
 interface IFieldError {
   i18n: string[],
@@ -11,12 +12,16 @@ interface IFieldError {
 
 const value = defineModel<any>({ required: true });
 const {
+  root,
+  parent,
   fields,
   fieldKey,
   locale,
   locales,
   index,
 } = defineProps<{
+  root: IStructureData
+  parent: IField,
   fields: {[key: string]: IField },
   fieldKey: string,
   locale: string,
@@ -33,14 +38,14 @@ const errorMessage = computed((): string | null => {
       return `${fields[item].label} field has an issue`;
     }
   } else if (errors.value.currentI18n.length > 0) {
-    const items = errors.value.currentI18n[0].split('.');
-    return `${fields[items[items.length - 2]].label} field has an issue`;
+    const errorField = getFieldByPath(root.sections, errors.value.currentI18n[0]);
+    return `${errorField.label} field has an issue`;
   } else if (errors.value.i18n.length > 0) {
     const items = errors.value.i18n[0].split('.');
     const key = items.pop();
-    const field = items.pop();
-    if (field && key) {
-      return `${fields[field].label} field has an issue in ${locales[key]}`
+    const errorField = getFieldByPath(root.sections, errors.value.i18n[0]);
+    if (errorField && key) {
+      return `${errorField.label} field has an issue in ${locales[key]}`
     }
   }
   return null;
@@ -51,13 +56,18 @@ const errors = ref<IFieldError>({
   currentI18n: [],
   general: [],
 });
-watch([() => fieldKey, () => value.value], () => {
-  const allErrors = Object.keys(getUserDataErrors(fields, fieldKey + (index ? '[' + index + ']' : '')));
-  const i18n = allErrors.filter(item => Object.keys(locales).find(subLocale => item.endsWith(subLocale)));
+watch([() => fieldKey, () => value.value, () => locale.value], () => {
+  const userDataErrors = getUserDataErrors(
+    fields,
+    fieldKey + (index ? '[' + index + ']' : ''),
+    parent,
+  );
+  const allErrorKeys = Object.keys(userDataErrors);
+  const i18n = allErrorKeys.filter(item => Object.keys(locales).find(subLocale => item.endsWith(subLocale)));
   errors.value = {
     i18n,
     currentI18n: i18n.filter(item => item.endsWith(locale)),
-    general: allErrors.filter(item => Object.keys(locales).every(subLocale => item.endsWith(subLocale))),
+    general: allErrorKeys.filter(item => Object.keys(locales).every(subLocale => item.endsWith(subLocale))),
   }
 }, { immediate: true, deep: true })
 

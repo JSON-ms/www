@@ -19,10 +19,11 @@ export function useLayout() {
     return (pixels / 16) + 'rem';
   }
 
+  const mobileDivisionRatio = 1.777;
   const windowWidth = ref(window.innerWidth);
   const windowHeight = ref(window.innerHeight);
   const mobileFrameHeight = computed((): number => windowHeight.value - layoutPx(64));
-  const mobileFrameWidth = computed((): number => mobileFrameHeight.value / 1.777);
+  const mobileFrameWidth = computed((): number => mobileFrameHeight.value / mobileDivisionRatio);
 
   // Drawer
   const drawer = {
@@ -58,8 +59,11 @@ export function useLayout() {
     let _mobileFrameWidth = mobileFrameWidth.value;
     let _mobileFrameHeight = mobileFrameHeight.value;
     if (globalStore.admin.previewMode === 'desktop' && globalStore.admin.structure) {
-      _mobileFrameHeight -= (_mobileFrameHeight) / 3.5;
-      _mobileFrameWidth = _mobileFrameHeight / 1.777;
+      const division = globalStore.userSettings.data.layoutSitePreviewKeepRatio ? 3.5 : 2
+      _mobileFrameHeight -= (_mobileFrameHeight) / division;
+      if (globalStore.userSettings.data.layoutSitePreviewKeepRatio) {
+        _mobileFrameWidth = _mobileFrameHeight / mobileDivisionRatio;
+      }
     }
 
     // Reset
@@ -82,11 +86,11 @@ export function useLayout() {
         editor.width = 0;
         total -= editorWidth;
         const remainingWidth = windowWidth.value - total;
-        const maxWidth = remainingWidth - windowHeight.value / 1.777;
-        if (windowHeight.value * 1.777 > maxWidth) {
+        const maxWidth = remainingWidth - windowHeight.value / mobileDivisionRatio;
+        if (windowHeight.value * mobileDivisionRatio > maxWidth) {
           preview.width = maxWidth > layoutPx(600) ? maxWidth : layoutPx(600);
         } else {
-          preview.width = windowHeight.value * 1.777;
+          preview.width = windowHeight.value * mobileDivisionRatio;
         }
       }
 
@@ -97,13 +101,13 @@ export function useLayout() {
       let width = windowWidth.value - total;
       if (width < _mobileFrameWidth) {
         width = _mobileFrameWidth;
-        if (!editor.temporary) {
-          editor.temporary = true;
-          editor.memory = globalStore.admin.structure;
-          return getDataWidth();
-        } else if (!drawer.temporary) {
+        if (!drawer.temporary) {
           drawer.temporary = true;
           drawer.memory = globalStore.admin.drawer;
+          return getDataWidth();
+        } else if (!editor.temporary) {
+          editor.temporary = true;
+          editor.memory = globalStore.admin.structure;
           return getDataWidth();
         } else if (preview.active) {
           preview.active = false;
@@ -119,21 +123,27 @@ export function useLayout() {
 
     // Preview: Height
     if (globalStore.admin.previewMode === 'desktop') {
-      preview.height = preview.width / 1.777;
+      preview.height = preview.width / mobileDivisionRatio;
     } else {
-      preview.height = windowHeight.value - layoutPx(96);
+      preview.height = windowHeight.value - layoutPx(globalStore.userSettings.data.layoutSitePreviewPadding ? 96 : 64);
     }
-    const maxHeight = _mobileFrameHeight - layoutPx(32);
+    const maxHeight = _mobileFrameHeight - layoutPx(globalStore.userSettings.data.layoutSitePreviewPadding ? 32 : 0);
     if (preview.height > maxHeight) {
       const ratio = preview.height / maxHeight;
       preview.height = maxHeight;
-      preview.width = preview.width / ratio;
+      if (globalStore.userSettings.data.layoutSitePreviewKeepRatio) {
+        preview.width = preview.width / ratio;
+      }
     }
 
     // Preview: Zoom
-    preview.zoom = globalStore.admin.previewMode === 'desktop'
-      ? (preview.width / layoutPx(1500))
-      : (_mobileFrameWidth / layoutPx(420))
+    if (globalStore.userSettings.data.layoutSitePreviewKeepRatio || globalStore.admin.previewMode === 'mobile') {
+      preview.zoom = globalStore.admin.previewMode === 'desktop'
+        ? (preview.width / layoutPx(1500))
+        : (_mobileFrameWidth / layoutPx(420))
+    } else {
+      preview.zoom = 1;
+    }
 
     return {
       drawer,
