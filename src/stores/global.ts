@@ -1,37 +1,15 @@
 import { defineStore } from 'pinia';
-import type {ISession, IPrompt, IError, ISnack, IAdmin, IInterface, IFileManager, IFile} from '@/interfaces';
-
-export const mimeTypes = {
-  images: [
-    "image/apng",
-    "image/avif",
-    "image/bmp",
-    "image/gif",
-    "image/heic",
-    "image/heif",
-    "image/jpeg",
-    "image/jpg",
-    "image/png",
-    "image/svg+xml",
-    "image/tiff",
-    "image/webp",
-    "image/x-icon"
-  ],
-  videos: [
-    "video/3gpp",
-    "video/3gpp2",
-    "video/avi",
-    "video/mp4",
-    "video/mpeg",
-    "video/ogg",
-    "video/quicktime",
-    "video/webm",
-    "video/x-flv",
-    "video/x-matroska",
-    "video/x-ms-wmv",
-    "video/x-msvideo"
-  ]
-};
+import type {
+  ISession,
+  IPrompt,
+  IError,
+  ISnack,
+  IAdmin,
+  IStructure,
+  IFileManager,
+  IFile,
+  IUserSettings
+} from '@/interfaces';
 
 export const useGlobalStore = defineStore('global', {
   state: (): {
@@ -42,6 +20,10 @@ export const useGlobalStore = defineStore('global', {
     prompt: IPrompt,
     session: ISession,
     fileManager: IFileManager,
+    userSettings: {
+      visible: boolean,
+      data: IUserSettings
+    },
   } => ({
     theme: 'light',
     prompt: {
@@ -60,9 +42,10 @@ export const useGlobalStore = defineStore('global', {
     },
     admin: {
       drawer: window.innerWidth >= 1300,
-      interface: window.innerWidth >= 1400,
+      structure: window.innerWidth >= 1400,
       previewMode: window.innerWidth >= 1400 ? 'desktop' : 'mobile',
-      tab: 'data',
+      dataTab: 'data',
+      editorTab: 'structure',
     },
     session: {
       loggedIn: false,
@@ -75,8 +58,8 @@ export const useGlobalStore = defineStore('global', {
         createdAt: null,
       },
       googleOAuthSignInUrl: '',
-      interfaces: [],
-      webhooks: [],
+      structures: [],
+      endpoints: [],
     },
     fileManager: {
       visible: false,
@@ -85,7 +68,32 @@ export const useGlobalStore = defineStore('global', {
       canSelect: false,
       callback: () => new Promise(resolve => resolve(true)),
       accept: null,
-    }
+    },
+    userSettings: {
+      visible: false,
+      data: {
+        editorFontSize: 16,
+        editorLiveUpdate: true,
+        editorUpdateTimeout: 1000,
+        editorShowPrintMargin: false,
+        editorTabSize: 2,
+        userDataAutoFetch: true,
+        layoutEditorLocation: 'start',
+        layoutSitePreviewLocation: 'start',
+        layoutSitePreviewPadding: true,
+        layoutSitePreviewKeepRatio: true,
+        layoutAutoSplit: true,
+        blueprintsIncludeTypings: true,
+        blueprintsReadFromData: true,
+        blueprintsReadFromStructure: false,
+        blueprintsWriteToData: true,
+        blueprintsWriteToDefault: true,
+        blueprintsWriteToIndex: true,
+        blueprintsWriteToStructure: true,
+        blueprintsWriteToTypings: true,
+        blueprintsWriteToSettings: true,
+      }
+    },
   }),
   actions: {
     catchError(error: Error) {
@@ -105,7 +113,7 @@ export const useGlobalStore = defineStore('global', {
           icon: 'mdi-server-network-off',
           color: 'error',
           title: serverError ? 'Error Fetching Data' : 'Server Error',
-          body: serverError ? 'Please check your webhook URL or check your server settings.' : error.message,
+          body: serverError ? 'Please check your endpoint URL or check your server settings.' : error.message,
         };
       }
       throw error;
@@ -126,7 +134,7 @@ export const useGlobalStore = defineStore('global', {
       this.session = session;
     },
     showFileManager(
-      selected = [],
+      selected: IFile[] = [],
       canSelect = false,
       multiple = false,
       callback?: (files?: IFile | IFile[]) => Promise<boolean>,
@@ -139,22 +147,51 @@ export const useGlobalStore = defineStore('global', {
       this.fileManager.accept = accept;
       this.fileManager.callback = callback;
     },
-    addInterface(item: IInterface) {
-      if (!this.session.interfaces.find(inter => inter.uuid === item.uuid)) {
-        this.session.interfaces.push(item);
+    initUserSettings() {
+      try {
+        const jsonStr = localStorage.getItem('jsonms/global:user-settings');
+        if (jsonStr) {
+          const json = JSON.parse(jsonStr);
+          this.applyUserSettingsData(json);
+        }
+      } catch (e: any) {
+        console.warn('Unable to fetch user settings from local storage.', e)
       }
     },
-    removeInterface(item: IInterface) {
-      const filteredItems = this.session.interfaces.filter(child => child.uuid !== item.uuid);
-      this.session.interfaces.length = 0;
-      Array.prototype.push.apply(this.session.interfaces, filteredItems);
+    applyUserSettingsData(data: any) {
+      const values: any = {};
+      Object.keys(this.userSettings.data).forEach(key => {
+        // @ts-expect-error Keys are fetched from this.userSettings, so it's all fine...
+        const item = this.userSettings.data[key];
+        if (data[key] !== undefined && typeof data[key] === typeof item) {
+          values[key] = data[key];
+        }
+      })
+      this.userSettings.data = values;
     },
-    updateInterface(item: IInterface) {
-      const index = this.session.interfaces.findIndex(child => child.uuid === item.uuid);
+    setUserSettingsVisible(visible: boolean) {
+      this.userSettings.visible = visible;
+    },
+    setUserSettings(userSettings: IUserSettings) {
+      this.applyUserSettingsData(userSettings);
+      localStorage.setItem('jsonms/global:user-settings', JSON.stringify(userSettings));
+    },
+    addStructure(item: IStructure) {
+      if (!this.session.structures.find(inter => inter.uuid === item.uuid)) {
+        this.session.structures.push(item);
+      }
+    },
+    removeStructure(item: IStructure) {
+      const filteredItems = this.session.structures.filter(child => child.uuid !== item.uuid);
+      this.session.structures.length = 0;
+      Array.prototype.push.apply(this.session.structures, filteredItems);
+    },
+    updateStructure(item: IStructure) {
+      const index = this.session.structures.findIndex(child => child.uuid === item.uuid);
       if (index >= 0) {
-        this.session.interfaces[index] = item;
+        this.session.structures[index] = item;
       } else {
-        this.addInterface(item);
+        this.addStructure(item);
       }
     },
   },

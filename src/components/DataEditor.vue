@@ -1,30 +1,38 @@
 <script setup lang="ts">
 import type {VForm} from 'vuetify/components';
-import type {IField, IInterface, IInterfaceData, IServerSettings} from '@/interfaces';
+import type {IField, IStructure, IStructureData, IServerSettings} from '@/interfaces';
 import FieldItem from '@/components/FieldItem.vue';
 import {computed, defineExpose, ref} from 'vue';
 import {useRoute} from 'vue-router';
 import {useModelStore} from '@/stores/model';
-import {useInterface} from "@/composables/interface";
+import {useStructure} from "@/composables/structure";
 import {isFieldI18n} from "@/utils";
 
 const modelStore = useModelStore();
-const interfaceModel = defineModel<IInterface>({ required: true });
-const { interfaceData, serverSettings, loading = false } = defineProps<{
-  interfaceData: IInterfaceData,
+const structure = defineModel<IStructure>({ required: true });
+const { structureData, serverSettings, loading = false } = defineProps<{
+  structureData: IStructureData,
   serverSettings: IServerSettings,
   loading?: boolean,
 }>();
 
 const currentRoute = useRoute();
-const { isFieldVisible } = useInterface();
+const { isFieldVisible } = useStructure();
+
+const currentLocale = computed((): string => {
+  return currentRoute.params.locale?.toString() ?? 'en-US';
+})
+
+const currentSection = computed((): string => {
+  return currentRoute.params.section?.toString() ?? 'home';
+})
 
 const userDataSection = computed(() => {
-  return modelStore.userData[currentRoute.params.section.toString()];
+  return modelStore.userData[currentSection.value];
 })
 
 const selectedSection = computed(() => {
-  return interfaceData.sections[currentRoute.params.section.toString()] || {};
+  return structureData.sections[currentSection.value] || {};
 })
 
 const showContent = computed((): boolean => {
@@ -47,7 +55,7 @@ defineExpose({
 });
 
 const canEditData = computed((): boolean => {
-  const types = interfaceModel.value.type.split(',');
+  const types = structure.value.type.split(',');
   for (let i = 0; i < types.length; i++) {
     const type = types[i];
     if (['owner', 'admin'].includes(type)) {
@@ -86,14 +94,14 @@ const canEditData = computed((): boolean => {
       :key="key"
     >
       <FieldItem
-        v-if="isFieldI18n(field) && userDataSection"
-        v-model="userDataSection[key][currentRoute.params.locale.toString()]"
+        v-if="isFieldI18n(field) && userDataSection && userDataSection[key]"
+        v-model="userDataSection[key][currentLocale]"
         :field="field"
-        :field-key="currentRoute.params.section + '.' + key"
-        :locale="currentRoute.params.locale.toString()"
-        :locales="interfaceData.locales"
-        :structure="interfaceData"
-        :interface="interfaceModel"
+        :field-key="currentSection + '.' + key"
+        :locale="currentLocale"
+        :locales="structureData.locales"
+        :structure="structure"
+        :structure-data="structureData"
         :server-settings="serverSettings"
         :loading="loading"
       />
@@ -101,11 +109,11 @@ const canEditData = computed((): boolean => {
         v-else-if="userDataSection"
         v-model="userDataSection[key]"
         :field="field"
-        :field-key="currentRoute.params.section.toString() + '.' + key"
-        :locale="currentRoute.params.locale.toString()"
-        :locales="interfaceData.locales"
-        :structure="interfaceData"
-        :interface="interfaceModel"
+        :field-key="currentSection + '.' + key"
+        :locale="currentLocale"
+        :locales="structureData.locales"
+        :structure="structure"
+        :structure-data="structureData"
         :server-settings="serverSettings"
         :loading="loading"
       />

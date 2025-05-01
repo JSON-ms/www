@@ -41,6 +41,9 @@ hr:not(.v-divider) {
     transform:rotate(360deg);
   }
 }
+pre {
+  cursor: text;
+}
 
 .spin {
   animation-name: spin;

@@ -9,17 +9,16 @@ const globalStore = useGlobalStore();
 const modelStore = useModelStore();
 
 if (currentRoute.params.hash) {
-  const foundInterface = globalStore.session.interfaces.find(item => item.hash === currentRoute.params.hash);
-  if (foundInterface) {
-    modelStore.setInterface(foundInterface);
+  const foundStructure = globalStore.session.structures.find(item => item.hash === currentRoute.params.hash);
+  if (foundStructure) {
+    modelStore.setStructure(foundStructure);
   }
 }
 </script>
 
 <template>
   <JSONms
-    v-model="modelStore.interface"
-    :interfaces="globalStore.session.interfaces"
-    autoload
+    v-model="modelStore.structure"
+    :structures="globalStore.session.structures"
   />
 </template>

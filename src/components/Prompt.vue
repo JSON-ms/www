@@ -11,6 +11,17 @@ const proceed = () => {
     .finally(() => proceeding.value = false);
 }
 const proceeding = ref(false);
+const closing = ref(false);
+const cancel = () => {
+  if (globalStore.prompt.cancelCallback instanceof Function) {
+    closing.value = true;
+    globalStore.prompt.cancelCallback()
+      .then(close)
+      .finally(() => closing.value = false);
+  } else {
+    close();
+  }
+}
 const close = () => {
   globalStore.setPrompt({
     ...globalStore.prompt,
@@ -43,7 +54,7 @@ const close = () => {
       <template #actions>
         <v-btn
           :loading="proceeding"
-          :disabled="proceeding"
+          :disabled="proceeding || closing"
           :text="globalStore.prompt.btnText || 'OK'"
           :prepend-icon="globalStore.prompt.btnIcon"
           :color="globalStore.prompt.btnColor || 'primary'"
@@ -54,9 +65,10 @@ const close = () => {
           @click="proceed"
         />
         <v-btn
-          :disabled="proceeding"
+          :disabled="proceeding || closing"
+          :loading="closing"
           text="Cancel"
-          @click="close"
+          @click="cancel"
         />
       </template>
     </v-card>

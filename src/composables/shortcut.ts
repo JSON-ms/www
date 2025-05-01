@@ -29,7 +29,7 @@ export function useShortcut(options: {
 
       event.preventDefault();
       globalStore.setAdmin({
-        interface: !globalStore.admin.interface,
+        structure: !globalStore.admin.structure,
       })
     }
   }, {
@@ -50,9 +50,11 @@ export function useShortcut(options: {
     }
   }, {
     keys: ['ctrl', 'r'],
-    preventDefault: true,
-    handler() {
-      options.onSiteRefresh();
+    handler(shortcut, event) {
+      if (globalStore.admin.previewMode !== null) {
+        event.preventDefault();
+        options.onSiteRefresh();
+      }
     }
   }, {
     keys: ['ctrl', 'q'],

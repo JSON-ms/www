@@ -2,13 +2,13 @@
 import ListBuilder from '@/components/ListBuilder.vue';
 import FieldHeader from '@/components/FieldHeader.vue';
 import FileFieldItem from '@/components/FileFieldItem.vue';
-import type {IInterfaceData, IField, IServerSettings, IInterface, IFile} from '@/interfaces';
+import FieldItemErrorTooltip from '@/components/FieldItemErrorTooltip.vue';
+import type {IStructureData, IField, IServerSettings, IStructure, IFile} from '@/interfaces';
 import Rules from '@/rules';
 import {deepToRaw, parseFields, getFieldType, isFieldType, isNativeObject, isFieldI18n, getFieldRules} from '@/utils';
 import {computed, ref, watch} from 'vue';
 import { useGlobalStore } from '@/stores/global';
-import {useUserData} from '@/composables/user-data';
-import {useInterface} from "@/composables/interface";
+import {useStructure} from "@/composables/structure";
 
 const globalStore = useGlobalStore();
 const value = defineModel<any>({ required: true });
@@ -18,8 +18,8 @@ const {
   locale,
   locales,
   structure,
+  structureData,
   serverSettings,
-  interface: interfaceModel,
   disabled = false,
   loading = false,
 } = defineProps<{
@@ -27,15 +27,15 @@ const {
   fieldKey: string,
   locale: string,
   locales: { [key: string]: string; },
-  structure: IInterfaceData,
-  interface: IInterface,
+  structure: IStructure,
+  structureData: IStructureData,
   serverSettings: IServerSettings,
   disabled?: boolean,
   loading?: boolean,
 }>();
 
-const { isFieldVisible } = useInterface();
-const { getUserDataErrors } = useUserData();
+const { isFieldVisible } = useStructure();
+
 const showDatePicker = ref(false);
 const showColorPicker = ref(false);
 const getRules = (field: IField): any[] => {
@@ -69,7 +69,7 @@ const optionItems = computed((): { title: string, value: string }[] => {
   }
   if (field.items?.toString().startsWith('enums.')) {
     const enumType = field.items?.toString().split('enums.')[1];
-    const enumData = structure.enums[enumType];
+    const enumData = structureData.enums[enumType];
     if (enumData) {
       if (Array.isArray(enumData)) {
         return enumData.map(title => ({ title, value: title }));
@@ -100,7 +100,7 @@ const computedReadOnlyDate = computed((): string => {
 });
 
 const getDefaultItem = () => {
-  return parseFields(structuredClone(deepToRaw(fields.value) || {}), locales, structure.schemas);
+  return parseFields(structuredClone(deepToRaw(fields.value) || {}), locales, structureData.schemas);
 }
 
 const fields = computed((): {[key: string]: IField } => {
@@ -122,36 +122,6 @@ const files = computed((): IFile[] => {
       ? [value.value]
       : [];
 })
-const getErrors = (index: number): { i18n: string[], currentI18n: string[], general: string[] } => {
-  const allErrors = Object.keys(getUserDataErrors(fields.value, fieldKey + '[' + index + ']'));
-  const i18n = allErrors.filter(item => Object.keys(locales).find(subLocale => item.endsWith(subLocale)));
-  return {
-    i18n,
-    currentI18n: i18n.filter(item => item.endsWith(locale)),
-    general: allErrors.filter(item => Object.keys(locales).every(subLocale => item.endsWith(subLocale))),
-  }
-}
-
-const getErrorMsg = (index: number): string | null => {
-  const errors = getErrors(index);
-  if (errors.general.length > 0) {
-    const item = errors.general[0].split('.').pop();
-    if (item) {
-      return `${fields.value[item].label} field has an issue`;
-    }
-  } else if (errors.currentI18n.length > 0) {
-    const items = errors.currentI18n[0].split('.');
-    return `${fields.value[items[items.length - 2]].label} field has an issue`;
-  } else if (errors.i18n.length > 0) {
-    const items = errors.i18n[0].split('.');
-    const key = items.pop();
-    const field = items.pop();
-    if (field && key) {
-      return `${fields.value[field].label} field has an issue in ${locales[key]}`
-    }
-  }
-  return null;
-}
 
 const markdownToolbar = [
   'bold', 'italic', 'heading', '|', 'unordered-list', 'ordered-list', 'link', {
@@ -249,9 +219,9 @@ const onClickOutsideColor = () => {
   }
 }
 
-const onWysiwygContentChange = (content: any) => {
-  console.log(content);
-}
+// const onWysiwygContentChange = (content: any) => {
+//   console.log(content);
+// }
 
 const expanded = ref(field.collapsed === true ? null : 0);
 watch(() => field.collapsed, () => {
@@ -341,30 +311,30 @@ watch(() => field.collapsed, () => {
   </v-number-input>
 
   <!-- WYSIWYG -->
-  <div v-else-if="isFieldType(field, 'wysiwyg')">
-    <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />
-    <v-input
-      v-if="value !== null"
-      v-model="value"
-      :hint="field.hint"
-      :persistent-hint="!!field.hint"
-      :required="field.required"
-      :rules="getRules(field)"
-      :disabled="disabled"
-      hide-details="auto"
-    >
-      <div class="w-100 mb-12">
-        <QuillEditor
-          v-model="computedStringValue"
-          theme="snow"
-          style="height: 33vh"
-          @text-change="onWysiwygContentChange"
-          @selection-change="onWysiwygContentChange"
-          @editor-change="onWysiwygContentChange"
-        />
-      </div>
-    </v-input>
-  </div>
+<!--  <div v-else-if="isFieldType(field, 'wysiwyg')">-->
+<!--    <FieldHeader v-model="value" :field="field" :field-key="fieldKey" />-->
+<!--    <v-input-->
+<!--      v-if="value !== null"-->
+<!--      v-model="value"-->
+<!--      :hint="field.hint"-->
+<!--      :persistent-hint="!!field.hint"-->
+<!--      :required="field.required"-->
+<!--      :rules="getRules(field)"-->
+<!--      :disabled="disabled"-->
+<!--      hide-details="auto"-->
+<!--    >-->
+<!--      <div class="w-100 mb-12">-->
+<!--        <QuillEditor-->
+<!--          v-model="computedStringValue"-->
+<!--          theme="snow"-->
+<!--          style="height: 33dvh"-->
+<!--          @text-change="onWysiwygContentChange"-->
+<!--          @selection-change="onWysiwygContentChange"-->
+<!--          @editor-change="onWysiwygContentChange"-->
+<!--        />-->
+<!--      </div>-->
+<!--    </v-input>-->
+<!--  </div>-->
 
   <!-- MARKDOWN -->
   <div v-else-if="isFieldType(field, 'markdown')">
@@ -766,32 +736,24 @@ watch(() => field.collapsed, () => {
       v-model="value"
       :default-item="getDefaultItem()"
       :disabled="disabled"
+      :collapsable="!(field.collapsable === false)"
       :on-collapsable-header="onCollapsableHeader"
       :min="field.min"
       :max="field.max"
       class="d-flex flex-column"
       style="gap: 0.5rem"
-      collapsable
     >
       <template #actions="{ index }">
-        <v-tooltip
-          v-if="getErrors(index).general.length > 0 || getErrors(index).currentI18n.length > 0"
-          :text="getErrorMsg(index) || ''"
-          location="bottom"
-        >
-          <template #activator="{ props }">
-            <v-icon v-bind="props" icon="mdi-alert" color="warning" />
-          </template>
-        </v-tooltip>
-        <v-tooltip
-          v-else-if="getErrors(index).i18n.length > 0"
-          :text="getErrorMsg(index) || ''"
-          location="bottom"
-        >
-          <template #activator="{ props }">
-            <v-icon v-bind="props" icon="mdi-alert-outline" color="warning" />
-          </template>
-        </v-tooltip>
+        <FieldItemErrorTooltip
+          v-model="value"
+          :root="structureData"
+          :parent="field"
+          :fields="fields"
+          :field-key="fieldKey"
+          :locales="locales"
+          :locale="locale"
+          :index="index"
+        />
       </template>
       <template #default="{ item, index }">
         <div
@@ -807,7 +769,7 @@ watch(() => field.collapsed, () => {
             :locale="locale"
             :locales="locales"
             :structure="structure"
-            :interface="interfaceModel"
+            :structure-data="structureData"
             :server-settings="serverSettings"
             :disabled="disabled"
             :loading="loading"
@@ -820,7 +782,7 @@ watch(() => field.collapsed, () => {
             :locale="locale"
             :locales="locales"
             :structure="structure"
-            :interface="interfaceModel"
+            :structure-data="structureData"
             :server-settings="serverSettings"
             :disabled="disabled"
             :loading="loading"
@@ -835,8 +797,21 @@ watch(() => field.collapsed, () => {
     <v-expansion-panels v-if="field.collapsable" v-model="expanded">
       <v-expansion-panel>
         <v-expansion-panel-title>
-          <v-icon v-if="field.icon" :icon="field.icon" start />
-          {{ field.label }}
+          <div class="d-flex align-center justify-space-between w-100 pr-3" style="gap: 1rem">
+            <div class="d-flex align-center" style="gap: 1rem">
+              <v-icon v-if="field.icon" :icon="field.icon" />
+              <span>{{ field.label }}</span>
+            </div>
+            <FieldItemErrorTooltip
+              v-model="value"
+              :root="structureData"
+              :parent="field"
+              :fields="fields"
+              :field-key="fieldKey"
+              :locales="locales"
+              :locale="locale"
+            />
+          </div>
         </v-expansion-panel-title>
         <v-expansion-panel-text>
           <div
@@ -855,7 +830,7 @@ watch(() => field.collapsed, () => {
                 :locale="locale"
                 :locales="locales"
                 :structure="structure"
-                :interface="interfaceModel"
+                :structure-data="structureData"
                 :server-settings="serverSettings"
                 :loading="loading"
               />
@@ -867,7 +842,7 @@ watch(() => field.collapsed, () => {
                 :locale="locale"
                 :locales="locales"
                 :structure="structure"
-                :interface="interfaceModel"
+                :structure-data="structureData"
                 :server-settings="serverSettings"
                 :loading="loading"
               />
@@ -896,7 +871,7 @@ watch(() => field.collapsed, () => {
             :locale="locale"
             :locales="locales"
             :structure="structure"
-            :interface="interfaceModel"
+            :structure-data="structureData"
             :server-settings="serverSettings"
             :loading="loading"
           />
@@ -908,7 +883,7 @@ watch(() => field.collapsed, () => {
             :locale="locale"
             :locales="locales"
             :structure="structure"
-            :interface="interfaceModel"
+            :structure-data="structureData"
             :server-settings="serverSettings"
             :loading="loading"
           />
@@ -928,7 +903,7 @@ watch(() => field.collapsed, () => {
     <v-chip size="x-small" label>
       {{ fieldType }}
     </v-chip>
-    is not supported. Check and adjust your YAML interface accordingly.
+    is not supported. Check and adjust your YAML structure accordingly.
   </v-alert>
 
   <!-- APPEND -->
@@ -942,7 +917,7 @@ watch(() => field.collapsed, () => {
 .v-checkbox .v-selection-control { min-height: 0 !important; }
 .vue-easymde-editor .CodeMirror-scroll {
   min-height: 6rem !important;
-  max-height: 40vh !important;
+  max-height: 40dvh !important;
 }
 .handle {
    cursor: grabbing;

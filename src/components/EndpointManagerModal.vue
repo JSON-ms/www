@@ -2,23 +2,23 @@
 import ListBuilder from '@/components/ListBuilder.vue';
 import {useGlobalStore} from '@/stores/global';
 import {computed, ref, watch} from 'vue';
-import type {IWebhook} from '@/interfaces';
+import type {IEndpoint} from '@/interfaces';
 import {deepToRaw} from '@/utils';
-import {useInterface} from '@/composables/interface';
+import {useStructure} from '@/composables/structure';
 import Rules from '@/rules';
-import {useWebhooks} from "@/composables/webhooks";
+import {useEndpoints} from "@/composables/endpoints";
 
 const globalStore = useGlobalStore();
 const visible = defineModel<boolean>({ default: false });
-const { getInterfaceRules } = useInterface();
-const { saveWebhooks, deleteWebhook, saving } = useWebhooks();
+const { getStructureRules } = useStructure();
+const { saveEndpoints, deleteEndpoint, saving } = useEndpoints();
 
 const save = () => {
-  const data = structuredClone(deepToRaw(webhookList.value));
-  saveWebhooks(data).then(webhooks => {
+  const data = structuredClone(deepToRaw(endpointList.value));
+  saveEndpoints(data).then(endpoints => {
     globalStore.setSession({
       ...globalStore.session,
-      webhooks: structuredClone(deepToRaw(webhooks))
+      endpoints: structuredClone(deepToRaw(endpoints))
     })
   })
 }
@@ -30,18 +30,18 @@ const onRemoveItemCallback = (index: number, list: any[]) => {
     globalStore.setPrompt({
       ...globalStore.prompt,
       visible: true,
-      title: 'Remove endpoint',
+      title: 'Remove Endpoint',
       body: 'Are you sure you want to remove this endpoint? Any project using this endpoint will stop working.',
       btnText: 'Remove',
       btnIcon: 'mdi-delete-outline',
       btnColor: 'error',
       callback: () => new Promise(resolve => {
-        deleteWebhook(list[index].uuid)
+        deleteEndpoint(list[index].uuid)
           .then(() => {
             list.splice(index, 1);
             globalStore.setSession({
               ...globalStore.session,
-              webhooks: structuredClone(deepToRaw(list))
+              endpoints: structuredClone(deepToRaw(list))
             })
           })
           .finally(resolve)
@@ -52,15 +52,15 @@ const onRemoveItemCallback = (index: number, list: any[]) => {
   }
 }
 const isPristine = computed((): boolean => {
-  return JSON.stringify(webhookList.value) === JSON.stringify(globalStore.session.webhooks);
+  return JSON.stringify(endpointList.value) === JSON.stringify(globalStore.session.endpoints);
 })
-const webhookList = ref<IWebhook[]>([]);
-watch(() => globalStore.session.webhooks, () => {
-  webhookList.value = structuredClone(deepToRaw(globalStore.session.webhooks));
+const endpointList = ref<IEndpoint[]>([]);
+watch(() => globalStore.session.endpoints, () => {
+  endpointList.value = structuredClone(deepToRaw(globalStore.session.endpoints));
 }, { immediate: true, deep: true })
 watch(visible, () => {
   if (visible.value) {
-    webhookList.value = structuredClone(deepToRaw(globalStore.session.webhooks));
+    endpointList.value = structuredClone(deepToRaw(globalStore.session.endpoints));
   }
 })
 </script>
@@ -73,7 +73,7 @@ watch(visible, () => {
     scrollable
   >
     <v-card
-      title="Webhook Manager"
+      title="Endpoint Manager"
       prepend-icon="mdi-webhook"
     >
       <v-card-text>
@@ -82,8 +82,12 @@ watch(visible, () => {
           Every endpoint you create instantiate a new <i>cypher</i> and <i>secret API key</i> that you can reuse with other projects. That way, you can centralize your data on a specific server if required.
         </p>
 
+        <v-alert type="info" variant="tonal" class="mb-4">
+          To get assistance with running your own endpoint instance, be sure to consult the Integration panel.
+        </v-alert>
+
         <ListBuilder
-          v-model="webhookList"
+          v-model="endpointList"
           :disabled="saving"
           :remove-item-callback="onRemoveItemCallback"
           :default-item="{
@@ -95,7 +99,7 @@ watch(visible, () => {
           <template #default="{ item }">
             <v-text-field
               v-model="item.url"
-              :rules="getInterfaceRules('server_url')"
+              :rules="getStructureRules('server_url')"
               clearable
               required
               persistent-hint

@@ -15,7 +15,6 @@ const close = () => {
   <v-dialog
     v-model="visible"
     width="auto"
-    persistent
     scrollable
   >
     <v-card
@@ -26,7 +25,7 @@ const close = () => {
       <iframe
         :height="800 / (16/9)"
         src="https://www.youtube.com/embed/QbzHaJ3GeJM?si=HsQLg2_cXyt97vv1"
-        title="YouTube video player"
+        title="JSON.ms Youtube Presentation"
         frameborder="0"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         referrerpolicy="strict-origin-when-cross-origin"

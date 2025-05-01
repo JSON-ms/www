@@ -68,15 +68,15 @@ loadSession()
     app.mount('#app')
   })
 
-document.addEventListener('visibilitychange', () => {
-  const wasLoggedIn = globalStore.session.loggedIn;
-  if (document.visibilityState === 'visible') {
-    loadSession().then(response => {
-      if (wasLoggedIn !== response.loggedIn) {
-        window.location.reload();
-      } else {
-        globalStore.setSession(response);
-      }
-    }).catch(globalStore.catchError)
-  }
-});
+// document.addEventListener('visibilitychange', () => {
+//   const wasLoggedIn = globalStore.session.loggedIn;
+//   if (document.visibilityState === 'visible') {
+//     loadSession().then(response => {
+//       if (wasLoggedIn !== response.loggedIn) {
+//         window.location.reload();
+//       } else {
+//         globalStore.setSession(response);
+//       }
+//     }).catch(globalStore.catchError)
+//   }
+// });

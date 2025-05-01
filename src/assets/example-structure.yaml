@@ -1,6 +1,6 @@
 # This YAML file serves as a blueprint for your admin panel, defining
 # all the fields and sections that will be displayed to users. It
-# outlines the structure and layout of the interface, specifying what
+# outlines the structure and layout of the structure, specifying what
 # data can be entered and how it will be organized.
 
 
@@ -10,7 +10,7 @@
 #   the overall appearance and functionality.
 global:
   title: Dynamic Admin Panel Example
-  logo: [INTERFACE_EDITOR_URL]/favicon.ico
+  logo: [STRUCTURE_EDITOR_URL]/favicon.ico
 
 
 # Supported Languages:
@@ -58,8 +58,6 @@ sections:
     label: Home page
     icon: mdi-account
     fields:
-      meta:
-        type: schemas.meta
       title:
         type: i18n
         label: Title
@@ -75,6 +73,11 @@ sections:
       image:
         type: file
         label: Image
+      meta:
+        type: schemas.meta
+        label: Metadata
+        collapsable: true
+        collapsed: true
   services:
     label: Services
     icon: mdi-room-service-outline
@@ -97,6 +100,11 @@ sections:
         label: Call-to-action
         icon: mdi-button-pointer
         required: true
+      meta:
+        type: schemas.meta
+        label: Metadata
+        collapsable: true
+        collapsed: true
   testimonials:
     label: Testimonials
     icon: mdi-comment-check-outline
@@ -129,6 +137,11 @@ sections:
             type: i18n:markdown
             label: Body
             required: true
+      meta:
+        type: schemas.meta
+        label: Metadata
+        collapsable: true
+        collapsed: true
   faq:
     label: FAQ
     icon: mdi-frequently-asked-questions
@@ -152,6 +165,11 @@ sections:
             type: string
             label: Body
             required: true
+      meta:
+        type: schemas.meta
+        label: Metadata
+        collapsable: true
+        collapsed: true
   contact:
     label: Contact
     icon: mdi-email-outline
@@ -164,6 +182,11 @@ sections:
         type: i18n:markdown
         label: Body
         required: true
+      meta:
+        type: schemas.meta
+        label: Metadata
+        collapsable: true
+        collapsed: true
   settings:
     label: Settings
     icon: mdi-cog

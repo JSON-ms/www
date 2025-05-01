@@ -1,5 +1,5 @@
-import exampleInterface from '@/assets/example-interface.yaml'
-import type {IInterface, IField, IFile, TSchema, TRule} from '@/interfaces';
+import exampleStructure from '@/assets/example-structure.yaml'
+import type {IStructure, IField, IFile, TSchema, TRule} from '@/interfaces';
 import type {Ref} from 'vue';
 import {isRef, toRaw} from 'vue';
 import JSZip from 'jszip';
@@ -30,6 +30,9 @@ export const allFields: string[] = [
   ...allNonI18nFields.map(item => 'i18n:' + item),
   'i18n',
 ]
+export const isValidField = (field: IField): boolean => {
+  return field && !!(allFields.find(item => item === field.type));
+}
 export const isFieldType = (field: IField, types: string | string[]): boolean => {
   if (!field) {
     return false;
@@ -48,6 +51,10 @@ export const isFieldType = (field: IField, types: string | string[]): boolean =>
     }
   }
   return false;
+}
+export const fieldHasChildren = (field: IField): boolean => {
+  return isFieldType(field, 'node')
+    || isFieldType(field, 'array');
 }
 export const isFieldArrayType = (field: IField): boolean => {
   return isFieldType(field, 'array')
@@ -72,13 +79,13 @@ export const getFieldType = (field: IField): string => {
   return typeof field?.type === 'string' ? field.type : 'unknown'
 }
 
-export const getInterface = (content: string = getDefaultInterfaceContent()): IInterface => {
+export const getStructure = (content: string = getDefaultStructureContent()): IStructure => {
   return {
     label: 'Untitled',
     hash: 'new',
     content,
-    webhook: null,
-    permission_interface: [],
+    endpoint: null,
+    permission_structure: [],
     permission_admin: [],
     type: 'owner',
   }
@@ -98,9 +105,9 @@ export const valueToString = (value: any) => {
   }
 }
 
-export const getDefaultInterfaceContent = (): string => {
-  return (exampleInterface as string)
-    .replace('[INTERFACE_EDITOR_URL]', window.location.origin);
+export const getDefaultStructureContent = (): string => {
+  return (exampleStructure as string)
+    .replace('[STRUCTURE_EDITOR_URL]', window.location.origin);
 }
 
 export const parseFields = (fields: any = {}, locales = {}, schemas: TSchema = {}) => {
@@ -117,8 +124,12 @@ export const parseFields = (fields: any = {}, locales = {}, schemas: TSchema = {
     const required = !!(field.required);
     const multiple = !!(field.multiple);
     const schemaKey = getFieldSchemaKey(field);
-    let value;
-    if (multipleTypes.includes(type) || (mayBeMultipleTypes.includes(type) && multiple)) {
+    let value: any;
+    if (isFieldType(field, 'range')) {
+      value = required ? [field.min ?? 0, field.max ?? 100] : null;
+    } else if (isFieldI18n(field) && isFieldType(field, 'array')) {
+      value = [];
+    } else if ((multipleTypes.includes(type) || (mayBeMultipleTypes.includes(type) && multiple)) && !isFieldI18n(field)) {
       value = [];
     } else if (isFieldType(field, 'file')) {
       value = required ? { path: null, meta: {
@@ -127,6 +138,9 @@ export const parseFields = (fields: any = {}, locales = {}, schemas: TSchema = {
         originalFileName: '',
         width: 0,
         height: 0,
+        frameRate: 0,
+        duration: 0,
+        timestamp: new Date().getTime() / 1000,
       } } as IFile : null;
     } else if (schemaKey) {
       value = parseFields(schemas[schemaKey], locales, schemas);
@@ -136,10 +150,6 @@ export const parseFields = (fields: any = {}, locales = {}, schemas: TSchema = {
           ? 0
           : ''
         : null;
-    }
-
-    if (value === null && field.default) {
-      value = field.default;
     }
 
     return value;
@@ -167,15 +177,100 @@ export const parseFields = (fields: any = {}, locales = {}, schemas: TSchema = {
   return result;
 }
 
+export const getFieldDefaultValue = (field: IField, locales: {[key: string]: string}) => {
+  if (isFieldType(field, 'file')) {
+    const defaultFileValue: IFile = {
+      path: null,
+      meta: {
+        type: 'unknown',
+        size: null,
+        height: null,
+        width: null,
+      }
+    };
+    if (typeof field.default === 'string') {
+      defaultFileValue.path = field.default;
+    }
+    if (isNativeObject(field.default)) {
+      if (typeof field.default.path === 'string') {
+        defaultFileValue.path = field.default.path;
+      }
+      if (isNativeObject(field.default.meta)) {
+        Object.assign(defaultFileValue.meta, field.default.meta);
+      }
+    }
+
+    ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tif', '.tiff', '.svg'].forEach(extension => {
+      if (defaultFileValue.path?.endsWith(extension)) {
+        defaultFileValue.meta.type = 'image/' + extension.substring(1);
+      }
+    });
+    ['.mp4', '.avi', '.mov', '.mkv', '.wmv', '.flv', '.webm'].forEach(extension => {
+      if (defaultFileValue.path?.endsWith(extension)) {
+        defaultFileValue.meta.type = 'video/' + extension.substring(1);
+      }
+    })
+
+    return defaultFileValue;
+  }
+  else if (isFieldI18n(field)) {
+    const defaultValue: {[key: string]: string | null | []} = {};
+    Object.entries(locales).forEach(([locale]) => {
+      defaultValue[locale] = isFieldType(field, 'array')
+        ? []
+        : field.required ? '' : null;
+      if (isNativeObject(field.default)) {
+        defaultValue[locale] = field.default[locale];
+      } else if (field.default) {
+        defaultValue[locale] = field.default;
+      }
+    });
+    return defaultValue;
+  }
+  else if (isFieldType(field, 'array')) {
+    if (!Array.isArray(field.default)) {
+      return [];
+    }
+    const items = structuredClone(field.default);
+    const finalItems = [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const hash = generateHash(8);
+      if (isNativeObject(item)) {
+        Object.keys(field.fields).forEach(key => {
+          const arrField = field.fields[key];
+          if (isFieldI18n(arrField)) {
+            item[key] = {};
+            Object.entries(locales).forEach(([locale]) => {
+              if (isNativeObject(field.default[i][key])) {
+                item[key][locale] = field.default[i][key][locale];
+              } else {
+                item[key][locale] = field.default[i][key] ?? '';
+              }
+            })
+          } else {
+            item[key] = getFieldDefaultValue(arrField, locales);
+          }
+        })
+
+        item.hash = hash;
+        finalItems.push(item);
+      }
+    }
+    return finalItems;
+  }
+  return field.default ?? null;
+}
+
 export const processObject = (
   obj: any,
-  callback: (parent: any, key: string, path: string) => void,
+  callback: (parent: any, key: string, path: string, obj: any) => void,
   path = '',
   parent = null,
   parentKey: string | null = null,
-  continueCallback: (path: string) => boolean = () => true
+  continueCallback: (path: string, obj: any) => boolean = () => true
 ) => {
-  if (obj !== null && typeof obj === 'object' && !Array.isArray(obj) && continueCallback(path)) {
+  if (obj !== null && typeof obj === 'object' && !Array.isArray(obj) && continueCallback(path, obj)) {
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
         const currentPath = path ? `${path}.${key}` : key;
@@ -183,8 +278,74 @@ export const processObject = (
       }
     }
   } else if (parentKey) {
-    callback(parent, parentKey, path);
+    callback(parent, parentKey, path, obj);
   }
+}
+
+export function updateObjectByPath(obj: any, path: string, value: any) {
+  const keys = path.split(/\.|\[|\]/).filter(Boolean) as any[];
+  let current: any = obj;
+  for (let i = 0; i < keys.length - 1; i++) {
+    const key = keys[i];
+    if (!current[key]) {
+      current[key] = isNaN(Number(keys[i + 1])) ? {} : [];
+    }
+    current = current[key];
+  }
+  current[keys[keys.length - 1]] = value;
+}
+
+export const valuesAreSameType = (a: any, b: any, deep = true): boolean => {
+  // Check for null values
+  if (a === null || b === null) {
+    return a === b; // both must be null to be the same type
+  }
+
+  // Check for primitive types
+  const typeA = typeof a;
+  const typeB = typeof b;
+
+  if (typeA !== typeB) {
+    return false; // different types
+  }
+
+  if (!deep && Array.isArray(a) && Array.isArray(b)) {
+    return true;
+  }
+
+  if (!deep && isNativeObject(a) && isNativeObject(b)) {
+    return true;
+  }
+
+  // Handle specific types
+  if (Array.isArray(a) && Array.isArray(b)) {
+    // If both are arrays, check their lengths and types of elements
+    if (a.length !== b.length) {
+      return false;
+    }
+    return a.every((item, index) => valuesAreSameType(item, b[index]));
+  }
+
+  if (typeA === 'object') {
+    // If both are objects, check their keys and values
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+
+    if (keysA.length !== keysB.length) {
+      return false; // different number of keys
+    }
+
+    return keysA.every(key => {
+      return keysB.includes(key) && valuesAreSameType(a[key], b[key]);
+    });
+  }
+
+  // For primitive types (number, string, boolean, symbol, undefined)
+  return true; // they are the same type
+}
+
+export const dataToFieldPath = (field: IField, path: string): string => {
+  return 'sections.' + path.split('.').join('.fields.') + '.default';
 }
 
 export const getDataByPath = (obj: any, path = '', defaultValue?: any) => {
@@ -192,7 +353,13 @@ export const getDataByPath = (obj: any, path = '', defaultValue?: any) => {
   const data = keys.reduce((accumulator: any, key: string) => {
     if (accumulator !== null && accumulator !== undefined) {
       const index = Number(key);
-      return Array.isArray(accumulator) && !isNaN(index) ? accumulator[index] : accumulator[key];
+      const value = Array.isArray(accumulator) && !isNaN(index)
+        ? accumulator[index]
+        : accumulator[key];
+      if (defaultValue && !valuesAreSameType(defaultValue, value, false)) {
+        return defaultValue;
+      }
+      return value;
     }
     return undefined;
   }, obj);
@@ -368,7 +535,7 @@ export async function urlsToBlobArray(
   })
 }
 
-export async function downloadFilesAsZip(urls: string[], jsonData: object | false, zipFileName: string): Promise<Blob> {
+export async function downloadFilesAsZip(urls: string[], jsonData: object | false, zipFileName: string, tabSize = 2): Promise<Blob> {
   return new Promise(async (resolve, reject) => {
 
     const zip = new JSZip();
@@ -376,11 +543,11 @@ export async function downloadFilesAsZip(urls: string[], jsonData: object | fals
 
     // Add JSON data as a file
     if (jsonData) {
-      zip.file("data.json", JSON.stringify(jsonData, null, 2));
+      zip.file("data.json", JSON.stringify(jsonData, null, tabSize));
     }
 
     // Fetch each URL and add it as a blob to the zip
-    const files = await urlsToBlobArray(urls, modelStore.interface.server_secret);
+    const files = await urlsToBlobArray(urls, modelStore.structure.server_secret);
     files.forEach(file => {
       zip.file(file.filename, file.blob);
     })
@@ -466,7 +633,7 @@ export function getFileIcon(file: IFile): string {
     json: 'mdi-file-code',
     xml: 'mdi-file-code'
   };
-  const extension = file.meta.originalFileName.split('.').pop() || '';
+  const extension = (file.meta.originalFileName || '').split('.').pop() || '';
   if (iconMapping[extension]) {
     return iconMapping[extension];
   }

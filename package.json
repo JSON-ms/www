@@ -2,7 +2,7 @@
   "name": "@json.ms/www",
   "private": true,
   "type": "module",
-  "version": "1.1.19",
+  "version": "1.2.2",
   "scripts": {
     "dev": "vite --host",
     "build": "run-p type-check \"build-only {@}\" --",
@@ -13,6 +13,7 @@
     "setup-hooks": "cp .pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit"
   },
   "dependencies": {
+    "@jsonms/js": "^1.0.7",
     "@mdi/font": "7.4.47",
     "@types/yamljs": "^0.2.34",
     "@vueup/vue-quill": "^1.2.0",
@@ -20,6 +21,7 @@
     "ace-builds": "^1.39.0",
     "core-js": "^3.37.1",
     "easymde": "^2.20.0",
+    "highlight.js": "^11.11.1",
     "jszip": "^3.10.1",
     "marked": "^15.0.7",
     "pinia": "^3.0.1",

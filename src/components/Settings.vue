@@ -1,20 +1,20 @@
 <script setup lang="ts">
 import {computed, ref, watch} from 'vue';
 import { useDisplay } from 'vuetify';
-import type {IInterface} from '@/interfaces';
-import {useInterface} from '@/composables/interface';
+import type {IStructure} from '@/interfaces';
+import {useStructure} from '@/composables/structure';
 import {useGlobalStore} from '@/stores/global';
-import WebhookManagerModal from '@/components/WebhookManagerModal.vue';
+import EndpointManagerModal from '@/components/EndpointManagerModal.vue';
 import {useUserData} from "@/composables/user-data";
 
 // Definitions
+const { secretKey, cypherKey, adminUrl, canOpenAdminUrl, serverSettings, computedServerSecretKey, computedCypherKey, structureStates, getStructureRules, getSecretKey, getCypherKey } = useStructure();
+const { fetchUserData, setUserData } = useUserData();
+const { smAndDown } = useDisplay()
+const copied = ref(false);
 const globalStore = useGlobalStore();
 const formIsValid = ref(false);
-const interfaceModel = defineModel<IInterface>({ required: true });
-const { secretKey, cypherKey, adminUrl, canOpenAdminUrl, serverSettings, computedServerSecretKey, computedCypherKey, interfaceStates, getInterfaceRules, getSecretKey, getCypherKey } = useInterface();
-const { fetchUserData, setUserData } = useUserData();
-const copied = ref(false);
-const { smAndDown } = useDisplay()
+const structure = defineModel<IStructure>({ required: true });
 
 // Props
 const {
@@ -44,52 +44,52 @@ const select = () => {
 
 const server = computed({
   get(): string | null {
-    return interfaceModel.value.webhook ?? null;
+    return structure.value.endpoint ?? null;
   },
   set(value: string) {
-    interfaceModel.value.webhook = value;
-    const webhook = globalStore.session.webhooks.find(webhook => webhook.uuid === value);
-    if (webhook) {
-      interfaceModel.value.server_url = webhook.url;
-      interfaceModel.value.server_secret = webhook.secret;
-    }
+    structure.value.endpoint = value;
+    const endpoint = globalStore.session.endpoints.find(endpoint => endpoint.uuid === value);
+    if (endpoint) {
+      structure.value.server_url = endpoint.url;
+      structure.value.server_secret = endpoint.secret;
 
-    globalStore.setPrompt({
-      ...globalStore.prompt,
-      visible: true,
-      title: 'Fetch data',
-      body: 'User data might be different on this server. Do you wish to fetch the user data? This action will override any unsaved change in your forms.',
-      btnText: 'Fetch',
-      btnIcon: 'mdi-cloud-arrow-down-outline',
-      btnColor: 'warning',
-      callback: () => new Promise(resolve => {
-        fetchUserData().then((response: any) => {
-          serverSettings.value = response.settings;
-          setUserData(response.data, true);
-          resolve();
+      globalStore.setPrompt({
+        ...globalStore.prompt,
+        visible: true,
+        title: 'Fetch data',
+        body: 'User data might be different on this server. Do you wish to fetch the user data? This action will override any unsaved change in your forms.',
+        btnText: 'Fetch',
+        btnIcon: 'mdi-cloud-arrow-down-outline',
+        btnColor: 'warning',
+        callback: () => new Promise(resolve => {
+          fetchUserData().then((response: any) => {
+            serverSettings.value = response.settings;
+            setUserData(response.data, true);
+            resolve();
+          })
         })
       })
-    })
+    }
   }
 })
 
-const showWebhookManager = ref(false);
+const showEndpointManager = ref(false);
 
-const manageWebhooks = () => {
-  showWebhookManager.value = true;
+const manageEndpoints = () => {
+  showEndpointManager.value = true;
 }
 
-watch(() => interfaceModel.value.webhook, () => {
+watch(() => structure.value.endpoint, () => {
   secretKey.value = '';
   cypherKey.value = '';
-  interfaceStates.value.secretKeyLoaded = false;
-  interfaceStates.value.cypherKeyLoaded = false;
+  structureStates.value.secretKeyLoaded = false;
+  structureStates.value.cypherKeyLoaded = false;
 })
-watch(() => interfaceModel.value.hash, () => {
+watch(() => structure.value.hash, () => {
   secretKey.value = '';
   cypherKey.value = '';
-  interfaceStates.value.secretKeyLoaded = false;
-  interfaceStates.value.cypherKeyLoaded = false;
+  structureStates.value.secretKeyLoaded = false;
+  structureStates.value.cypherKeyLoaded = false;
 })
 </script>
 
@@ -109,7 +109,7 @@ watch(() => interfaceModel.value.hash, () => {
       variant="elevated"
     >
       <span v-if="demo">You are currently in demo mode. Please log in to your account to make any changes.</span>
-      <span v-else-if="disabled">Only the owner of this interface is allowed to modify the settings.</span>
+      <span v-else-if="disabled">Only the owner of this structure is allowed to modify the settings.</span>
     </v-alert>
 
     <v-card tile flat>
@@ -117,89 +117,91 @@ watch(() => interfaceModel.value.hash, () => {
         <h1>Settings</h1>
         <hr>
       </v-card-text>
-      <v-card-title>
-        Public URL
-      </v-card-title>
-      <v-card-text class="d-flex flex-column" style="gap: 1rem">
+<!--      <v-card-title>-->
+<!--        Public URL-->
+<!--      </v-card-title>-->
+<!--      <v-card-text class="d-flex flex-column" style="gap: 1rem">-->
 
-        <!-- ADMIN URL -->
-        <v-text-field
-          id="adminRef"
-          v-model="adminUrl"
-          :disabled="!canOpenAdminUrl"
-          label="URL"
-          hint="This read-only field displays the generated URL for accessing the admin panel. Feel free to share this link with authorized users to grant them access to manage the application."
-          persistent-hint
-          readonly
-          @click="select"
-        >
-          <template #append-inner>
-            <div class="d-flex align-center" style="gap: 0.5rem">
-              <v-btn
-                size="small"
-                variant="text"
-                :color="copied ? 'primary' : undefined"
-                :readonly="copied"
-                :disabled="!canOpenAdminUrl"
-                :icon="smAndDown"
-                @click="copy"
-              >
-                <template v-if="!copied || smAndDown">
-                  <v-icon :start="!smAndDown" icon="mdi-content-copy" />
-                  <span v-if="!smAndDown">Copy</span>
-                </template>
-                <template v-else>
-                  <v-icon start icon="mdi-check" />
-                  <span>Copied!</span>
-                </template>
-              </v-btn>
-            </div>
-          </template>
-        </v-text-field>
-      </v-card-text>
+<!--        &lt;!&ndash; ADMIN URL &ndash;&gt;-->
+<!--        <v-text-field-->
+<!--          id="adminRef"-->
+<!--          v-model="adminUrl"-->
+<!--          :disabled="!canOpenAdminUrl"-->
+<!--          label="URL"-->
+<!--          hint="This read-only field displays the generated URL for accessing the admin panel. Feel free to share this link with authorized users to grant them access to manage the application."-->
+<!--          persistent-hint-->
+<!--          readonly-->
+<!--          @click="select"-->
+<!--        >-->
+<!--          <template #append-inner>-->
+<!--            <div class="d-flex align-center" style="gap: 0.5rem">-->
+<!--              <v-btn-->
+<!--                size="small"-->
+<!--                variant="text"-->
+<!--                :color="copied ? 'primary' : undefined"-->
+<!--                :readonly="copied"-->
+<!--                :disabled="!canOpenAdminUrl"-->
+<!--                :icon="smAndDown"-->
+<!--                @click="copy"-->
+<!--              >-->
+<!--                <template v-if="!copied || smAndDown">-->
+<!--                  <v-icon :start="!smAndDown" icon="mdi-content-copy" />-->
+<!--                  <span v-if="!smAndDown">Copy</span>-->
+<!--                </template>-->
+<!--                <template v-else>-->
+<!--                  <v-icon start icon="mdi-check" />-->
+<!--                  <span>Copied!</span>-->
+<!--                </template>-->
+<!--              </v-btn>-->
+<!--            </div>-->
+<!--          </template>-->
+<!--        </v-text-field>-->
+<!--      </v-card-text>-->
       <v-card-title>Server</v-card-title>
       <v-card-text class="d-flex flex-column" style="gap: 1rem">
 
-        <WebhookManagerModal
-          v-model="showWebhookManager"
+        <EndpointManagerModal
+          v-model="showEndpointManager"
         />
 
         <!-- SERVER URL -->
         <v-select
           v-model="server"
-          :items="globalStore.session.webhooks"
+          :items="globalStore.session.endpoints"
           :disabled="demo || disabled"
           item-title="url"
           item-value="uuid"
           prepend-inner-icon="mdi-webhook"
           hide-details="auto"
-          hint="This feature allows you to specify a URL that will be triggered whenever data is read from or saved to the admin panel. By integrating a webhook, you can synchronize data with a remote server and perform various transformations."
+          hint="This feature allows you to specify a URL that will be triggered whenever data is read from or saved to the admin panel. By integrating an endpoint, you can synchronize data with a remote server and perform various transformations. Check the Server-Side Integration section of the Integration panel for further information."
           persistent-hint
           required
           clearable
-          autocomplete="webhook"
+          autocomplete="endpoint"
         >
           <template #label>
-            <span class="mr-2 text-error">*</span>Webhook Endpoint
+            <span class="mr-2 text-error">*</span>Endpoint
           </template>
 
           <template #append-inner>
-            <v-btn
-              variant="outlined"
-              size="small"
-              @mousedown.stop
-              @click="manageWebhooks"
-            >
-              Manage
-            </v-btn>
+            <div class="d-flex align-center" style="gap: 0.5rem">
+              <v-btn
+                variant="outlined"
+                size="small"
+                @mousedown.stop
+                @click="manageEndpoints"
+              >
+                Manage
+              </v-btn>
+            </div>
           </template>
         </v-select>
 
         <!-- SERVER SECRET -->
         <v-text-field
           v-model="computedServerSecretKey"
-          :type="interfaceStates.secretKeyLoaded ? 'text' : 'password'"
-          :disabled="!server || demo || disabled || !interfaceModel.uuid"
+          :type="structureStates.secretKeyLoaded ? 'text' : 'password'"
+          :disabled="!server || demo || disabled || !structure.uuid"
           prepend-inner-icon="mdi-key-chain"
           hide-details="auto"
           label="API Server Secret"
@@ -209,10 +211,10 @@ watch(() => interfaceModel.value.hash, () => {
           name="server_secret"
           autocomplete="new-password"
         >
-          <template v-if="!interfaceStates.secretKeyLoaded" #append-inner>
+          <template v-if="!structureStates.secretKeyLoaded" #append-inner>
             <v-btn
-              :disabled="!interfaceModel.uuid"
-              :loading="interfaceStates.loadingSecretKey"
+              :disabled="!structure.uuid"
+              :loading="structureStates.loadingSecretKey"
               variant="outlined"
               size="small"
               @click="getSecretKey"
@@ -225,8 +227,8 @@ watch(() => interfaceModel.value.hash, () => {
         <!-- CYPHER KEY -->
         <v-text-field
           v-model="computedCypherKey"
-          :type="interfaceStates.cypherKeyLoaded ? 'text' : 'password'"
-          :disabled="!server || demo || disabled || !interfaceModel.uuid"
+          :type="structureStates.cypherKeyLoaded ? 'text' : 'password'"
+          :disabled="!server || demo || disabled || !structure.uuid"
           prepend-inner-icon="mdi-script-text-key-outline"
           hide-details="auto"
           label="API Cypher Key"
@@ -236,10 +238,10 @@ watch(() => interfaceModel.value.hash, () => {
           name="cypher_key"
           autocomplete="new-password"
         >
-          <template v-if="!interfaceStates.cypherKeyLoaded" #append-inner>
+          <template v-if="!structureStates.cypherKeyLoaded" #append-inner>
             <v-btn
-              :disabled="!interfaceModel.uuid"
-              :loading="interfaceStates.loadingCypherKey"
+              :disabled="!structure.uuid"
+              :loading="structureStates.loadingCypherKey"
               variant="outlined"
               size="small"
               @click="getCypherKey"
@@ -256,14 +258,14 @@ watch(() => interfaceModel.value.hash, () => {
           No emails will be sent to users. Please ensure that the Google account email addresses entered match the accounts that users are connected with when accessing the application.
         </v-alert>
         <v-combobox
-          v-model="interfaceModel.permission_interface"
+          v-model="structure.permission_structure"
           :disabled="demo || disabled"
           :items="[]"
-          :rules="getInterfaceRules('permission_interface')"
+          :rules="getStructureRules('permission_structure')"
           prepend-inner-icon="mdi-account-multiple-check"
-          label="Interface User(s)"
+          label="Structure User(s)"
           hide-details="auto"
-          hint="This field contains a list of Google email accounts who have permission to edit the YAML interface used to generate the admin panel, ensuring that only authorized individuals can make changes to the interface."
+          hint="This field contains a list of Google email accounts who have permission to edit the YAML structure used to generate the admin panel, ensuring that only authorized individuals can make changes to the structure."
           persistent-hint
           clearable
           chips
@@ -271,10 +273,10 @@ watch(() => interfaceModel.value.hash, () => {
           multiple
         />
         <v-combobox
-          v-model="interfaceModel.permission_admin"
+          v-model="structure.permission_admin"
           :disabled="demo || disabled"
           :items="[]"
-          :rules="getInterfaceRules('permission_admin')"
+          :rules="getStructureRules('permission_admin')"
           prepend-inner-icon="mdi-account-multiple-check"
           label="Admin User(s)"
           hide-details="auto"
