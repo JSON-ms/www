@@ -246,10 +246,10 @@
   resolved "https://registry.yarnpkg.com/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.0.tgz#3188bcb273a414b0d215fd22a58540b989b9409a"
   integrity sha512-gv3ZRaISU3fjPAgNsriBRqGWQL6quFx04YMPW/zD8XMLsU32mhCCbfbO6KZFLjvYpCZ8zyDEgqsgf+PwPaM7GQ==
 
-"@jsonms/js@^1.0.5":
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/@jsonms/js/-/js-1.0.3.tgz#c94627643786b8e9f4445ac4fb5cccb43b836710"
-  integrity sha512-F/USKVd3Dcjq1YSHGDYJgK9X6hPrgEQ9rH9VtiRUWkXLr1F+F50tVFJ34m9ZWzhreqxHjSSx4gYRXOVzGDha7g==
+"@jsonms/js@^1.0.7":
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/@jsonms/js/-/js-1.0.7.tgz#353efe6724789386fb723eb5615a08df4d253d42"
+  integrity sha512-/7Ru4cxsOjSjrIBONUA/mbdZYcYKPANbL8zPR0DjsIN4qaMuiWD7laQlHTGNphKhuQ4lDb2qMzAO66E9lgsV5g==
 
 "@mdi/font@7.4.47":
   version "7.4.47"
