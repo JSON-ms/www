@@ -41,7 +41,7 @@ export function useTypings() {
   const autoAskToSyncFolder = async (structure: IStructure, language: 'typescript' | 'php') => {
     const hash = structure.hash ?? 'unknown';
     const id = `${hash}_${language}`;
-    const keys = JSON.parse(localStorage.getItem(localStorageHandleKey) || '{}');
+    const keys = JSON.parse(localStorage.getItem(localStorageHandleKey) || '[]');
     keys.forEach((key: string) => {
       if (key === id && !handleReference[id]) {
         globalStore.setPrompt({
@@ -58,7 +58,7 @@ export function useTypings() {
             })
           }),
           cancelCallback: () => new Promise(resolve => {
-            let keys = JSON.parse(localStorage.getItem(localStorageHandleKey) || '{}');
+            let keys = JSON.parse(localStorage.getItem(localStorageHandleKey) || '[]');
             keys = keys.filter((key: string) => key !== id);
             localStorage.setItem(localStorageHandleKey, JSON.stringify(keys));
             resolve();
