@@ -32,7 +32,7 @@ const { smAndDown } = useDisplay();
 const { windowWidth, layoutSize } = useLayout();
 const { serverSettings, createStructure } = useStructure()
 const { migrating } = useMigration()
-const { downloadUserData, downloading, userDataLoading, setUserData, fetchUserData, canFetchUserData, canInteractWithServer, getUserDataErrors } = useUserData();
+const { downloadUserData, downloading, userDataLoading, setUserData, cleanUserData, fetchUserData, canFetchUserData, canInteractWithServer, getUserDataErrors } = useUserData();
 const { reloading } = useIframe()
 const emit = defineEmits(['locale', 'preview', 'refresh', 'update:model-value', 'create', 'save', 'delete', 'edit-json', 'migrate-data', 'logout'])
 
@@ -111,6 +111,22 @@ const onFetchUserData = () => {
   fetchUserData().then((response: any) => {
     setUserData(response.data, true);
     serverSettings.value = response.settings;
+  })
+}
+
+const onCleanUserData = () => {
+  globalStore.setPrompt({
+    ...globalStore.prompt,
+    visible: true,
+    title: 'Clean data',
+    body: 'Are you sure you want to clean your data? This will remove any property and value that doesn\'t match your structure.',
+    btnText: 'Clean data',
+    btnIcon: 'mdi-vacuum-outline',
+    btnColor: 'warning',
+    callback: () => new Promise(resolve => {
+      cleanUserData()
+      resolve();
+    })
   })
 }
 
@@ -352,6 +368,12 @@ watch(() => currentRoute.params.locale, () => {
             title="Migrate data"
             prepend-icon="mdi-folder-arrow-left-right-outline"
             @click="onMigrateData"
+          />
+          <v-list-item
+            :disabled="userDataLoading"
+            prepend-icon="mdi-vacuum-outline"
+            title="Clean data"
+            @click="onCleanUserData"
           />
           <v-list-item
             :disabled="userDataLoading"
