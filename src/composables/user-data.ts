@@ -278,6 +278,12 @@ export function useUserData() {
     })
   }
 
+  const cleanUserData = () => {
+    const parsedStructure = getParsedStructureData(modelStore.structure);
+    const data = getParsedUserData(parsedStructure, modelStore.userData, true);
+    setUserData(data, true);
+  }
+
   const setUserData = (data: any, setOriginal = false) => {
     const parsedData = getParsedUserData(structureParsedData.value, structuredClone(deepToRaw(data)));
     modelStore.setUserData(parsedData, setOriginal);
@@ -428,6 +434,7 @@ export function useUserData() {
     downloadUserData,
     getParsedUserData,
     setUserData,
+    cleanUserData,
     getUserFiles,
     testServer,
     changeServerUrlInContent,
