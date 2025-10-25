@@ -30,10 +30,12 @@ jobs:
         run: yarn build-only
 
       - name: FTP Deploy
-        uses: pressidium/lftp-mirror-action@v1
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
-          host: ${{ secrets.FTP_SERVER }}
-          user: ${{ secrets.FTP_USERNAME }}
-          pass: ${{ secrets.FTP_PASSWORD }}
-          localDir: ./dist/
-          remoteDir: ${{ secrets.FTP_WWW_PROD_PATH }}
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./dist/
+          server-dir: ${{ secrets.FTP_WWW_PROD_PATH }}
+          protocol: ftps
+
