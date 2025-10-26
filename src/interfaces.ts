@@ -67,6 +67,7 @@ export interface IUserSettings {
   editorTabSize: number
   editorLiveUpdate: boolean
   editorUpdateTimeout: number
+  autoCleanData: boolean
   userDataAutoFetch: boolean
   layoutEditorLocation: 'start' | 'end'
   layoutSitePreviewLocation: 'start' | 'end'

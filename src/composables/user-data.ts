@@ -285,7 +285,7 @@ export function useUserData() {
   }
 
   const setUserData = (data: any, setOriginal = false) => {
-    const parsedData = getParsedUserData(structureParsedData.value, structuredClone(deepToRaw(data)));
+    const parsedData = getParsedUserData(structureParsedData.value, structuredClone(deepToRaw(data)), globalStore.userSettings.data.autoCleanData);
     modelStore.setUserData(parsedData, setOriginal);
   }
 
