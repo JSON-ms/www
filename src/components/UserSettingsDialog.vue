@@ -173,6 +173,14 @@ watch(() => visible.value, () => {
                   hint="There will be a delay of X milliseconds before the admin panel updates after a change."
                   persistent-hint
                 />
+                <v-switch
+                  v-model="userSettings.autoCleanData"
+                  color="primary"
+                  label="Auto-Clean Data"
+                  hint="Data is auto-cleaned on every edit. Anything not matching the updated structure will be lost."
+                  persistent-hint
+                  inset
+                />
               </v-card-text>
             </v-card>
 
