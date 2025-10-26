@@ -1,0 +1,9 @@
+# Enable URL rewriting
+RewriteEngine On
+
+# Serve files directly if they exist
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^(.*)$ - [L]
+
+# Redirect all other requests to index.html
+RewriteRule ^(.*)$ index.html [L]
