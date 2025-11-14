@@ -207,7 +207,7 @@ export function useUserData() {
   }
 
   const downloadUserData = () => {
-    const files = getUserFiles().map(file => modelStore.structure.server_url + '/file/read/' + file.path);
+    const files = getUserFiles().map(file => modelStore.structure.server_url + '/file/get/' + file.path);
     downloading.value = true;
     const path = (modelStore.structure.server_url + '/data/' + modelStore.structure.hash) || ''
     return Services.get(path, {
