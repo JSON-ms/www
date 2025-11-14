@@ -179,6 +179,9 @@ export const parseFields = (fields: any = {}, locales = {}, schemas: TSchema = {
 
 export const getFieldDefaultValue = (field: IField, locales: {[key: string]: string}) => {
   if (isFieldType(field, 'file')) {
+    if (field.multiple) {
+      return [];
+    }
     const defaultFileValue: IFile = {
       path: null,
       meta: {
