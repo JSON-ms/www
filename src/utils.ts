@@ -359,6 +359,9 @@ export const getDataByPath = (obj: any, path = '', defaultValue?: any) => {
       const value = Array.isArray(accumulator) && !isNaN(index)
         ? accumulator[index]
         : accumulator[key];
+      if (key !== keys[keys.length - 1] && typeof value !== 'undefined') {
+        return value;
+      }
       if (defaultValue && !valuesAreSameType(defaultValue, value, false)) {
         return defaultValue;
       }
