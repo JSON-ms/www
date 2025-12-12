@@ -235,7 +235,7 @@ export function useTypings() {
             let content = ''
 
             if (globalStore.userSettings.data.blueprintsWriteToTypings) {
-              content += `import { type JmsSectionKey, type JmsLocaleKey, type JmsData } from '@/jms/typings';\n`;
+              content += `import { type JmsSectionKey, type JmsLocaleKey, type JmsData } from './typings';\n`;
             }
             if (globalStore.userSettings.data.blueprintsWriteToDefault) {
               content += `import { defaultData, locales } from './default';\n`
