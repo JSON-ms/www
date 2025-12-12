@@ -47,6 +47,7 @@ const structureStates = ref({
 const serverSettings = ref<IServerSettings>({
   postMaxSize: '8M',
   publicUrl: '',
+  supportedFeatures: [],
   uploadMaxSize: '2M',
   version: '',
 })
@@ -357,6 +358,7 @@ export function useStructure() {
     serverSettings.value = {
       postMaxSize: '8M',
       publicUrl: '',
+      supportedFeatures: [],
       uploadMaxSize: '2M',
       version: '',
     };
