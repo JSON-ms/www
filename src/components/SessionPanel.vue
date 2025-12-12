@@ -5,7 +5,7 @@ import { Services } from '@/services';
 import {useModelStore} from '@/stores/model';
 
 const globalStore = useGlobalStore();
-const modelStore = useModelStore();
+const modelStore = useModelStore(); // Necessary even if not used
 const sessionLoginOut = ref(false);
 const emit = defineEmits(['logout'])
 const {
@@ -45,38 +45,43 @@ const logout = () => {
   <v-menu>
     <template #activator="{ props }">
       <v-btn v-bind="props" :icon="dense" height="40">
-        <v-avatar size="32" color="primary">
-          <v-img
-            v-if="globalStore.session.user.avatar"
-            :src="globalStore.session.user.avatar"
-            alt="Avatar"
-          >
-            <template #placeholder>
-              <div class="d-flex align-center justify-center fill-height">
-                <v-progress-circular
-                  color="surface"
-                  indeterminate
-                  size="16"
-                  width="1"
-                />
-              </div>
-            </template>
-          </v-img>
-          <strong v-else>{{ globalStore.session.user.name.substring(0, 1) }}</strong>
-        </v-avatar>
-        <strong v-if="showUsername" class="ml-3">{{ globalStore.session.user.name }}</strong>
+        <template v-if="globalStore.session.loggedIn">
+          <v-avatar size="32" color="primary">
+            <v-img
+              v-if="globalStore.session.user?.avatar"
+              :src="globalStore.session.user?.avatar"
+              alt="Avatar"
+            >
+              <template #placeholder>
+                <div class="d-flex align-center justify-center fill-height">
+                  <v-progress-circular
+                    color="surface"
+                    indeterminate
+                    size="16"
+                    width="1"
+                  />
+                </div>
+              </template>
+            </v-img>
+            <strong v-else>{{ globalStore.session.user?.name.substring(0, 1) }}</strong>
+          </v-avatar>
+          <strong v-if="showUsername" class="ml-3">{{ globalStore.session.user?.name }}</strong>
+        </template>
+        <v-icon v-else icon="mdi-tools" />
         <v-icon v-if="!dense" end icon="mdi-chevron-down" />
       </v-btn>
     </template>
     <v-list>
       <slot></slot>
-      <v-divider v-if="$slots.default" class="my-1" />
-      <v-list-item
-        :disabled="sessionLoginOut"
-        title="Logout"
-        prepend-icon="mdi-logout-variant"
-        @click="logout"
-      />
+      <template v-if="globalStore.session.loggedIn">
+        <v-divider v-if="$slots.default" class="my-1" />
+        <v-list-item
+          :disabled="sessionLoginOut"
+          title="Logout"
+          prepend-icon="mdi-logout-variant"
+          @click="logout"
+        />
+      </template>
     </v-list>
   </v-menu>
 </template>

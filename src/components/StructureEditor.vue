@@ -401,7 +401,6 @@ watch(() => globalStore.userSettings.data, () => {
       <v-spacer />
       <div class="d-flex align-center pr-1" style="gap: 0.5rem">
         <v-tooltip
-          v-if="globalStore.session.loggedIn"
           text="Toggle local folder synchronization"
           location="bottom"
         >

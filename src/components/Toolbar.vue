@@ -236,7 +236,7 @@ watch(() => currentRoute.params.locale, () => {
       </v-alert>
     </div>
 
-    <div class="d-flex align-center mx-3" :style="{ gap: smAndDown ? 0 : '1rem'}">
+    <div class="d-flex align-center mx-3" :style="{ gap: smAndDown ? '0.5rem' : '1rem'}">
       <v-tooltip
         v-if="windowWidth > 1000"
         text="Refresh Preview (CTRL+R)"
@@ -320,78 +320,75 @@ watch(() => currentRoute.params.locale, () => {
         </template>
       </LocaleSwitcher>
 
-      <template v-if="globalStore.session.loggedIn">
-        <SessionPanel
-          :show-username="windowWidth > 1500"
-          @logout="onLogout"
-        >
-          <div v-if="showLocaleSwitcher && smAndDown" class="px-4 pt-2">
-            <LocaleSwitcher
-              v-model="selectedLocale"
-              :locales="locales"
-              :disabled="userDataLoading"
-              variant="filled"
-              style="width: 100%"
-              @click.stop
-              @update:model-value="onLocaleChange"
-            >
-              <template v-if="!userDataLoading" #prepend-inner-selection>
-                <v-icon v-if="Object.keys(userDataErrorList).find(key => key.endsWith(selectedLocale))" icon="mdi-alert" color="warning" />
-                <v-icon v-else-if="Object.keys(userDataErrorList).find(key => locales.find(locale => key.endsWith(locale.value)))" icon="mdi-alert-outline" color="warning" />
-              </template>
-              <template v-if="!userDataLoading" #prepend-inner-item="{ item }">
-                <v-icon v-if="Object.keys(userDataErrorList).find(key => key.endsWith(item.value))" icon="mdi-alert" color="warning" class="mr-n4" />
-              </template>
-            </LocaleSwitcher>
-            <v-divider class="my-1 mt-4" />
-          </div>
-          <v-list-item
-            title="Edit JSON"
-            prepend-icon="mdi-code-json"
-            @click="onEditJson"
-          />
-          <v-divider class="my-1" />
-          <v-list-item
-            :disabled="userDataLoading || !canFetchUserData"
-            prepend-icon="mdi-monitor-arrow-down"
-            title="Fetch data"
-            @click="onFetchUserData"
-          />
-          <v-list-item
-            :disabled="downloading || !canInteractWithServer"
-            title="Download data"
-            prepend-icon="mdi-tray-arrow-down"
-            @click="downloadUserData"
-          />
-          <v-list-item
-            :disabled="migrating || !canInteractWithServer"
-            title="Migrate data"
-            prepend-icon="mdi-folder-arrow-left-right-outline"
-            @click="onMigrateData"
-          />
-          <v-list-item
+      <GoogleSignInButton />
+
+      <SessionPanel
+        :show-username="windowWidth > 1500"
+        @logout="onLogout"
+      >
+        <div v-if="showLocaleSwitcher && smAndDown" class="px-4 pt-2">
+          <LocaleSwitcher
+            v-model="selectedLocale"
+            :locales="locales"
             :disabled="userDataLoading"
-            prepend-icon="mdi-vacuum-outline"
-            title="Clean data"
-            @click="onCleanUserData"
-          />
-          <v-list-item
-            :disabled="userDataLoading"
-            prepend-icon="mdi-close-box-outline"
-            title="Clear data"
-            @click="onClearUserData"
-          />
-          <v-divider class="my-1" />
-          <v-list-item
-            prepend-icon="mdi-tune"
-            title="Settings"
-            @click="onUserSettings"
-          />
-        </SessionPanel>
-      </template>
-      <template v-else>
-        <GoogleSignInButton />
-      </template>
+            variant="filled"
+            style="width: 100%"
+            @click.stop
+            @update:model-value="onLocaleChange"
+          >
+            <template v-if="!userDataLoading" #prepend-inner-selection>
+              <v-icon v-if="Object.keys(userDataErrorList).find(key => key.endsWith(selectedLocale))" icon="mdi-alert" color="warning" />
+              <v-icon v-else-if="Object.keys(userDataErrorList).find(key => locales.find(locale => key.endsWith(locale.value)))" icon="mdi-alert-outline" color="warning" />
+            </template>
+            <template v-if="!userDataLoading" #prepend-inner-item="{ item }">
+              <v-icon v-if="Object.keys(userDataErrorList).find(key => key.endsWith(item.value))" icon="mdi-alert" color="warning" class="mr-n4" />
+            </template>
+          </LocaleSwitcher>
+          <v-divider class="my-1 mt-4" />
+        </div>
+        <v-list-item
+          title="Edit JSON"
+          prepend-icon="mdi-code-json"
+          @click="onEditJson"
+        />
+        <v-divider class="my-1" />
+        <v-list-item
+          :disabled="userDataLoading || !canFetchUserData"
+          prepend-icon="mdi-monitor-arrow-down"
+          title="Fetch data"
+          @click="onFetchUserData"
+        />
+        <v-list-item
+          :disabled="downloading || !canInteractWithServer"
+          title="Download data"
+          prepend-icon="mdi-tray-arrow-down"
+          @click="downloadUserData"
+        />
+        <v-list-item
+          :disabled="migrating || !canInteractWithServer"
+          title="Migrate data"
+          prepend-icon="mdi-folder-arrow-left-right-outline"
+          @click="onMigrateData"
+        />
+        <v-list-item
+          :disabled="userDataLoading"
+          prepend-icon="mdi-vacuum-outline"
+          title="Clean data"
+          @click="onCleanUserData"
+        />
+        <v-list-item
+          :disabled="userDataLoading"
+          prepend-icon="mdi-close-box-outline"
+          title="Clear data"
+          @click="onClearUserData"
+        />
+        <v-divider class="my-1" />
+        <v-list-item
+          prepend-icon="mdi-tune"
+          title="Settings"
+          @click="onUserSettings"
+        />
+      </SessionPanel>
     </div>
   </v-app-bar>
 </template>
