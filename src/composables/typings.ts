@@ -83,7 +83,9 @@ export function useTypings() {
         keys.push(id);
         localStorage.setItem(localStorageHandleKey, JSON.stringify(keys));
         await syncFromFolder(structure, language);
-        await syncToFolder(structure, language);
+        if (globalStore.session.loggedIn) {
+          await syncToFolder(structure, language);
+        }
       }
     }
     const acknowledgedExplanations = localStorage.getItem(localStorageExplanationsKey);
@@ -318,7 +320,7 @@ export function useTypings() {
       }
 
       // structure.yml
-      if (globalStore.userSettings.data.blueprintsReadFromStructure && types.includes('structure')) {
+      if ((globalStore.userSettings.data.blueprintsReadFromStructure || !globalStore.session.loggedIn) && types.includes('structure')) {
         await (async () => {
           if (handleReference[id]) {
             try {

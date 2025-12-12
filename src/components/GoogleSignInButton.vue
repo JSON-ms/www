@@ -12,18 +12,18 @@ const state = encodeURIComponent(JSON.stringify({ path: window.location.pathname
 
 <template>
   <v-btn
-    variant="outlined"
     :loading="clicking"
     :disabled="clicking"
     :href="globalStore.session.googleOAuthSignInUrl.replace('&state', '&state=' + state)"
+    variant="outlined"
     @click="clicking = true"
   >
     <v-img
       :src="googleImg"
       height="16"
       width="16"
-      class="mr-2"
+      class="mr-md-2"
     />
-    Sign in<span v-if="!smAndDown">&nbsp;with Google</span>
+    <span v-if="!smAndDown">Sign in with Google</span>
   </v-btn>
 </template>
