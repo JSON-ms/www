@@ -320,7 +320,7 @@ watch(() => currentRoute.params.locale, () => {
         </template>
       </LocaleSwitcher>
 
-      <GoogleSignInButton />
+      <GoogleSignInButton v-if="!globalStore.session.loggedIn" />
 
       <SessionPanel
         :show-username="windowWidth > 1500"
