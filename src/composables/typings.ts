@@ -52,10 +52,10 @@ export function useTypings() {
           body: 'This project was previously synced to your local folder. For security reasons, your browser resets this permission whenever the page loses its session. Would you like to resume syncing?',
           btnText: 'Resume',
           btnColor: 'secondary',
-          callback: () => new Promise(resolve => {
+          callback: () => new Promise((resolve, reject) => {
             askToSyncFolder(structure, language).then(() => {
               resolve();
-            })
+            }).catch(reject);
           }),
           cancelCallback: () => new Promise(resolve => {
             let keys = JSON.parse(localStorage.getItem(localStorageHandleKey) || '[]');
