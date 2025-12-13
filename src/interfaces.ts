@@ -21,7 +21,9 @@ export interface IPrompt {
   btnIcon?: string | undefined,
   btnColor?: string | undefined,
   callback: () => Promise<void>,
+  cancelText?: string | undefined,
   cancelCallback?: () => Promise<void>,
+  cancelIcon?: string | undefined,
 }
 
 export interface IAdmin {

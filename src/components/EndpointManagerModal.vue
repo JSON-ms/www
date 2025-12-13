@@ -20,6 +20,7 @@ const save = () => {
       ...globalStore.session,
       endpoints: structuredClone(deepToRaw(endpoints))
     })
+    close();
   })
 }
 const close = () => {
@@ -126,7 +127,7 @@ watch(visible, () => {
           variant="flat"
           @click="save"
         >
-          Save
+          Save and close
         </v-btn>
         <v-btn
           :disabled="saving"

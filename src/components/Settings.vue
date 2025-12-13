@@ -8,7 +8,7 @@ import EndpointManagerModal from '@/components/EndpointManagerModal.vue';
 import {useUserData} from "@/composables/user-data";
 
 // Definitions
-const { secretKey, cypherKey, adminUrl, canOpenAdminUrl, serverSettings, computedServerSecretKey, computedCypherKey, structureStates, getStructureRules, getSecretKey, getCypherKey } = useStructure();
+const { secretKey, cypherKey, adminUrl, canOpenAdminUrl, saveStructureSimple, serverSettings, computedServerSecretKey, computedCypherKey, structureStates, getStructureRules, getSecretKey, getCypherKey } = useStructure();
 const { fetchUserData, setUserData } = useUserData();
 const { smAndDown } = useDisplay()
 const copied = ref(false);
@@ -61,6 +61,8 @@ const server = computed({
         btnText: 'Fetch',
         btnIcon: 'mdi-cloud-arrow-down-outline',
         btnColor: 'warning',
+        cancelText: 'Skip',
+        cancelIcon: 'mdi-skip-next-circle-outline',
         callback: () => new Promise(resolve => {
           fetchUserData().then((response: any) => {
             serverSettings.value = response.settings;
@@ -90,6 +92,9 @@ watch(() => structure.value.hash, () => {
   cypherKey.value = '';
   structureStates.value.secretKeyLoaded = false;
   structureStates.value.cypherKeyLoaded = false;
+})
+watch(() => [structure.value.permission_structure, structure.value.permission_admin], () => {
+  saveStructureSimple(structure.value);
 })
 </script>
 
