@@ -6,6 +6,7 @@ export type TSchema = {[key: string]: { [key: string]: IField }}
 export interface IServerSettings {
   postMaxSize: PHPMegabyte,
   publicUrl: string,
+  supportedFeatures: string[],
   uploadMaxSize: PHPMegabyte,
   version: string,
 }
