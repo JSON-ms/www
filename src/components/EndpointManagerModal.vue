@@ -36,7 +36,7 @@ const onRemoveItemCallback = (index: number, list: any[]) => {
       btnText: 'Remove',
       btnIcon: 'mdi-delete-outline',
       btnColor: 'error',
-      callback: () => new Promise(resolve => {
+      callback: () => new Promise((resolve, reject) => {
         deleteEndpoint(list[index].uuid)
           .then(() => {
             list.splice(index, 1);
@@ -45,6 +45,7 @@ const onRemoveItemCallback = (index: number, list: any[]) => {
               endpoints: structuredClone(deepToRaw(list))
             })
           })
+          .catch(reject)
           .finally(resolve)
       })
     })

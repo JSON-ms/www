@@ -508,8 +508,8 @@ export function useStructure() {
           resolve(modelStore.structure);
         })
         .catch(error => {
-          globalStore.catchError(error);
           reject(error);
+          globalStore.catchError(error);
           return error;
         })
         .finally(() => structureStates.value.saving = false);
@@ -540,8 +540,8 @@ export function useStructure() {
               return response;
             })
             .catch(error => {
-              globalStore.catchError(error);
               reject(error);
+              globalStore.catchError(error);
               return error;
             })
             .finally(() => {

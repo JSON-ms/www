@@ -24,14 +24,17 @@ const logout = () => {
     btnText: 'Logout',
     btnIcon: 'mdi-logout-variant',
     btnColor: 'warning',
-    callback: () => new Promise(resolve => {
+    callback: () => new Promise((resolve, reject) => {
       sessionLoginOut.value = true;
       Services.get(import.meta.env.VITE_SERVER_URL + '/session/logout')
         .then(response => {
           globalStore.setSession(response);
           emit('logout', response);
         })
-        .catch(globalStore.catchError)
+        .catch(err => {
+          reject();
+          globalStore.catchError(err);
+        })
         .finally(() => {
           sessionLoginOut.value = false;
           resolve();

@@ -98,11 +98,11 @@ export function useTypings() {
         body: 'You will need to select a folder where the structure, user data, typings, and default object structure in JSON format will be updated in real-time on your local machine. We recommend using a folder named "jms" within your "src" directory. For security reasons, your browser requires session-based permission for local folder synchronization, so you will need to reselect this folder each time you refresh or return to this page.',
         btnText: 'Proceed',
         btnColor: 'warning',
-        callback: () => new Promise(resolve => {
+        callback: () => new Promise((resolve, reject) => {
           localStorage.setItem(localStorageExplanationsKey, '1');
           explanationCallback().then(() => {
             resolve();
-          })
+          }).catch(reject)
         }),
       });
     } else {

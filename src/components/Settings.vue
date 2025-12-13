@@ -63,12 +63,12 @@ const server = computed({
         btnColor: 'warning',
         cancelText: 'Skip',
         cancelIcon: 'mdi-skip-next-circle-outline',
-        callback: () => new Promise(resolve => {
+        callback: () => new Promise((resolve, reject) => {
           fetchUserData().then((response: any) => {
             serverSettings.value = response.settings;
             setUserData(response.data, true);
             resolve();
-          })
+          }).catch(reject)
         })
       })
     }
