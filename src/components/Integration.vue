@@ -83,29 +83,19 @@ ${prefix}JMS_ENCRYPTED_SECRET_KEY=${modelStore.structure.server_secret}`;
       <h3 class="mt-4">
         Environment Variables
       </h3>
-      <v-alert
-        v-if="!server"
-        type="warning"
-        variant="tonal"
-        class="ma-0"
+      <p class="mb-3">
+        These are the environment variables to utilize in your <strong>server-side</strong> project. When working with our sandboxes, a file called<code>.env.example</code> is already provided and can be easily copied and renamed to <code>.env.local</code> or <code>.env.production</code>.
+      </p>
+      <v-btn
+        variant="outlined"
+        color="primary"
+        :loading="structureStates.loadingSecretKey || structureStates.loadingCypherKey"
+        :disabled="structureStates.secretKeyLoaded && structureStates.cypherKeyLoaded"
+        @click="onGetCyperAndSecret"
       >
-        Please select a endpoint for your project first.
-      </v-alert>
-      <template v-else>
-        <p class="mb-3">
-          These are the environment variables to utilize in your <strong>server-side</strong> project. When working with our sandboxes, a file called<code>.env.example</code> is already provided and can be easily copied and renamed to <code>.env.local</code> or <code>.env.production</code>.
-        </p>
-        <v-btn
-          variant="outlined"
-          color="primary"
-          :loading="structureStates.loadingSecretKey || structureStates.loadingCypherKey"
-          :disabled="structureStates.secretKeyLoaded && structureStates.cypherKeyLoaded"
-          @click="onGetCyperAndSecret"
-        >
-          Get Cypher and Secret key
-        </v-btn>
-        <SyntaxHighlighter :model-value="serverSideEnvVar" language="properties" class="mt-4" />
-      </template>
+        Get Cypher and Secret key
+      </v-btn>
+      <SyntaxHighlighter :model-value="serverSideEnvVar" language="properties" class="mt-4" />
     </v-card-text>
   </v-card>
 </template>

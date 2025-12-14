@@ -47,6 +47,7 @@ const structureStates = ref({
 const serverSettings = ref<IServerSettings>({
   postMaxSize: '8M',
   publicUrl: '',
+  supportedFeatures: [],
   uploadMaxSize: '2M',
   version: '',
 })
@@ -357,6 +358,7 @@ export function useStructure() {
     serverSettings.value = {
       postMaxSize: '8M',
       publicUrl: '',
+      supportedFeatures: [],
       uploadMaxSize: '2M',
       version: '',
     };
@@ -496,20 +498,24 @@ export function useStructure() {
         resolve(structure);
       }
 
+      const saveCallback = () => {
+        useTypings().syncToFolder(structure, 'typescript', ['structure', 'typings', 'default', 'settings', 'index']);
+        structureStates.value.saved = true;
+        setTimeout(() => structureStates.value.saved = false, 2000);
+      }
+
       structureStates.value.saving = true;
       saveStructureSimple(structure)
         .then(response => {
-          useTypings().syncToFolder(structure, 'typescript', ['structure', 'typings', 'default', 'settings', 'index']);
+          saveCallback();
           modelStore.setStructure(response);
           modelStore.setOriginalStructure(response);
           globalStore.updateStructure(response);
-          structureStates.value.saved = true;
-          setTimeout(() => structureStates.value.saved = false, 2000);
           resolve(modelStore.structure);
         })
         .catch(error => {
-          globalStore.catchError(error);
           reject(error);
+          globalStore.catchError(error);
           return error;
         })
         .finally(() => structureStates.value.saving = false);
@@ -540,8 +546,8 @@ export function useStructure() {
               return response;
             })
             .catch(error => {
-              globalStore.catchError(error);
               reject(error);
+              globalStore.catchError(error);
               return error;
             })
             .finally(() => {

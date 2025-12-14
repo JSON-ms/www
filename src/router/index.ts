@@ -5,12 +5,14 @@
  */
 
 // Composables
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error
 import { createRouter, createWebHistory } from 'vue-router/auto'
 import ErrorPage from '@/components/ErrorPage.vue'
 import MainView from '@/views/MainView.vue';
 import {useStructure} from '@/composables/structure';
 import {useGlobalStore} from '@/stores/global';
-import type {RouteLocationGeneric} from 'vue-router';
+import type {NavigationGuardNext, RouteLocationGeneric} from 'vue-router';
 import {useModelStore} from '@/stores/model';
 
 const getValidStructureRoute = (route:  RouteLocationGeneric): string => {
@@ -30,7 +32,7 @@ const router = createRouter({
   routes: [
     { path: '/', redirect: '/admin/demo/home/en-US' },
     { path: '/admin/:hash/', redirect: getValidStructureRoute },
-    { path: '/admin/:hash/:section?/:locale?', name: 'admin', beforeEnter: (to, from, next) => {
+    { path: '/admin/:hash/:section?/:locale?', name: 'admin', beforeEnter: (to: RouteLocationGeneric, from: RouteLocationGeneric, next: NavigationGuardNext) => {
       const url = getValidStructureRoute(to);
       if (to.fullPath !== url) {
         next(url);
@@ -43,7 +45,7 @@ const router = createRouter({
 })
 
 // Workaround for https://github.com/vitejs/vite/issues/11804
-router.onError((err, to) => {
+router.onError((err: Error, to: RouteLocationGeneric) => {
   if (err?.message?.includes?.('Failed to fetch dynamically imported module')) {
     if (!localStorage.getItem('vuetify:dynamic-reload')) {
       console.log('Reloading page to fix dynamic import error')

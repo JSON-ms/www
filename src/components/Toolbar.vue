@@ -239,7 +239,7 @@ watch(() => currentRoute.params.locale, () => {
     <div class="d-flex align-center mx-3" :style="{ gap: smAndDown ? '0.5rem' : '1rem'}">
       <v-tooltip
         v-if="windowWidth > 1000"
-        text="Refresh Preview (CTRL+R)"
+        text="Refresh Preview (ALT+R)"
         location="bottom"
       >
         <template #activator="{ props }">

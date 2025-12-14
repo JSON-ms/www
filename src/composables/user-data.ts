@@ -135,10 +135,12 @@ export function useUserData() {
           return response;
         })
         .catch(reason => {
-          globalStore.catchError(reason);
           reject(reason);
+          globalStore.catchError(reason);
         })
         .finally(() => loading.value = false);
+      } else {
+        reject();
       }
     })
   }
@@ -260,12 +262,12 @@ export function useUserData() {
           resolve(data);
         })
         .catch(reason => {
-          globalStore.catchError(reason);
           if (canInteractWithSyncedFolder.value && !onlyEndpoint) {
             useTypings().syncToFolder(structure, 'typescript', ['data']);
             saved.value = true;
             setTimeout(() => saved.value = false, 1000);
           }
+          globalStore.catchError(reason);
         })
         .finally(() => saving.value = false);
       } else {

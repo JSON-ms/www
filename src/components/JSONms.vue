@@ -153,12 +153,9 @@ const onApplyNewStructure = (template: string) => {
   updateRoute('new', getAvailableSection(), getAvailableLocale());
 }
 
-const onSaveStructureContent = () => {
-  onSaveStructure();
-}
-
 const onSaveStructure = () => {
   if (canSaveStructure.value) {
+    modelStore.structure.content = modelStore.temporaryContent;
     saveStructure().then(() => {
       bottomSheetData.value = { text: 'Structure saved!', color: 'success', icon: 'mdi-check' };
       syncToFolder(modelStore.structure, 'typescript', ['structure', 'default', 'typings', 'settings', 'index']);
@@ -200,6 +197,7 @@ const onLocaleChange = (locale: string) => {
 const onLogout = (response: any) => {
   modelStore.setStructure(response.structures[0], {});
   userDataLoaded.value = false;
+  setUserData({}, true);
   if (globalStore.userSettings.data.userDataAutoFetch) {
     updateRoute('demo', 'home', 'en-US');
     refreshUserData();
@@ -357,7 +355,7 @@ if (globalStore.session.loggedIn) {
         ref="structureEditor"
         v-model="structure"
         style="flex: 1"
-        @save="onSaveStructureContent"
+        @save="onSaveStructure"
         @create="onCreateStructure"
         @change="onStructureContentChange"
       />
@@ -370,7 +368,7 @@ if (globalStore.session.loggedIn) {
     v-model="structure"
     :structure-data="structureParsedData"
     :user-data="modelStore.userData"
-    @save="onSaveStructureContent"
+    @save="onSaveStructure"
     @create="onCreateStructure"
     @change="onStructureContentChange"
   />

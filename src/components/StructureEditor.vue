@@ -15,7 +15,7 @@ const structure = defineModel<IStructure>({ required: true });
 const { columns = false } = defineProps<{
   columns?: boolean
 }>();
-const { canSaveStructure, yamlException } = useStructure();
+const { canSaveStructure, yamlException, structureStates } = useStructure();
 const modelStore = useModelStore();
 const { getTypescriptTypings, getTypescriptDefaultObj, isFolderSynced, lastStateTimestamp, askToSyncFolder, unSyncFolder } = useTypings();
 const showParsingDelay = ref(false);
@@ -89,6 +89,10 @@ const setCaretToOriginalPosition = () => {
     structureEditor.value?.getAceInstance().selection.moveTo(lastPosition.row, lastPosition.column)
     lastPosition = null;
   }
+}
+
+const onSaveStructure = () => {
+  emit('save', structure.value);
 }
 
 const findNeedleInString = (haystack: string, needle: string) => {
@@ -400,37 +404,6 @@ watch(() => globalStore.userSettings.data, () => {
       </v-tab>
       <v-spacer />
       <div class="d-flex align-center pr-1" style="gap: 0.5rem">
-        <v-tooltip
-          text="Toggle local folder synchronization"
-          location="bottom"
-        >
-          <template #activator="{ props }">
-            <v-btn
-              v-if="isFolderSynced(modelStore.structure, 'typescript')"
-              v-bind="props"
-              :key="lastStateTimestamp"
-              color="secondary"
-              size="small"
-              prepend-icon="mdi-sync-circle"
-              variant="text"
-              @click="onUnSync"
-            >
-              Synced!
-            </v-btn>
-            <v-btn
-              v-else
-              v-bind="props"
-              :key="lastStateTimestamp + '_'"
-              size="small"
-              prepend-icon="mdi-sync-off"
-              variant="text"
-              @click="onSync"
-            >
-              Sync
-            </v-btn>
-          </template>
-        </v-tooltip>
-
         <div
           v-if="!globalStore.userSettings.data.editorLiveUpdate"
           :style="{
@@ -463,20 +436,79 @@ watch(() => globalStore.userSettings.data, () => {
     </v-tabs>
     <v-tabs-window v-model="tab" style="flex: 1" class="fill-height">
       <v-tabs-window-item value="structure" class="fill-height">
-        <v-ace-editor
-          ref="structureEditor"
-          v-model:value="value"
-          :options="structureOptions"
-          :style="{
-            '--tooltip-position': globalStore.admin.drawer
-              ? 'translateY(-4rem) translateX(-261px)'
-              : 'translateY(-4rem)'
-          }"
-          lang="yaml"
-          theme="github_dark"
-          class="fill-height"
-          @change="onChange"
-        />
+        <div class="d-flex flex-column align-center pr-1 fill-height">
+          <div class="w-100" style="flex: 1">
+            <v-ace-editor
+              ref="structureEditor"
+              v-model:value="value"
+              :options="structureOptions"
+              :style="{
+                '--tooltip-position': globalStore.admin.drawer
+                  ? 'translateY(-4rem) translateX(-261px)'
+                  : 'translateY(-4rem)'
+              }"
+              lang="yaml"
+              theme="github_dark"
+              class="fill-height"
+              @change="onChange"
+            />
+          </div>
+          <div class="pa-2 d-flex w-100" style="flex: 0; gap: 0.5rem">
+
+            <v-tooltip
+              text="Toggle local folder synchronization"
+              location="bottom"
+            >
+              <template #activator="{ props }">
+                <v-btn
+                  v-if="isFolderSynced(modelStore.structure, 'typescript')"
+                  v-bind="props"
+                  :key="lastStateTimestamp"
+                  color="secondary"
+                  size="small"
+                  prepend-icon="mdi-sync-circle"
+                  variant="text"
+                  @click="onUnSync"
+                >
+                  Synced!
+                </v-btn>
+                <v-btn
+                  v-else
+                  v-bind="props"
+                  :key="lastStateTimestamp + '_'"
+                  size="small"
+                  prepend-icon="mdi-sync-off"
+                  variant="text"
+                  @click="onSync"
+                >
+                  Sync
+                </v-btn>
+              </template>
+            </v-tooltip>
+            <v-spacer />
+            <v-tooltip
+              text="Save (CTRL+S)"
+              location="bottom"
+            >
+              <template #activator="{ props }">
+                <v-btn
+                  v-if="structure"
+                  v-bind="props"
+                  :loading="structureStates.saving"
+                  :disabled="!canSaveStructure || structureStates.saving || structureStates.saved"
+                  :prepend-icon="!structureStates.saved ? 'mdi-content-save' : 'mdi-check'"
+                  variant="outlined"
+                  color="primary"
+                  size="small"
+                  @mousedown.stop.prevent="onSaveStructure"
+                >
+                  <span v-if="!structureStates.saved">Save</span>
+                  <span v-else>Saved!</span>
+                </v-btn>
+              </template>
+            </v-tooltip>
+          </div>
+        </div>
       </v-tabs-window-item>
       <v-tabs-window-item value="blueprints" class="fill-height">
         <div
@@ -485,7 +517,7 @@ watch(() => globalStore.userSettings.data, () => {
           }]"
         >
           <div v-if="globalStore.userSettings.data.blueprintsIncludeTypings" class="d-flex flex-column" style="flex: 1">
-            <v-alert tile class="py-6">
+            <v-alert tile class="py-4 text-caption">
               <strong>Readonly:</strong> Typings are generated automatically.
             </v-alert>
             <v-ace-editor
@@ -499,7 +531,7 @@ watch(() => globalStore.userSettings.data, () => {
             />
           </div>
           <div class="d-flex flex-column" style="flex: 1">
-            <v-alert tile class="py-6">
+            <v-alert tile class="py-4 text-caption">
               <strong>Readonly:</strong> Default objects are generated automatically.
             </v-alert>
             <v-ace-editor

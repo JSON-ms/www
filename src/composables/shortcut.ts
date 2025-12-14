@@ -49,7 +49,7 @@ export function useShortcut(options: {
       })
     }
   }, {
-    keys: ['ctrl', 'r'],
+    keys: ['alt', 'r'],
     handler(shortcut, event) {
       if (globalStore.admin.previewMode !== null) {
         event.preventDefault();

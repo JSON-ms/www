@@ -6,6 +6,7 @@ export type TSchema = {[key: string]: { [key: string]: IField }}
 export interface IServerSettings {
   postMaxSize: PHPMegabyte,
   publicUrl: string,
+  supportedFeatures: string[],
   uploadMaxSize: PHPMegabyte,
   version: string,
 }
@@ -21,7 +22,9 @@ export interface IPrompt {
   btnIcon?: string | undefined,
   btnColor?: string | undefined,
   callback: () => Promise<void>,
+  cancelText?: string | undefined,
   cancelCallback?: () => Promise<void>,
+  cancelIcon?: string | undefined,
 }
 
 export interface IAdmin {

@@ -181,7 +181,7 @@ const remove = () => {
     btnText: 'Delete',
     btnIcon: 'mdi-delete',
     btnColor: 'error',
-    callback: () => new Promise(resolve => {
+    callback: () => new Promise((resolve, reject) => {
       deleting.value = true;
       const promises = [];
       for (let i = 0; i < selectedFiles.value.length; i++) {
@@ -197,7 +197,10 @@ const remove = () => {
         );
       }
       return Promise.all(promises)
-        .catch(globalStore.catchError)
+        .catch(err => {
+          reject();
+          globalStore.catchError(err);
+        })
         .finally(resolve)
         .finally(() => deleting.value = false);
     })

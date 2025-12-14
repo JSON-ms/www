@@ -52,10 +52,10 @@ export function useTypings() {
           body: 'This project was previously synced to your local folder. For security reasons, your browser resets this permission whenever the page loses its session. Would you like to resume syncing?',
           btnText: 'Resume',
           btnColor: 'secondary',
-          callback: () => new Promise(resolve => {
+          callback: () => new Promise((resolve, reject) => {
             askToSyncFolder(structure, language).then(() => {
               resolve();
-            })
+            }).catch(reject);
           }),
           cancelCallback: () => new Promise(resolve => {
             let keys = JSON.parse(localStorage.getItem(localStorageHandleKey) || '[]');
@@ -98,11 +98,11 @@ export function useTypings() {
         body: 'You will need to select a folder where the structure, user data, typings, and default object structure in JSON format will be updated in real-time on your local machine. We recommend using a folder named "jms" within your "src" directory. For security reasons, your browser requires session-based permission for local folder synchronization, so you will need to reselect this folder each time you refresh or return to this page.',
         btnText: 'Proceed',
         btnColor: 'warning',
-        callback: () => new Promise(resolve => {
+        callback: () => new Promise((resolve, reject) => {
           localStorage.setItem(localStorageExplanationsKey, '1');
           explanationCallback().then(() => {
             resolve();
-          })
+          }).catch(reject)
         }),
       });
     } else {

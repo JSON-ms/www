@@ -67,7 +67,8 @@ const close = () => {
         <v-btn
           :disabled="proceeding || closing"
           :loading="closing"
-          text="Cancel"
+          :text="globalStore.prompt.cancelText || 'Cancel'"
+          :prepend-icon="globalStore.prompt.cancelIcon"
           @click="cancel"
         />
       </template>

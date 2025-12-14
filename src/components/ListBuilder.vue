@@ -133,6 +133,7 @@ const formattedList = computed({
         }"
         :color="computedCanAdd ? 'primary' : undefined"
         block
+        variant="outlined"
         @click="addItem"
       >
         Add
@@ -204,6 +205,7 @@ const formattedList = computed({
             'mt-3': list.length > 0
           }"
           :color="computedCanAdd ? 'primary' : undefined"
+          variant="outlined"
           block
           @click="addItem"
         >
