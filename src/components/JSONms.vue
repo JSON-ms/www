@@ -200,6 +200,7 @@ const onLocaleChange = (locale: string) => {
 const onLogout = (response: any) => {
   modelStore.setStructure(response.structures[0], {});
   userDataLoaded.value = false;
+  setUserData({}, true);
   if (globalStore.userSettings.data.userDataAutoFetch) {
     updateRoute('demo', 'home', 'en-US');
     refreshUserData();

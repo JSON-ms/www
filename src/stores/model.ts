@@ -13,14 +13,14 @@ export const useModelStore = defineStore('model', {
     userData: any,
     originalUserData: any,
   } => ({
-    structure: defaultStructure,
-    originalStructure: defaultStructure,
+    structure: structuredClone(deepToRaw(defaultStructure)),
+    originalStructure: structuredClone(deepToRaw(defaultStructure)),
     temporaryContent: '',
     userData: {},
     originalUserData: {},
   }),
   actions: {
-    setStructure(model: IStructure, data?: any) {
+    setStructure(model: IStructure = structuredClone(deepToRaw(defaultStructure)), data?: any) {
       this.structure = model;
       this.temporaryContent = model.content;
       this.setOriginalStructure(model);
