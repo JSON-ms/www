@@ -453,7 +453,7 @@ watch(() => globalStore.userSettings.data, () => {
               @change="onChange"
             />
           </div>
-          <div class="px-3 py-2 d-flex w-100" style="flex: 0; gap: 0.5rem">
+          <div class="pa-2 d-flex w-100" style="flex: 0; gap: 0.5rem">
 
             <v-tooltip
               text="Toggle local folder synchronization"
