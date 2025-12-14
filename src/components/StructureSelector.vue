@@ -121,27 +121,27 @@ const computedStructure = computed((): IStructure => {
       </v-tooltip>
 
       <!-- SAVE -->
-      <v-tooltip
-        text="Save (CTRL+S)"
-        location="bottom"
-      >
-        <template #activator="{ props }">
-          <v-btn
-            v-if="structure"
-            v-bind="props"
-            :loading="structureStates.saving"
-            :disabled="!canSaveStructure || structureStates.saving || structureStates.saved"
-            variant="text"
-            color="primary"
-            size="small"
-            icon
-            @mousedown.stop.prevent="save(structure)"
-          >
-            <v-icon v-if="!structureStates.saved" icon="mdi-content-save" />
-            <v-icon v-else icon="mdi-check" />
-          </v-btn>
-        </template>
-      </v-tooltip>
+<!--      <v-tooltip-->
+<!--        text="Save (CTRL+S)"-->
+<!--        location="bottom"-->
+<!--      >-->
+<!--        <template #activator="{ props }">-->
+<!--          <v-btn-->
+<!--            v-if="structure"-->
+<!--            v-bind="props"-->
+<!--            :loading="structureStates.saving"-->
+<!--            :disabled="!canSaveStructure || structureStates.saving || structureStates.saved"-->
+<!--            variant="text"-->
+<!--            color="primary"-->
+<!--            size="small"-->
+<!--            icon-->
+<!--            @mousedown.stop.prevent="save(structure)"-->
+<!--          >-->
+<!--            <v-icon v-if="!structureStates.saved" icon="mdi-content-save" />-->
+<!--            <v-icon v-else icon="mdi-check" />-->
+<!--          </v-btn>-->
+<!--        </template>-->
+<!--      </v-tooltip>-->
 
       <!-- DELETE -->
       <v-tooltip

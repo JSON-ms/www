@@ -15,7 +15,7 @@ const structure = defineModel<IStructure>({ required: true });
 const { columns = false } = defineProps<{
   columns?: boolean
 }>();
-const { canSaveStructure, yamlException } = useStructure();
+const { canSaveStructure, yamlException, structureStates } = useStructure();
 const modelStore = useModelStore();
 const { getTypescriptTypings, getTypescriptDefaultObj, isFolderSynced, lastStateTimestamp, askToSyncFolder, unSyncFolder } = useTypings();
 const showParsingDelay = ref(false);
@@ -89,6 +89,10 @@ const setCaretToOriginalPosition = () => {
     structureEditor.value?.getAceInstance().selection.moveTo(lastPosition.row, lastPosition.column)
     lastPosition = null;
   }
+}
+
+const onSaveStructure = () => {
+  emit('save', structure.value);
 }
 
 const findNeedleInString = (haystack: string, needle: string) => {
@@ -400,6 +404,27 @@ watch(() => globalStore.userSettings.data, () => {
       </v-tab>
       <v-spacer />
       <div class="d-flex align-center pr-1" style="gap: 0.5rem">
+        <v-tooltip
+          text="Save (CTRL+S)"
+          location="bottom"
+        >
+          <template #activator="{ props }">
+            <v-btn
+              v-if="structure"
+              v-bind="props"
+              :loading="structureStates.saving"
+              :disabled="!canSaveStructure || structureStates.saving || structureStates.saved"
+              :prepend-icon="!structureStates.saved ? 'mdi-content-save' : 'mdi-check'"
+              variant="text"
+              color="primary"
+              size="small"
+              @mousedown.stop.prevent="onSaveStructure"
+            >
+              <span v-if="!structureStates.saved">Save</span>
+              <span v-else>Saved!</span>
+            </v-btn>
+          </template>
+        </v-tooltip>
         <v-tooltip
           text="Toggle local folder synchronization"
           location="bottom"

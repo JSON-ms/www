@@ -498,15 +498,19 @@ export function useStructure() {
         resolve(structure);
       }
 
+      const saveCallback = () => {
+        useTypings().syncToFolder(structure, 'typescript', ['structure', 'typings', 'default', 'settings', 'index']);
+        structureStates.value.saved = true;
+        setTimeout(() => structureStates.value.saved = false, 2000);
+      }
+
       structureStates.value.saving = true;
       saveStructureSimple(structure)
         .then(response => {
-          useTypings().syncToFolder(structure, 'typescript', ['structure', 'typings', 'default', 'settings', 'index']);
+          saveCallback();
           modelStore.setStructure(response);
           modelStore.setOriginalStructure(response);
           globalStore.updateStructure(response);
-          structureStates.value.saved = true;
-          setTimeout(() => structureStates.value.saved = false, 2000);
           resolve(modelStore.structure);
         })
         .catch(error => {
