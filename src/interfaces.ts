@@ -183,12 +183,22 @@ export interface ISection {
   fields: {[key: string]: IField}
 }
 
+export interface ITrigger {
+  key?: string
+  label: string
+  icon?: string
+  headers?: {[key: string]: string}
+  method?: string
+  url: string
+}
+
 export interface IStructureData {
   global: {
     title?: string
     logo?: string
     preview?: string
   },
+  triggers: {[key: string]: ITrigger},
   enums: TEnum,
   schemas: TSchema,
   locales: {[key: string]: string}

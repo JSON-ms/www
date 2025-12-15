@@ -47,6 +47,7 @@ declare module 'vue' {
     StructureSelector: typeof import('./src/components/StructureSelector.vue')['default']
     SyntaxHighlighter: typeof import('./src/components/SyntaxHighlighter.vue')['default']
     Toolbar: typeof import('./src/components/Toolbar.vue')['default']
+    TriggerMenu: typeof import('./src/components/TriggerMenu.vue')['default']
     UserSettingsDialog: typeof import('./src/components/UserSettingsDialog.vue')['default']
     VideoPlayer: typeof import('./src/components/VideoPlayer.vue')['default']
   }

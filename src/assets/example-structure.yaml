@@ -13,6 +13,19 @@ global:
   logo: [STRUCTURE_EDITOR_URL]/favicon.ico
 
 
+# Triggers Configuration:
+#   Define custom actions that can be triggered from the admin panel UI.
+#   Each trigger represents an executable action (button, menu item, etc.)
+#   that points to a URL or endpoint responsible for handling the action.
+triggers:
+  build:
+    label: Build
+    icon: mdi-play
+    url: [STRUCTURE_EDITOR_URL]/build
+    method: POST
+    headers:
+      Content-Type: application/json
+
 # Supported Languages:
 #   Specify the languages your content will support, allowing users
 #   to interact with your content in their preferred language

@@ -369,6 +369,8 @@ if (globalStore.session.loggedIn) {
       <StructureEditor
         ref="structureEditor"
         v-model="structure"
+        :structure-data="structureParsedData"
+        :user-data="modelStore.userData"
         style="flex: 1"
         @save="onSaveStructure"
         @create="onCreateStructure"

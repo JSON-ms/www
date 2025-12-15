@@ -44,7 +44,7 @@ export class Services {
     }
   }
 
-  private static handle(url: string, method = 'GET', body?: any, headers: {[key: string]: any} = {}, params: {[key: string]: any} = {}, cache = true): Promise<any> {
+  static handle(url: string, method = 'GET', body?: any, headers: {[key: string]: any} = {}, params: {[key: string]: any} = {}, cache = true): Promise<any> {
     const finalParams: any = {
       credentials: 'include',
       method,

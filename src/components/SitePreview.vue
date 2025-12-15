@@ -13,6 +13,7 @@ const structure = defineModel<IStructure>({ required: true });
 const emit = defineEmits(['save', 'create', 'change'])
 const props = defineProps<{
   structureData: IStructureData,
+  userData: any,
 }>();
 
 const structureEditor = ref<InstanceType<typeof StructureEditor> | null>();
@@ -215,6 +216,8 @@ defineExpose({
             <StructureEditor
               ref="structureEditor"
               v-model="structure"
+              :structure-data="structureData"
+              :user-data="userData"
               class="fill-height"
               columns
               @save="onSaveStructureContent"

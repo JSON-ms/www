@@ -2,7 +2,8 @@
 import {computed, onMounted, type Ref, ref, defineExpose, onBeforeUnmount, watch, nextTick} from 'vue';
 import { VAceEditor } from 'vue3-ace-editor';
 import type { VAceEditorInstance } from 'vue3-ace-editor/types';
-import type {IStructure} from '@/interfaces';
+import type {IStructure, IStructureData} from '@/interfaces';
+import TriggerMenu from '@/components/TriggerMenu.vue';
 import {useStructure} from '@/composables/structure';
 import '@/plugins/aceeditor';
 import {useGlobalStore} from '@/stores/global';
@@ -12,8 +13,10 @@ import {useModelStore} from "@/stores/model";
 
 const emit = defineEmits(['save', 'create', 'change'])
 const structure = defineModel<IStructure>({ required: true });
-const { columns = false } = defineProps<{
-  columns?: boolean
+const { columns = false, userData } = defineProps<{
+  columns?: boolean,
+  structureData: IStructureData,
+  userData: any
 }>();
 const { canSaveStructure, yamlException, structureStates } = useStructure();
 const modelStore = useModelStore();
@@ -456,7 +459,6 @@ watch(() => globalStore.userSettings.data, () => {
             />
           </div>
           <div class="pa-2 d-flex w-100" style="flex: 0; gap: 0.5rem">
-
             <v-tooltip
               text="Toggle local folder synchronization"
               location="bottom"
@@ -488,27 +490,35 @@ watch(() => globalStore.userSettings.data, () => {
               </template>
             </v-tooltip>
             <v-spacer />
-            <v-tooltip
-              text="Save (CTRL+S)"
-              location="bottom"
-            >
-              <template #activator="{ props }">
-                <v-btn
-                  v-if="structure"
-                  v-bind="props"
-                  :loading="structureStates.saving"
-                  :disabled="!canSaveStructure || structureStates.saving || structureStates.saved"
-                  :prepend-icon="!structureStates.saved ? 'mdi-content-save' : 'mdi-check'"
-                  variant="outlined"
-                  color="primary"
-                  size="small"
-                  @mousedown.stop.prevent="onSaveStructure"
-                >
-                  <span v-if="!structureStates.saved">Save</span>
-                  <span v-else>Saved!</span>
-                </v-btn>
-              </template>
-            </v-tooltip>
+            <div class="d-flex justify-end" style="gap: 0.5rem">
+              <TriggerMenu
+                :model-value="structureData"
+                :structure="structure"
+                :user-data="userData"
+              />
+              <v-tooltip
+                v-if="isFolderSynced(modelStore.structure, 'typescript')"
+                text="Save (CTRL+S)"
+                location="bottom"
+              >
+                <template #activator="{ props }">
+                  <v-btn
+                    v-if="structure"
+                    v-bind="props"
+                    :loading="structureStates.saving"
+                    :disabled="!canSaveStructure || structureStates.saving || structureStates.saved"
+                    :prepend-icon="!structureStates.saved ? 'mdi-content-save' : 'mdi-check'"
+                    variant="outlined"
+                    color="primary"
+                    size="small"
+                    @mousedown.stop.prevent="onSaveStructure"
+                  >
+                    <span v-if="!structureStates.saved">Save</span>
+                    <span v-else>Saved!</span>
+                  </v-btn>
+                </template>
+              </v-tooltip>
+            </div>
           </div>
         </div>
       </v-tabs-window-item>
@@ -520,7 +530,9 @@ watch(() => globalStore.userSettings.data, () => {
         >
           <div v-if="globalStore.userSettings.data.blueprintsIncludeTypings" class="d-flex flex-column" style="flex: 1">
             <v-alert tile class="py-4 text-caption">
-              <strong>Readonly:</strong> Typings are generated automatically.
+              <div class="text-truncate">
+                <strong>Readonly:</strong> Typings are generated automatically.
+              </div>
             </v-alert>
             <v-ace-editor
               ref="blueprintEditorTypings"
@@ -534,7 +546,9 @@ watch(() => globalStore.userSettings.data, () => {
           </div>
           <div class="d-flex flex-column" style="flex: 1">
             <v-alert tile class="py-4 text-caption">
-              <strong>Readonly:</strong> Default objects are generated automatically.
+              <div class="text-truncate">
+                <strong>Readonly:</strong> Default objects are generated automatically.
+              </div>
             </v-alert>
             <v-ace-editor
               ref="blueprintEditorDefault"
