@@ -481,7 +481,7 @@ watch(() => globalStore.userSettings.data, () => {
                   variant="text"
                   @click="onSync"
                 >
-                  Sync
+                  Local sync
                 </v-btn>
               </template>
             </v-tooltip>

@@ -76,6 +76,8 @@ export const useGlobalStore = defineStore('global', {
         editorLiveUpdate: true,
         editorUpdateTimeout: 1000,
         editorShowPrintMargin: false,
+        editorAutoSyncFrom: true,
+        editorAutoSyncInterval: 1000,
         autoCleanData: false,
         editorTabSize: 2,
         userDataAutoFetch: true,
