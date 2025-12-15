@@ -96,13 +96,15 @@ const onSaveStructure = () => {
 }
 
 const findNeedleInString = (haystack: string, needle: string) => {
-  const lines = haystack.split('\n');
+  const lines = haystack.split('\n')
+
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes(needle)) {
-      return i;
+    if (new RegExp(`^${needle}\\s*$`).test(lines[i])) {
+      return i + 1
     }
   }
-  return -1;
+
+  return -1
 }
 
 const scrollToSection = (section: string) => {
