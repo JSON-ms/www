@@ -428,3 +428,31 @@ Here's an example of a field using an schema:
         collapsable: true # Make it a collapsable group
         collapsed: true # Make it collapsed by default
 ```
+
+## Triggers
+
+Use triggers to define executable actions exposed in the UI. Each trigger becomes an interactive control (button, menu item, etc.) that calls a specific URL when activated.
+
+```yaml
+triggers:
+
+  # Unique trigger identifier
+  build:
+
+    # Text displayed to the user
+    label: Build
+
+    # Icon shown next to the label (Material Design Icons)
+    icon: mdi-play
+
+    # URL called when the trigger is executed
+    url: https://json.ms/?action=build
+
+    # HTTP method used for the request
+    method: POST
+
+    # HTTP headers sent with the request
+    headers:
+      # (Example) Indicates the payload format sent to the backend
+      Content-Type: application/json
+```
