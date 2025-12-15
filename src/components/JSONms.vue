@@ -155,7 +155,7 @@ const onApplyNewStructure = (template: string) => {
 
 const onSaveStructure = () => {
   if (canSaveStructure.value) {
-    modelStore.structure.content = modelStore.temporaryContent;
+    modelStore.structure.content = modelStore.temporaryContent || modelStore.structure.content;
     saveStructure().then(() => {
       bottomSheetData.value = { text: 'Structure saved!', color: 'success', icon: 'mdi-check' };
       syncToFolder(modelStore.structure, 'typescript', ['structure', 'default', 'typings', 'settings', 'index']);
