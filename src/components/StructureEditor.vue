@@ -161,9 +161,9 @@ const scrollToSection = (section: string) => {
     const annotations = [];
     const line = findNeedleInString(structure.value.content, '  ' + section + ':');
     if (line) {
-      instance.renderer.scrollToLine(line, false, true);
+      instance.renderer.scrollToLine(line - 1, false, true);
       annotations.push({
-        row: line,
+        row: line - 1,
         column: 0,
         text: "Current section",
         type: "info"
