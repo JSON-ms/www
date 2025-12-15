@@ -21,7 +21,7 @@ triggers:
   build:
     label: Build
     icon: mdi-play
-    url: [STRUCTURE_EDITOR_URL]/build
+    url: [BUILD_URL]/build
     method: POST
     headers:
       Content-Type: application/json

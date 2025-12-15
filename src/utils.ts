@@ -107,7 +107,8 @@ export const valueToString = (value: any) => {
 
 export const getDefaultStructureContent = (): string => {
   return (exampleStructure as string)
-    .replace('[STRUCTURE_EDITOR_URL]', window.location.origin);
+    .replace('[STRUCTURE_EDITOR_URL]', window.location.origin)
+    .replace('[BUILD_URL]', window.location.origin);
 }
 
 export const parseFields = (fields: any = {}, locales = {}, schemas: TSchema = {}) => {
