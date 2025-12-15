@@ -5,6 +5,8 @@ import type { VAceEditorInstance } from 'vue3-ace-editor/types';
 import type {IStructure, IStructureData} from '@/interfaces';
 import TriggerMenu from '@/components/TriggerMenu.vue';
 import {useStructure} from '@/composables/structure';
+import Settings from '@/components/Settings.vue';
+import Integration from '@/components/Integration.vue';
 import '@/plugins/aceeditor';
 import {useGlobalStore} from '@/stores/global';
 import {useTypings} from "@/composables/typings";
@@ -32,6 +34,8 @@ const blueprintTypings = ref('')
 const blueprintDefault = ref('')
 const blueprintLanguage = ref<'typescript' | 'php'>('typescript')
 
+const sectionMenu = ref(false);
+
 const tab = computed({
   get: () => {
     return globalStore.admin.structure ? globalStore.admin.editorTab : 'structure';
@@ -42,6 +46,47 @@ const tab = computed({
     })
   },
 })
+
+const setSection = (section: any) => {
+  globalStore.admin.editorTab = section.key;
+  sectionMenu.value = false;
+}
+
+const selectedSection = computed(() => {
+  const selected = sections.value.find(item => item.key === globalStore.admin.editorTab) || sections.value[0];
+  if (selected.disabled()) {
+    return sections.value[0];
+  }
+  return selected;
+})
+
+const sections = ref([{
+  key: 'structure',
+  icon: 'mdi-invoice-text-edit-outline',
+  title: "Structure",
+  subtitle: "YAML schema and layout",
+  disabled: () => false
+}, {
+  key: 'blueprints',
+  icon: 'mdi-ruler-square',
+  title: "Blueprints",
+  subtitle: "TypeScript types and default data",
+  disabled: () => false
+}, {
+  key: 'settings',
+  icon: 'mdi-cog',
+  title: "Settings",
+  subtitle: "Configure project behavior",
+  disabledSubtitle: 'Must be logged in',
+  disabled: () => !globalStore.session.loggedIn
+}, {
+  key: 'integration',
+  icon: 'mdi-download-circle-outline',
+  title: "Integration",
+  subtitle: "Install and connect your custom endpoint",
+  disabledSubtitle: 'Must be logged in',
+  disabled: () => !globalStore.session.loggedIn
+}])
 
 let parseInterval: any;
 let showParseInterval: any;
@@ -398,15 +443,28 @@ watch(() => globalStore.userSettings.data, () => {
     text="Access to this template has not been granted by the owner."
   />
   <div v-else class="d-flex flex-column">
-    <v-tabs v-model="tab">
-      <v-tab value="structure">
-        <v-icon icon="mdi-invoice-text-edit-outline" start />
-        Structure
-      </v-tab>
-      <v-tab value="blueprints">
-        <v-icon icon="mdi-ruler-square" start />
-        Blueprints
-      </v-tab>
+    <div class="d-flex align-center pa-1">
+      <v-menu v-model="sectionMenu" :close-on-content-click="false">
+        <template #activator="{ props }">
+          <v-btn v-bind="props">
+            <v-icon :icon="selectedSection?.icon" start />
+            <span>{{ selectedSection?.title }}</span>
+            <v-icon icon="mdi-chevron-down" end />
+          </v-btn>
+        </template>
+        <v-list color="primary">
+          <v-list-item
+            v-for="section in sections"
+            :key="section.key"
+            :prepend-icon="section.disabled() ? 'mdi-alert' : section.icon"
+            :title="section.title"
+            :subtitle="section.disabled() ? section.disabledSubtitle : section.subtitle"
+            :active="selectedSection?.key === section.key"
+            :disabled="section.disabled()"
+            @click="setSection(section)"
+          />
+        </v-list>
+      </v-menu>
       <v-spacer />
       <div class="d-flex align-center pr-1" style="gap: 0.5rem">
         <div
@@ -438,7 +496,7 @@ watch(() => globalStore.userSettings.data, () => {
           />
         </div>
       </div>
-    </v-tabs>
+    </div>
     <v-tabs-window v-model="tab" style="flex: 1" class="fill-height">
       <v-tabs-window-item value="structure" class="fill-height">
         <div class="d-flex flex-column align-center pr-1 fill-height">
@@ -562,6 +620,22 @@ watch(() => globalStore.userSettings.data, () => {
           </div>
         </div>
       </v-tabs-window-item>
+      <v-tabs-window-item value="settings" class="fill-height">
+        <div class="d-flex flex-column overflow-auto h-100" style="max-height: calc(100vh - 109px)">
+          <Settings
+            v-model="structure"
+            :demo="!globalStore.session.loggedIn"
+            :disabled="structure.type !== 'owner'"
+          />
+        </div>
+      </v-tabs-window-item>
+      <v-tabs-window-item value="integration" class="fill-height">
+        <div class="d-flex flex-column overflow-auto h-100" style="max-height: calc(100vh - 109px)">
+          <Integration
+            v-model="structure"
+          />
+        </div>
+      </v-tabs-window-item>
     </v-tabs-window>
   </div>
 </template>
@@ -576,5 +650,11 @@ watch(() => globalStore.userSettings.data, () => {
 }
 .v-progress-circular__overlay {
   transition: all var(--parsing-delay) linear;
+}
+</style>
+
+<style scoped lang="scss">
+.v-window ::v-deep .v-window__container {
+  height: 100% !important;
 }
 </style>

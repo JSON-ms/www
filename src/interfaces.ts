@@ -32,7 +32,7 @@ export interface IAdmin {
   structure: boolean,
   previewMode: 'mobile' | 'desktop' | null,
   dataTab: 'data' | 'settings' | 'docs',
-  editorTab: 'structure' | 'blueprints',
+  editorTab: 'structure' | 'blueprints' | 'settings' | 'integration',
 }
 
 export interface ISnack {
