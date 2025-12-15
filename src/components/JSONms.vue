@@ -49,7 +49,7 @@ const dataEditor = ref<InstanceType<typeof DataEditor> | null>();
 const { serverSettings, structureParsedData, structureStates, structureHasSettingsError, getAvailableSection, deleteStructure, getAvailableLocale, structureHasSection, structureHasLocale, saveStructure, canSaveStructure, canDeleteStructure, resetStructure } = useStructure();
 const { fetchUserData, canSave, saveUserData, downloading, userDataLoaded, userDataLoading, setUserData } = useUserData();
 const { sendMessageToIframe } = useIframe();
-const { autoAskToSyncFolder, syncToFolder, unSyncFolder } = useTypings();
+const { syncFromFolder, autoAskToSyncFolder, syncToFolder, unSyncFolder, stopWatchSnapshotDirectory, watchSnapshotDirectory, isFolderSynced } = useTypings();
 
 globalStore.initUserSettings();
 
@@ -247,6 +247,21 @@ watch(() => globalStore.admin.structure, () => {
   if (globalStore.admin.structure && globalStore.admin.drawer && layoutSize.value.drawer.temporary) {
     globalStore.admin.drawer = false;
   }
+})
+
+const autoSyncCallback = () => {
+  stopWatchSnapshotDirectory();
+  if (globalStore.userSettings.data.editorAutoSyncFrom) {
+    watchSnapshotDirectory(globalStore.userSettings.data.editorAutoSyncInterval);
+  }
+}
+watch(() => [
+  globalStore.userSettings.data.editorAutoSyncFrom,
+  globalStore.userSettings.data.editorAutoSyncInterval,
+], autoSyncCallback, { deep: true });
+autoSyncCallback();
+window.addEventListener('fs-change', () => {
+  syncFromFolder(structure.value, 'typescript');
 })
 
 const refreshUserData = async (): Promise<any> => {

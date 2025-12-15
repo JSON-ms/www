@@ -70,6 +70,8 @@ export interface IUserSettings {
   editorTabSize: number
   editorLiveUpdate: boolean
   editorUpdateTimeout: number
+  editorAutoSyncFrom: boolean
+  editorAutoSyncInterval: number
   autoCleanData: boolean
   userDataAutoFetch: boolean
   layoutEditorLocation: 'start' | 'end'

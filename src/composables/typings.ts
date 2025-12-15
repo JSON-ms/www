@@ -20,7 +20,17 @@ type JmsStructure = {
   }[]
 }
 
-const handleReference: {[key: string]: FileSystemDirectoryHandle | null} = {}
+type FileMeta = {
+  lastModified: number
+  size: number
+}
+
+type Snapshot = Map<string, FileMeta>
+
+let previousSnapshot: Snapshot
+let snalshopCheckInterval: any
+
+const syncHandleRef: {[key: string]: FileSystemDirectoryHandle | null} = {}
 export const lastStateTimestamp = ref(0);
 const localStorageHandleKey = 'jsonms/typings:handle-list';
 const localStorageExplanationsKey = 'jsonms/typings:explanations';
@@ -28,7 +38,7 @@ const localStorageExplanationsKey = 'jsonms/typings:explanations';
 export const isFolderSynced = (structure: IStructure, language: 'typescript' | 'php'): boolean => {
   const hash = structure.hash ?? 'unknown';
   const id = `${hash}_${language}`;
-  return !!(handleReference[id]);
+  return !!(syncHandleRef[id]);
 }
 
 export function useTypings() {
@@ -43,7 +53,7 @@ export function useTypings() {
     const id = `${hash}_${language}`;
     const keys = JSON.parse(localStorage.getItem(localStorageHandleKey) || '[]');
     keys.forEach((key: string) => {
-      if (key === id && !handleReference[id]) {
+      if (key === id && !syncHandleRef[id]) {
         globalStore.setPrompt({
           ...globalStore.prompt,
           visible: true,
@@ -72,12 +82,12 @@ export function useTypings() {
     const explanationCallback = async () => {
       const hash = structure.hash ?? 'unknown';
       const id = `${hash}_${language}`;
-      handleReference[id] = await window.showDirectoryPicker({
+      syncHandleRef[id] = await window.showDirectoryPicker({
         id,
         mode: 'readwrite',
       });
 
-      if (handleReference[id]) {
+      if (syncHandleRef[id]) {
         let keys = JSON.parse(localStorage.getItem(localStorageHandleKey) || '[]');
         keys = keys.filter((key: string) => key !== id);
         keys.push(id);
@@ -115,7 +125,7 @@ export function useTypings() {
     const id = `${hash}_${language}`;
 
     if (clean) {
-      delete handleReference[id];
+      delete syncHandleRef[id];
       let keys = JSON.parse(localStorage.getItem(localStorageHandleKey) || '{}');
       keys = keys.filter((key: string) => key !== id);
       localStorage.setItem(localStorageHandleKey, JSON.stringify(keys));
@@ -127,7 +137,7 @@ export function useTypings() {
   const syncToFolder = async (structure: IStructure, language: 'typescript' | 'php', types: ('structure' | 'typings' | 'default' | 'data' | 'settings' | 'index')[] = ['structure', 'default', 'typings', 'data', 'settings', 'index']) => {
     const id = `${structure.hash ?? 'unknown'}_${language}`;
     const oneTab = ' '.repeat(globalStore.userSettings.data.editorTabSize);
-    if (handleReference[id]) {
+    if (syncHandleRef[id]) {
       const structuredData = getParsedStructureData(structure);
       const fileSaveList: {
         writableStream: FileSystemWritableFileStream,
@@ -137,8 +147,8 @@ export function useTypings() {
       // structure.yml
       if (globalStore.userSettings.data.blueprintsWriteToStructure && types.includes('structure')) {
         await (async () => {
-          if (handleReference[id]) {
-            const fileHandle = await handleReference[id].getFileHandle('structure.yml', { create: true });
+          if (syncHandleRef[id]) {
+            const fileHandle = await syncHandleRef[id].getFileHandle('structure.yml', { create: true });
             const file = await fileHandle.getFile();
             const existingData = await file.text();
             const content = structure.content;
@@ -150,8 +160,8 @@ export function useTypings() {
         })();
 
         await (async () => {
-          if (handleReference[id]) {
-            const fileHandle = await handleReference[id].getFileHandle('structure.json', { create: true });
+          if (syncHandleRef[id]) {
+            const fileHandle = await syncHandleRef[id].getFileHandle('structure.json', { create: true });
             const file = await fileHandle.getFile();
             const existingData = await file.text();
             const content = JSON.stringify(structuredData, null, globalStore.userSettings.data.editorTabSize);
@@ -166,8 +176,8 @@ export function useTypings() {
       // typings.yml
       if (globalStore.userSettings.data.blueprintsWriteToTypings && types.includes('typings')) {
         await (async () => {
-          if (handleReference[id]) {
-            const fileHandle = await handleReference[id].getFileHandle('typings.ts', {create: true});
+          if (syncHandleRef[id]) {
+            const fileHandle = await syncHandleRef[id].getFileHandle('typings.ts', {create: true});
             const file = await fileHandle.getFile();
             const existingData = await file.text();
             const content = getTypescriptTypings(structuredData);
@@ -182,8 +192,8 @@ export function useTypings() {
       // default.ts
       if (globalStore.userSettings.data.blueprintsWriteToDefault && types.includes('default')) {
         await (async () => {
-          if (handleReference[id]) {
-            const fileHandle = await handleReference[id].getFileHandle('default.ts', {create: true});
+          if (syncHandleRef[id]) {
+            const fileHandle = await syncHandleRef[id].getFileHandle('default.ts', {create: true});
             const file = await fileHandle.getFile();
             const existingData = await file.text();
             const content = getTypescriptDefaultObj(structuredData);
@@ -198,8 +208,8 @@ export function useTypings() {
       // settings.ts
       if (globalStore.userSettings.data.blueprintsWriteToSettings && types.includes('settings')) {
         await (async () => {
-          if (handleReference[id]) {
-            const fileHandle = await handleReference[id].getFileHandle('settings.json', {create: true});
+          if (syncHandleRef[id]) {
+            const fileHandle = await syncHandleRef[id].getFileHandle('settings.json', {create: true});
             const file = await fileHandle.getFile();
             const existingData = await file.text();
             const content = JSON.stringify(serverSettings.value, null, globalStore.userSettings.data.editorTabSize);
@@ -214,9 +224,9 @@ export function useTypings() {
       // data.json
       if (globalStore.userSettings.data.blueprintsWriteToData && types.includes('data')) {
         await (async () => {
-          if (handleReference[id]) {
+          if (syncHandleRef[id]) {
             const content = JSON.stringify(deepToRaw(modelStore.userData), null, globalStore.userSettings.data.editorTabSize);
-            const fileHandle = await handleReference[id].getFileHandle('data.json', {create: true});
+            const fileHandle = await syncHandleRef[id].getFileHandle('data.json', {create: true});
             const file = await fileHandle.getFile();
             const existingData = await file.text();
             if (existingData !== content) {
@@ -230,8 +240,8 @@ export function useTypings() {
       // index.ts
       if (globalStore.userSettings.data.blueprintsWriteToIndex && types.includes('index')) {
         await (async () => {
-          if (handleReference[id]) {
-            const fileHandle = await handleReference[id].getFileHandle('index.ts', {create: true});
+          if (syncHandleRef[id]) {
+            const fileHandle = await syncHandleRef[id].getFileHandle('index.ts', {create: true});
             const file = await fileHandle.getFile();
             const existingData = await file.text();
             let content = ''
@@ -298,14 +308,14 @@ export function useTypings() {
 
   const syncFromFolder = async (structure: IStructure, language: 'typescript' | 'php', types: ('data' | 'structure')[] = ['data', 'structure']) => {
     const id = `${structure.hash ?? 'unknown'}_${language}`;
-    if (handleReference[id]) {
+    if (syncHandleRef[id]) {
 
       // data.json
       if (globalStore.userSettings.data.blueprintsReadFromData && types.includes('data')) {
         await (async () => {
-          if (handleReference[id]) {
+          if (syncHandleRef[id]) {
             try {
-              const fileHandle = await handleReference[id].getFileHandle('data.json');
+              const fileHandle = await syncHandleRef[id].getFileHandle('data.json');
               const file = await fileHandle.getFile();
               const content = await file.text();
               const json = JSON.parse(content);
@@ -322,9 +332,9 @@ export function useTypings() {
       // structure.yml
       if ((globalStore.userSettings.data.blueprintsReadFromStructure || !globalStore.session.loggedIn) && types.includes('structure')) {
         await (async () => {
-          if (handleReference[id]) {
+          if (syncHandleRef[id]) {
             try {
-              const fileHandle = await handleReference[id].getFileHandle('structure.yml');
+              const fileHandle = await syncHandleRef[id].getFileHandle('structure.yml');
               const file = await fileHandle.getFile();
               modelStore.structure.content = await file.text();
             } catch (e) {
@@ -543,7 +553,72 @@ export function useTypings() {
     return result.trim();
   }
 
+  const scanSnapshotDir = async (
+    dir: FileSystemDirectoryHandle,
+    prefix = ''
+  ): Promise<Snapshot> => {
+    const snapshot: Snapshot = new Map()
+
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    for await (const [name, handle] of dir.entries()) {
+      const path = `${prefix}/${name}`
+
+      if (handle.kind === 'file') {
+        const file = await handle.getFile()
+        snapshot.set(path, {
+          lastModified: file.lastModified,
+          size: file.size,
+        })
+      } else {
+        const sub = await scanSnapshotDir(handle, path)
+        sub.forEach((v, k) => snapshot.set(k, v))
+      }
+    }
+
+    return snapshot
+  }
+
+  const snapshotsEqual = (a: Snapshot, b: Snapshot): boolean => {
+    if (!a || !b || a.size !== b.size) return false
+
+    for (const [path, meta] of a) {
+      const other = b.get(path)
+      if (!other) return false
+      if (
+        meta.lastModified !== other.lastModified ||
+        meta.size !== other.size
+      ) {
+        return false
+      }
+    }
+
+    return true
+  }
+
+  const watchSnapshotDirectory = async (
+    intervalMs = 1000
+  ): Promise<void> => {
+    snalshopCheckInterval = setInterval(async () => {
+      for (const id of Object.keys(syncHandleRef)) {
+        const root = syncHandleRef[id]
+        if (root) {
+          const current = await scanSnapshotDir(root)
+          if (!snapshotsEqual(previousSnapshot, current)) {
+            window.dispatchEvent(new Event('fs-change'))
+            previousSnapshot = current
+          }
+        }
+      }
+    }, intervalMs)
+  }
+
+  const stopWatchSnapshotDirectory = () => {
+    clearInterval(snalshopCheckInterval);
+  }
+
   return {
+    syncHandleRef,
     autoAskToSyncFolder,
     askToSyncFolder,
     unSyncFolder,
@@ -553,5 +628,9 @@ export function useTypings() {
     getTypescriptTypings,
     getTypescriptDefaultObj,
     lastStateTimestamp,
+    scanSnapshotDir,
+    snapshotsEqual,
+    watchSnapshotDirectory,
+    stopWatchSnapshotDirectory,
   }
 }

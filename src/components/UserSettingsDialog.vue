@@ -174,6 +174,21 @@ watch(() => visible.value, () => {
                   persistent-hint
                 />
                 <v-switch
+                  v-model="userSettings.editorAutoSyncFrom"
+                  color="primary"
+                  label="Auto-sync from local files"
+                  hint="Updates the structure automatically whenever changes are detected in your locally synced files."
+                  persistent-hint
+                  inset
+                />
+                <v-number-input
+                  v-model="userSettings.editorAutoSyncInterval"
+                  :disabled="!userSettings.editorAutoSyncFrom"
+                  label="Update timeout (milliseconds)"
+                  hint="There will be a delay of X milliseconds before the structure updates after a change."
+                  persistent-hint
+                />
+                <v-switch
                   v-model="userSettings.autoCleanData"
                   color="primary"
                   label="Auto-Clean Data"
