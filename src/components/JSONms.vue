@@ -22,10 +22,8 @@ import {useShortcut} from '@/composables/shortcut';
 import {deepToRaw, getStructure} from '@/utils';
 import NewStructureModal from '@/components/NewStructureModal.vue';
 import type {VForm} from 'vuetify/components';
-import Settings from '@/components/Settings.vue';
 import Docs from '@/components/Docs.vue';
 import FileManager from '@/components/FileManager.vue';
-import Integration from '@/components/Integration.vue';
 import {useModelStore} from '@/stores/model';
 import structureMd from "../../docs/structure.md";
 
@@ -155,7 +153,7 @@ const onApplyNewStructure = (template: string) => {
 
 const onSaveStructure = () => {
   if (canSaveStructure.value) {
-    modelStore.structure.content = modelStore.temporaryContent;
+    modelStore.structure.content = modelStore.temporaryContent || modelStore.structure.content;
     saveStructure().then(() => {
       bottomSheetData.value = { text: 'Structure saved!', color: 'success', icon: 'mdi-check' };
       syncToFolder(modelStore.structure, 'typescript', ['structure', 'default', 'typings', 'settings', 'index']);
@@ -396,33 +394,22 @@ if (globalStore.session.loggedIn) {
       ref="form"
       class="fill-height"
     >
-      <v-expand-transition group>
-        <div v-if="globalStore.admin.structure && windowWidth > 900">
-          <v-tabs v-model="tab" grow>
-            <template v-if="!splitTabs">
+      <template v-if="!splitTabs">
+        <v-expand-transition group>
+          <div v-if="globalStore.admin.structure && windowWidth > 900">
+            <v-tabs v-model="tab" grow>
               <v-tab value="data">
                 <v-icon icon="mdi-pencil" start />
                 Data
               </v-tab>
-            </template>
-            <v-tab value="settings">
-              <v-icon start icon="mdi-cog" />
-              Settings
-              <v-icon v-if="structureHasSettingsError" color="warning" class="ml-3">
-                mdi-alert
-              </v-icon>
-            </v-tab>
-            <v-tab value="integration">
-              <v-icon start icon="mdi-download-circle-outline" />
-              Integration
-            </v-tab>
-            <v-tab value="docs">
-              <v-icon start icon="mdi-book" />
-              Docs
-            </v-tab>
-          </v-tabs>
-        </div>
-      </v-expand-transition>
+              <v-tab value="docs">
+                <v-icon start icon="mdi-book" />
+                Docs
+              </v-tab>
+            </v-tabs>
+          </div>
+        </v-expand-transition>
+      </template>
       <v-tabs-window v-model="tab" class="fill-height" style="flex: 1">
         <v-tabs-window-item value="data" class="fill-height">
           <DataEditor
@@ -432,18 +419,6 @@ if (globalStore.session.loggedIn) {
             :user-data="modelStore.userData"
             :server-settings="serverSettings"
             :loading="userDataLoading"
-          />
-        </v-tabs-window-item>
-        <v-tabs-window-item value="settings">
-          <Settings
-            v-model="structure"
-            :demo="!globalStore.session.loggedIn"
-            :disabled="structure.type !== 'owner'"
-          />
-        </v-tabs-window-item>
-        <v-tabs-window-item value="integration">
-          <Integration
-            v-model="structure"
           />
         </v-tabs-window-item>
         <v-tabs-window-item value="docs">

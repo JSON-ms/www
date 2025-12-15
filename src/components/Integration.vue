@@ -44,8 +44,7 @@ ${prefix}JMS_ENCRYPTED_SECRET_KEY=${modelStore.structure.server_secret}`;
 </script>
 
 <template>
-
-  <v-card tile flat>
+  <v-card tile flat class="overflow-auto">
     <v-card-text>
       <h1>Integration Guide</h1>
       <hr>

@@ -424,24 +424,26 @@ export function useStructure() {
     structureStates.value.loadingSecretKey = true;
     structureStates.value.secretKeyLoaded = false;
     return getSecretKeySimple(endpoint.value?.uuid || '')
-      .then(response => secretKey.value = response)
-      .catch(error => globalStore.catchError(error))
-      .finally(() => {
-        structureStates.value.loadingSecretKey = false;
+      .then(response => {
+        secretKey.value = response;
         structureStates.value.secretKeyLoaded = true;
+        return response;
       })
+      .catch(error => globalStore.catchError(error))
+      .finally(() => structureStates.value.loadingSecretKey = false)
   }
 
   const getCypherKey = async (): Promise<string> => {
     structureStates.value.loadingCypherKey = true;
     structureStates.value.cypherKeyLoaded = false;
     return Services.get(import.meta.env.VITE_SERVER_URL + '/endpoint/cypher-key/' + endpoint.value?.uuid)
-      .then(response => cypherKey.value = response)
-      .catch(error => globalStore.catchError(error))
-      .finally(() => {
-        structureStates.value.loadingCypherKey = false;
+      .then(response => {
+        cypherKey.value = response;
         structureStates.value.cypherKeyLoaded = true;
+        return response;
       })
+      .catch(error => globalStore.catchError(error))
+      .finally(() => structureStates.value.loadingCypherKey = false)
   }
 
   const createStructure = (): Promise<IStructure> => {
@@ -504,21 +506,26 @@ export function useStructure() {
         setTimeout(() => structureStates.value.saved = false, 2000);
       }
 
-      structureStates.value.saving = true;
-      saveStructureSimple(structure)
-        .then(response => {
-          saveCallback();
-          modelStore.setStructure(response);
-          modelStore.setOriginalStructure(response);
-          globalStore.updateStructure(response);
-          resolve(modelStore.structure);
-        })
-        .catch(error => {
-          reject(error);
-          globalStore.catchError(error);
-          return error;
-        })
-        .finally(() => structureStates.value.saving = false);
+      if (globalStore.session.loggedIn) {
+        structureStates.value.saving = true;
+        saveStructureSimple(structure)
+          .then(response => {
+            saveCallback();
+            modelStore.setStructure(response);
+            modelStore.setOriginalStructure(response);
+            globalStore.updateStructure(response);
+            resolve(modelStore.structure);
+          })
+          .catch(error => {
+            reject(error);
+            globalStore.catchError(error);
+            return error;
+          })
+          .finally(() => structureStates.value.saving = false);
+      } else {
+        saveCallback();
+        resolve(modelStore.structure);
+      }
     })
   }
 
@@ -602,8 +609,7 @@ export function useStructure() {
   }
 
   const canSaveStructure = computed(() => {
-    return globalStore.session.loggedIn
-      && !structureIsPristine.value
+    return !structureIsPristine.value
       && !structureHasSettingsError.value
   })
 

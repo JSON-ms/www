@@ -232,7 +232,9 @@ watch(() => currentRoute.params.locale, () => {
         type="info"
         icon="mdi-information-outline"
       >
-        Free and open-source, with data securely hosted on your server.
+        <div class="text-truncate">
+          Free and open-source, with data securely hosted on your server.
+        </div>
       </v-alert>
     </div>
 
