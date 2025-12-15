@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {useGlobalStore} from '@/stores/global';
-import {defineExpose, nextTick, onMounted, onUnmounted, ref, watch} from 'vue';
+import {computed, defineExpose, nextTick, onMounted, onUnmounted, ref, watch} from 'vue';
 import type {IStructure, IStructureData} from '@/interfaces';
 import {useLayout} from '@/composables/layout';
 import StructureEditor from '@/components/StructureEditor.vue';
@@ -24,10 +24,20 @@ const loaded = ref(false);
 const loading = ref(false);
 const killIframe = ref(false);
 const siteNotCompatibleSnack = ref(false);
+const hoveringEditor = ref(false);
 const { layoutSize, windowHeight, layoutPx } = useLayout();
 const { reloading, siteCompatible, sendMessageToIframe, getPathsFromSectionKey, listenIframeMessage, sendUserDataToIframe } = useIframe();
 const { userDataLoading } = useUserData();
 const iframeErrorMsg = ref('This site is not JSONms compatible');
+
+const editorHeight = computed((): number => {
+  const padding = (globalStore.userSettings.data.layoutSitePreviewPadding ? 96 : 63);
+  const result = windowHeight.value - padding;
+  if (hoveringEditor.value) {
+    return result + 32;
+  }
+  return result - layoutSize.value.preview.height;
+})
 
 const refresh = () => {
   if (siteCompatible.value) {
@@ -212,7 +222,15 @@ defineExpose({
     <template #append>
       <v-expand-transition>
         <div v-show="globalStore.admin.previewMode === 'desktop' && globalStore.admin.structure">
-          <v-card :height="windowHeight - layoutSize.preview.height - (globalStore.userSettings.data.layoutSitePreviewPadding ? 96 : 63)" tile flat theme="dark">
+          <v-card
+            :height="editorHeight"
+            tile
+            flat
+            class="editor-card"
+            theme="dark"
+            @mouseover="hoveringEditor = true"
+            @mouseleave="hoveringEditor = false"
+          >
             <StructureEditor
               ref="structureEditor"
               v-model="structure"
@@ -237,5 +255,8 @@ defineExpose({
   & iframe {
     transition: all 200ms ease;
   }
+}
+.editor-card {
+  transition: height 300ms ease;
 }
 </style>
