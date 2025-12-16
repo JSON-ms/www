@@ -6,6 +6,7 @@ import {Services} from '@/services';
 import ImgTag from '@/components/ImgTag.vue';
 import VideoPlayer from '@/components/VideoPlayer.vue';
 import {downloadFilesAsZip, getFileIcon, phpStringSizeToBytes} from '@/utils';
+import ModalDialog from '@/components/ModalDialog.vue';
 
 const globalStore = useGlobalStore();
 const structure = defineModel<IStructure>({ required: true });
@@ -258,255 +259,252 @@ watch(() => globalStore.fileManager.visible, () => {
 </script>
 
 <template>
-  <v-dialog
+  <ModalDialog
     v-model="globalStore.fileManager.visible"
     :max-width="1000"
+    title="File Manager"
+    prepend-icon="mdi-file-multiple"
     persistent
     scrollable
   >
-    <v-card
-      title="File Manager"
-      prepend-icon="mdi-file-multiple"
-    >
-      <template v-if="globalStore.session.loggedIn" #append>
-        <v-tabs v-model="filter" class="my-n4">
-          <v-tab value="all">
-            All ({{ getFilesByType('all').length }})
-          </v-tab>
-          <v-tab v-if="getFilesByType('image').length > 0" value="image">
-            Images ({{ getFilesByType('image').length }})
-          </v-tab>
-          <v-tab v-if="getFilesByType('video').length > 0" value="video">
-            Videos ({{ getFilesByType('video').length }})
-          </v-tab>
-          <v-tab v-if="getFilesByType('document').length > 0" value="document">
-            Document ({{ getFilesByType('document').length }})
-          </v-tab>
-        </v-tabs>
-      </template>
-      <v-card-actions>
-        <v-text-field
-          v-model="search"
-          label="Search"
-          prepend-inner-icon="mdi-magnify"
-          hide-details
-        >
-          <template #append-inner>
-            <div class="d-flex align-center" style="gap: 0.5rem">
-              <v-select
-                v-model="sortBy"
-                :items="[
-                  { title: 'Timestamp', value: 'timestamp' },
-                  { title: 'Name', value: 'originalFileName' },
-                  { title: 'Size', value: 'size' },
-                  { title: 'Width', value: 'width' },
-                  { title: 'Height', value: 'height' },
-                ]"
-                label="Sort by"
-                width="max-content"
-                hide-details
-                @mousedown.stop
-                @click.stop
-              />
-              <v-btn-toggle
-                v-model="sortOrder"
-                mandatory
-                @mousedown.stop
-                @click.stop
-              >
-                <v-btn value="asc">
-                  ASC
-                </v-btn>
-                <v-btn value="desc">
-                  DESC
-                </v-btn>
-              </v-btn-toggle>
-            </div>
-          </template>
-        </v-text-field>
-      </v-card-actions>
-      <v-card-text
-        :class="['pa-0', {
-          'bg-background': !dragOver,
-          'bg-primary': dragOver,
-        }]"
-        style="transition: background-color 300ms ease-in-out"
-        @drop.prevent.stop="onDrop"
-        @dragover.prevent.stop="onDragEnter"
-        @dragleave.prevent.stop="onDragLeave"
+    <template v-if="globalStore.session.loggedIn" #append>
+      <v-tabs v-model="filter" class="my-n4" density="compact">
+        <v-tab value="all">
+          All ({{ getFilesByType('all').length }})
+        </v-tab>
+        <v-tab v-if="getFilesByType('image').length > 0" value="image">
+          Images ({{ getFilesByType('image').length }})
+        </v-tab>
+        <v-tab v-if="getFilesByType('video').length > 0" value="video">
+          Videos ({{ getFilesByType('video').length }})
+        </v-tab>
+        <v-tab v-if="getFilesByType('document').length > 0" value="document">
+          Document ({{ getFilesByType('document').length }})
+        </v-tab>
+      </v-tabs>
+    </template>
+    <v-card-actions>
+      <v-text-field
+        v-model="search"
+        label="Search"
+        prepend-inner-icon="mdi-magnify"
+        hide-details
       >
-        <div v-if="loading || filteredFiles.length === 0 || !structure.endpoint" class="d-flex align-center justify-center text-center" style="height: 33dvh">
-          <v-progress-circular
-            v-if="loading"
-            size="96"
-            color="primary"
-            indeterminate
+        <template #append-inner>
+          <div class="d-flex align-center" style="gap: 0.5rem">
+            <v-select
+              v-model="sortBy"
+              :items="[
+                { title: 'Timestamp', value: 'timestamp' },
+                { title: 'Name', value: 'originalFileName' },
+                { title: 'Size', value: 'size' },
+                { title: 'Width', value: 'width' },
+                { title: 'Height', value: 'height' },
+              ]"
+              label="Sort by"
+              width="max-content"
+              hide-details
+              @mousedown.stop
+              @click.stop
+            />
+            <v-btn-toggle
+              v-model="sortOrder"
+              mandatory
+              @mousedown.stop
+              @click.stop
+            >
+              <v-btn value="asc">
+                ASC
+              </v-btn>
+              <v-btn value="desc">
+                DESC
+              </v-btn>
+            </v-btn-toggle>
+          </div>
+        </template>
+      </v-text-field>
+    </v-card-actions>
+    <v-card-text
+      :class="['pa-0', {
+        'bg-background': !dragOver,
+        'bg-primary': dragOver,
+      }]"
+      style="transition: background-color 300ms ease-in-out"
+      @drop.prevent.stop="onDrop"
+      @dragover.prevent.stop="onDragEnter"
+      @dragleave.prevent.stop="onDragLeave"
+    >
+      <div v-if="loading || filteredFiles.length === 0 || !structure.endpoint" class="d-flex align-center justify-center text-center" style="height: 33dvh">
+        <v-progress-circular
+          v-if="loading"
+          size="96"
+          color="primary"
+          indeterminate
+        />
+        <v-card
+          v-else-if="(filteredFiles.length === 0 && !canUpload) || !structure.endpoint"
+          color="transparent"
+          class="w-100 fill-height"
+          tile
+          flat
+        >
+          <v-empty-state
+            v-if="structure.endpoint"
+            icon="mdi-file-hidden"
+            title="Empty"
+            text="No files available yet."
           />
-          <v-card
-            v-else-if="(filteredFiles.length === 0 && !canUpload) || !structure.endpoint"
-            color="transparent"
-            class="w-100 fill-height"
-            tile
-            flat
-          >
-            <v-empty-state
-              v-if="structure.endpoint"
-              icon="mdi-file-hidden"
-              title="Empty"
-              text="No files available yet."
-            />
-            <v-empty-state
-              v-else
-              icon="mdi-help-network-outline"
-              title="No endpoint detected"
-              text="Files cannot be loaded without a properly configured endpoint. Please check your project's settings in advanced mode."
-            />
-          </v-card>
-          <v-card
-            v-else-if="filteredFiles.length === 0 && canUpload"
-            color="transparent"
-            class="w-100 fill-height"
-            tile
-            flat
-            @click="promptUpload"
-          >
-            <v-empty-state
-              icon="mdi-gesture-tap-button"
-              title="Touch to upload"
-              text="Or drag and drop files here"
-            />
-          </v-card>
-        </div>
-        <div v-else class="pa-4" style="min-height: 33dvh">
-          <masonry-wall :items="filteredFiles" :ssr-columns="1" :column-width="200" :gap="16">
-            <template #default="{ item }">
-              <v-card
-                :color="fileIsSelected(item) ? 'primary' : undefined"
-                @click="onFileClick(item)"
-              >
-                <div v-if="!canSelect || globalStore.fileManager.multiple" class="position-absolute" style="top: 0; left: 0; z-index: 10">
-                  <v-checkbox :model-value="fileIsSelected(item)" color="primary" base-color="surface" hide-details @click.stop.prevent="onFileClick(item)" />
-                </div>
-                <div class="bg-blue-grey-lighten-4">
-                  <ImgTag
-                    v-if="item.meta.type?.startsWith('image')"
-                    :src="serverSettings.publicUrl + item.path"
-                    :aspect-ratio="(item.meta.width || 1) / (item.meta.height || 1)"
-                  />
-                  <VideoPlayer
-                    v-else-if="item.meta.type?.startsWith('video')"
-                    :src="serverSettings.publicUrl + item.path"
-                    :aspect-ratio="(item.meta.width || 1) / (item.meta.height || 1)"
-                  />
-                  <v-sheet v-else>
-                    <v-responsive :aspect-ratio="16 / 9" class="d-flex align-center justify-center text-center">
-                      <v-icon :icon="getFileIcon(item)" size="96" />
-                    </v-responsive>
-                  </v-sheet>
-                </div>
-                <v-card-title
-                  :class="{
-                    'pb-0': showInfo,
-                  }"
-                >
-                  {{ item.meta.originalFileName }}
-                </v-card-title>
-                <template v-if="showInfo">
-                  <v-card-subtitle class="pb-3">
-                    <div v-if="item.meta.size">
-                      Size: {{ $formatBytes(item.meta.size) }}
-                    </div>
-                    <div v-if="item.meta.width && item.meta.height">
-                      Dimension: {{ item.meta.width }} x {{ item.meta.height }}
-                    </div>
-                    <template v-if="item.meta.type?.startsWith('video/')">
-                      <div v-if="item.meta.duration">
-                        Duration: {{ $formatSeconds(item.meta.duration) }}
-                      </div>
-                      <div v-if="item.meta.frameRate">
-                        Frame rate: {{ item.meta.frameRate }}
-                      </div>
-                    </template>
-                    <div v-if="item.meta.type" class="text-capitalize">
-                      Type: {{ item.meta.type.split('/')[0] }}/{{ item.meta.type.split('/')[1].toUpperCase() }}
-                    </div>
-                    <div v-if="item.meta.timestamp">
-                      Date: {{ $formatTimestamp(item.meta.timestamp, 'YYYY-MM-DD HH:mm:ss') }}
-                    </div>
-                  </v-card-subtitle>
-                </template>
-              </v-card>
-            </template>
-          </masonry-wall>
-        </div>
-      </v-card-text>
-      <template #actions>
-        <v-btn
-          v-if="canUpload"
-          :loading="uploading"
-          :disabled="uploading"
-          :color="uploading ? undefined : 'secondary'"
-          prepend-icon="mdi-upload"
-          text="Upload"
-          variant="outlined"
-          class="px-3"
+          <v-empty-state
+            v-else
+            icon="mdi-help-network-outline"
+            title="No endpoint detected"
+            text="Files cannot be loaded without a properly configured endpoint. Please check your project's settings in advanced mode."
+          />
+        </v-card>
+        <v-card
+          v-else-if="filteredFiles.length === 0 && canUpload"
+          color="transparent"
+          class="w-100 fill-height"
+          tile
+          flat
           @click="promptUpload"
-        />
-        <v-menu location="top">
-          <template #activator="{ props }">
-            <v-btn
-              v-if="!canSelect || globalStore.fileManager.multiple"
-              v-bind="props"
-              :disabled="loading || selectedFiles.length === 0"
-              variant="text"
+        >
+          <v-empty-state
+            icon="mdi-gesture-tap-button"
+            title="Touch to upload"
+            text="Or drag and drop files here"
+          />
+        </v-card>
+      </div>
+      <div v-else class="pa-4" style="min-height: 33dvh">
+        <masonry-wall :items="filteredFiles" :ssr-columns="1" :column-width="200" :gap="16">
+          <template #default="{ item }">
+            <v-card
+              :color="fileIsSelected(item) ? 'primary' : undefined"
+              @click="onFileClick(item)"
             >
-              Bulk Actions
-              <v-icon icon="mdi-chevron-up" end />
-            </v-btn>
+              <div v-if="!canSelect || globalStore.fileManager.multiple" class="position-absolute" style="top: 0; left: 0; z-index: 10">
+                <v-checkbox :model-value="fileIsSelected(item)" color="primary" base-color="surface" hide-details @click.stop.prevent="onFileClick(item)" />
+              </div>
+              <div class="bg-blue-grey-lighten-4">
+                <ImgTag
+                  v-if="item.meta.type?.startsWith('image')"
+                  :src="serverSettings.publicUrl + item.path"
+                  :aspect-ratio="(item.meta.width || 1) / (item.meta.height || 1)"
+                />
+                <VideoPlayer
+                  v-else-if="item.meta.type?.startsWith('video')"
+                  :src="serverSettings.publicUrl + item.path"
+                  :aspect-ratio="(item.meta.width || 1) / (item.meta.height || 1)"
+                />
+                <v-sheet v-else>
+                  <v-responsive :aspect-ratio="16 / 9" class="d-flex align-center justify-center text-center">
+                    <v-icon :icon="getFileIcon(item)" size="96" />
+                  </v-responsive>
+                </v-sheet>
+              </div>
+              <v-card-title
+                :class="{
+                  'pb-0': showInfo,
+                }"
+              >
+                {{ item.meta.originalFileName }}
+              </v-card-title>
+              <template v-if="showInfo">
+                <v-card-subtitle class="pb-3">
+                  <div v-if="item.meta.size">
+                    Size: {{ $formatBytes(item.meta.size) }}
+                  </div>
+                  <div v-if="item.meta.width && item.meta.height">
+                    Dimension: {{ item.meta.width }} x {{ item.meta.height }}
+                  </div>
+                  <template v-if="item.meta.type?.startsWith('video/')">
+                    <div v-if="item.meta.duration">
+                      Duration: {{ $formatSeconds(item.meta.duration) }}
+                    </div>
+                    <div v-if="item.meta.frameRate">
+                      Frame rate: {{ item.meta.frameRate }}
+                    </div>
+                  </template>
+                  <div v-if="item.meta.type" class="text-capitalize">
+                    Type: {{ item.meta.type.split('/')[0] }}/{{ item.meta.type.split('/')[1].toUpperCase() }}
+                  </div>
+                  <div v-if="item.meta.timestamp">
+                    Date: {{ $formatTimestamp(item.meta.timestamp, 'YYYY-MM-DD HH:mm:ss') }}
+                  </div>
+                </v-card-subtitle>
+              </template>
+            </v-card>
           </template>
-          <v-list>
-            <v-list-item
-              :loading="downloading"
-              :disabled="!canDownload || loading || downloading || selectedFiles.length === 0"
-              prepend-icon="mdi-download"
-              @click="download"
-            >
-              <v-list-item-title>Download</v-list-item-title>
-            </v-list-item>
-            <v-list-item
-              v-if="canDelete"
-              :loading="downloading"
-              :disabled="loading || deleting || selectedFiles.length === 0"
-              prepend-icon="mdi-delete"
-              base-color="error"
-              @click="remove"
-            >
-              <v-list-item-title>Delete</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
-        <v-checkbox
-          v-model="showInfo"
-          label="Show additional info"
-          hide-details
-        />
-        <v-spacer />
-        <v-btn
-          v-if="canSelect"
-          :disabled="loading || selectedFiles.length === 0"
-          :loading="loading"
-          :color="selectedFiles.length === 0 ? undefined : 'primary'"
-          :text="'Select (' + selectedFiles.length + ')'"
-          variant="flat"
-          class="px-3"
-          @click="select"
-        />
-        <v-btn
-          :text="globalStore.fileManager.canSelect ? 'Cancel' : 'Close'"
-          class="px-3"
-          @click="close"
-        />
-      </template>
-    </v-card>
-  </v-dialog>
+        </masonry-wall>
+      </div>
+    </v-card-text>
+    <v-card-actions>
+      <v-btn
+        v-if="canUpload"
+        :loading="uploading"
+        :disabled="uploading"
+        :color="uploading ? undefined : 'secondary'"
+        prepend-icon="mdi-upload"
+        text="Upload"
+        variant="outlined"
+        class="px-3"
+        @click="promptUpload"
+      />
+      <v-menu location="top">
+        <template #activator="{ props }">
+          <v-btn
+            v-if="!canSelect || globalStore.fileManager.multiple"
+            v-bind="props"
+            :disabled="loading || selectedFiles.length === 0"
+            variant="text"
+          >
+            Bulk Actions
+            <v-icon icon="mdi-chevron-up" end />
+          </v-btn>
+        </template>
+        <v-list>
+          <v-list-item
+            :loading="downloading"
+            :disabled="!canDownload || loading || downloading || selectedFiles.length === 0"
+            prepend-icon="mdi-download"
+            @click="download"
+          >
+            <v-list-item-title>Download</v-list-item-title>
+          </v-list-item>
+          <v-list-item
+            v-if="canDelete"
+            :loading="downloading"
+            :disabled="loading || deleting || selectedFiles.length === 0"
+            prepend-icon="mdi-delete"
+            base-color="error"
+            @click="remove"
+          >
+            <v-list-item-title>Delete</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+      <v-checkbox
+        v-model="showInfo"
+        label="Show additional info"
+        hide-details
+      />
+      <v-spacer />
+      <v-btn
+        v-if="canSelect"
+        :disabled="loading || selectedFiles.length === 0"
+        :loading="loading"
+        :color="selectedFiles.length === 0 ? undefined : 'primary'"
+        :text="'Select (' + selectedFiles.length + ')'"
+        variant="flat"
+        class="px-3"
+        @click="select"
+      />
+      <v-btn
+        :text="globalStore.fileManager.canSelect ? 'Cancel' : 'Close'"
+        class="px-3"
+        @click="close"
+      />
+    </v-card-actions>
+  </ModalDialog>
 </template>

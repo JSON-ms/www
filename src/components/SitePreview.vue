@@ -24,7 +24,7 @@ const loaded = ref(false);
 const loading = ref(false);
 const killIframe = ref(false);
 const siteNotCompatibleSnack = ref(false);
-const hoveringEditor = ref(false);
+const expanded = ref(false);
 const { layoutSize, windowHeight, layoutPx } = useLayout();
 const { reloading, siteCompatible, sendMessageToIframe, getPathsFromSectionKey, listenIframeMessage, sendUserDataToIframe } = useIframe();
 const { userDataLoading } = useUserData();
@@ -33,7 +33,7 @@ const iframeErrorMsg = ref('This site is not JSONms compatible');
 const editorHeight = computed((): number => {
   const padding = (globalStore.userSettings.data.layoutSitePreviewPadding ? 96 : 63);
   const result = windowHeight.value - padding;
-  if (hoveringEditor.value) {
+  if (expanded.value) {
     return result + 32;
   }
   return result - layoutSize.value.preview.height;
@@ -153,6 +153,7 @@ defineExpose({
     :width="layoutSize.preview.width"
     :location="globalStore.userSettings.data.layoutSitePreviewLocation"
     scrim
+    class="site-preview-drawer"
     color="transparent"
     border="0"
     permanent
@@ -228,8 +229,6 @@ defineExpose({
             flat
             class="editor-card"
             theme="dark"
-            @mouseover="hoveringEditor = true"
-            @mouseleave="hoveringEditor = false"
           >
             <StructureEditor
               ref="structureEditor"
@@ -241,7 +240,19 @@ defineExpose({
               @save="onSaveStructureContent"
               @create="onCreateStructure"
               @change="onStructureContentChange"
-            />
+            >
+              <template #header.end>
+                <v-btn
+                  size="small"
+                  @click="expanded = !expanded"
+                >
+                  <span v-if="expanded">Collapse</span>
+                  <span v-else>Expand</span>
+                  <v-icon v-if="expanded" icon="mdi-unfold-less-horizontal" end />
+                  <v-icon v-else icon="mdi-unfold-more-horizontal" end />
+                </v-btn>
+              </template>
+            </StructureEditor>
           </v-card>
         </div>
       </v-expand-transition>
@@ -258,5 +269,8 @@ defineExpose({
 }
 .editor-card {
   transition: height 300ms ease;
+}
+.site-preview-drawer ::v-deep .v-navigation-drawer__content {
+  overflow: hidden !important;
 }
 </style>

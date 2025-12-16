@@ -7,6 +7,7 @@ import {deepToRaw} from '@/utils';
 import {useStructure} from '@/composables/structure';
 import Rules from '@/rules';
 import {useEndpoints} from "@/composables/endpoints";
+import ModalDialog from '@/components/ModalDialog.vue';
 
 const globalStore = useGlobalStore();
 const visible = defineModel<boolean>({ default: false });
@@ -68,75 +69,72 @@ watch(visible, () => {
 </script>
 
 <template>
-  <v-dialog
+  <ModalDialog
     v-model="visible"
     :persistent="!isPristine"
+    title="Endpoint Manager"
+    prepend-icon="mdi-webhook"
     width="600"
     scrollable
   >
-    <v-card
-      title="Endpoint Manager"
-      prepend-icon="mdi-webhook"
-    >
-      <v-card-text>
+    <v-card-text>
 
-        <p class="mb-4">
-          Every endpoint you create instantiate a new <i>cypher</i> and <i>secret API key</i> that you can reuse with other projects. That way, you can centralize your data on a specific server if required.
-        </p>
+      <p class="mb-4">
+        Every endpoint you create instantiate a new <i>cypher</i> and <i>secret API key</i> that you can reuse with other projects. That way, you can centralize your data on a specific server if required.
+      </p>
 
-        <v-alert type="info" variant="tonal" class="mb-4">
-          To get assistance with running your own endpoint instance, be sure to consult the Integration panel.
-        </v-alert>
+      <v-alert type="info" variant="tonal" class="mb-4">
+        To get assistance with running your own endpoint instance, be sure to consult the Integration panel.
+      </v-alert>
 
-        <ListBuilder
-          v-model="endpointList"
-          :disabled="saving"
-          :remove-item-callback="onRemoveItemCallback"
-          :default-item="{
-            url: '',
-            secret: '',
-            cypher: '',
-          }"
-        >
-          <template #default="{ item }">
-            <v-text-field
-              v-model="item.url"
-              :rules="getStructureRules('server_url')"
-              clearable
-              required
-              persistent-hint
-              hint="This field is required"
-            >
-              <template #label>
-                <span class="mr-2 text-error">*</span> Endpoint
-              </template>
-              <template v-if="item.url && Rules.isUrl(item.url) && !item.url.startsWith('https://')" #message>
-                <span class="text-error">It is not safe to use an unsecured protocol (HTTP) to communicate your data. Please be aware that your information may be vulnerable to interception by unauthorized parties. For your safety, we recommend using a secure connection (HTTPS) to protect your sensitive data during transmission.</span>
-              </template>
-              <template v-if="!item.uuid" #prepend-inner>
-                <v-icon icon="mdi-new-box" />
-              </template>
-            </v-text-field>
-          </template>
-        </ListBuilder>
-      </v-card-text>
-      <v-card-actions>
-        <v-btn
-          :loading="saving"
-          :disabled="isPristine || saving"
-          :color="isPristine ? undefined : 'primary'"
-          variant="flat"
-          @click="save"
-        >
-          Save and close
-        </v-btn>
-        <v-btn
-          :disabled="saving"
-          @click="close"
-        >
-          Cancel
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+      <ListBuilder
+        v-model="endpointList"
+        :disabled="saving"
+        :remove-item-callback="onRemoveItemCallback"
+        :default-item="{
+          url: '',
+          secret: '',
+          cypher: '',
+        }"
+      >
+        <template #default="{ item }">
+          <v-text-field
+            v-model="item.url"
+            :rules="getStructureRules('server_url')"
+            clearable
+            required
+            persistent-hint
+            hint="This field is required"
+          >
+            <template #label>
+              <span class="mr-2 text-error">*</span> Endpoint
+            </template>
+            <template v-if="item.url && Rules.isUrl(item.url) && !item.url.startsWith('https://')" #message>
+              <span class="text-error">It is not safe to use an unsecured protocol (HTTP) to communicate your data. Please be aware that your information may be vulnerable to interception by unauthorized parties. For your safety, we recommend using a secure connection (HTTPS) to protect your sensitive data during transmission.</span>
+            </template>
+            <template v-if="!item.uuid" #prepend-inner>
+              <v-icon icon="mdi-new-box" />
+            </template>
+          </v-text-field>
+        </template>
+      </ListBuilder>
+    </v-card-text>
+    <v-card-actions>
+      <v-btn
+        :loading="saving"
+        :disabled="isPristine || saving"
+        :color="isPristine ? undefined : 'primary'"
+        variant="flat"
+        @click="save"
+      >
+        Save and close
+      </v-btn>
+      <v-btn
+        :disabled="saving"
+        @click="close"
+      >
+        Cancel
+      </v-btn>
+    </v-card-actions>
+  </ModalDialog>
 </template>

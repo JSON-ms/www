@@ -34,6 +34,7 @@ declare module 'vue' {
     LocaleSwitcher: typeof import('./src/components/LocaleSwitcher.vue')['default']
     Logo: typeof import('./src/components/Logo.vue')['default']
     MigrationDialog: typeof import('./src/components/MigrationDialog.vue')['default']
+    ModalDialog: typeof import('./src/components/ModalDialog.vue')['default']
     NewStructureModal: typeof import('./src/components/NewStructureModal.vue')['default']
     Prompt: typeof import('./src/components/Prompt.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

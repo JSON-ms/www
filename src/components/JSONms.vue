@@ -323,6 +323,7 @@ if (globalStore.session.loggedIn) {
     :structures="structures"
     :structure-data="structureParsedData"
     :default-locale="getAvailableLocale()"
+    :user-data="modelStore.userData"
     @refresh="onRefreshPreview"
     @create="onCreateStructure"
     @save="onSaveStructure"
@@ -442,7 +443,11 @@ if (globalStore.session.loggedIn) {
     <template #append>
       <v-divider />
       <div class="d-flex align-center justify-space-between pl-3" style="height: 4rem">
-        <ActionBar />
+        <ActionBar
+          :model-value="structure"
+          :structure-data="structureParsedData"
+          :user-data="modelStore.userData"
+        />
       </div>
     </template>
 
@@ -466,7 +471,11 @@ if (globalStore.session.loggedIn) {
       class="pl-3"
     >
       <div class="w-100 d-flex align-center justify-space-between">
-        <ActionBar />
+        <ActionBar
+          :model-value="structure"
+          :structure-data="structureParsedData"
+          :user-data="modelStore.userData"
+        />
       </div>
     </v-app-bar>
   </v-expand-transition>

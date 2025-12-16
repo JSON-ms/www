@@ -13,7 +13,7 @@ import {useTypings} from "@/composables/typings";
 import {useModelStore} from "@/stores/model";
 // import yaml from 'js-yaml';
 
-const emit = defineEmits(['save', 'create', 'change'])
+const emit = defineEmits(['save', 'create', 'change', 'focus', 'blur']);
 const structure = defineModel<IStructure>({ required: true });
 const { columns = false, userData } = defineProps<{
   columns?: boolean,
@@ -65,27 +65,37 @@ const sections = ref([{
   icon: 'mdi-invoice-text-edit-outline',
   title: "Structure",
   subtitle: "YAML schema and layout",
+  disabledSubtitle: (): string => 'Must be logged in',
   disabled: () => false
 }, {
   key: 'blueprints',
   icon: 'mdi-ruler-square',
   title: "Blueprints",
   subtitle: "TypeScript types and default data",
+  disabledSubtitle: (): string => 'Must be logged in',
   disabled: () => false
 }, {
   key: 'settings',
   icon: 'mdi-cog',
   title: "Settings",
   subtitle: "Configure project behavior",
-  disabledSubtitle: 'Must be logged in',
+  disabledSubtitle: (): string => 'Must be logged in',
   disabled: () => !globalStore.session.loggedIn
 }, {
   key: 'integration',
   icon: 'mdi-download-circle-outline',
   title: "Integration",
   subtitle: "Install and connect your custom endpoint",
-  disabledSubtitle: 'Must be logged in',
-  disabled: () => !globalStore.session.loggedIn
+  disabledSubtitle: (): string => {
+    if (!globalStore.session.loggedIn) {
+      return 'Must be logged in';
+    }
+    if (!structure.value.endpoint) {
+      return 'Must connect an endpoint to your project'
+    }
+    return 'Unknown'
+  },
+  disabled: () => !globalStore.session.loggedIn || !structure.value.endpoint
 }])
 
 let parseInterval: any;
@@ -153,6 +163,16 @@ const findNeedleInString = (haystack: string, needle: string) => {
   }
 
   return -1
+}
+
+
+const onFocus = () => {
+  setTimeout(() => {
+    emit('focus');
+  }, 100);
+}
+const onBlur = () => {
+  emit('blur');
 }
 
 const scrollToSection = (section: string) => {
@@ -443,8 +463,8 @@ watch(() => globalStore.userSettings.data, () => {
     text="Access to this template has not been granted by the owner."
   />
   <div v-else class="d-flex flex-column">
-    <div class="d-flex align-center pa-1">
-      <v-menu v-model="sectionMenu" :close-on-content-click="false">
+    <div class="d-flex align-center pa-1" style="gap: 1rem">
+      <v-menu v-model="sectionMenu" contained :close-on-content-click="false">
         <template #activator="{ props }">
           <v-btn v-bind="props">
             <v-icon :icon="selectedSection?.icon" start />
@@ -458,7 +478,7 @@ watch(() => globalStore.userSettings.data, () => {
             :key="section.key"
             :prepend-icon="section.disabled() ? 'mdi-alert' : section.icon"
             :title="section.title"
-            :subtitle="section.disabled() ? section.disabledSubtitle : section.subtitle"
+            :subtitle="section.disabled() ? section.disabledSubtitle() : section.subtitle"
             :active="selectedSection?.key === section.key"
             :disabled="section.disabled()"
             @click="setSection(section)"
@@ -467,6 +487,7 @@ watch(() => globalStore.userSettings.data, () => {
       </v-menu>
       <v-spacer />
       <div class="d-flex align-center pr-1" style="gap: 0.5rem">
+        <slot name="header.end" />
         <div
           v-if="!globalStore.userSettings.data.editorLiveUpdate"
           :style="{
@@ -514,6 +535,8 @@ watch(() => globalStore.userSettings.data, () => {
               theme="github_dark"
               class="fill-height"
               @change="onChange"
+              @focus="onFocus"
+              @blur="onBlur"
             />
           </div>
           <div class="pa-2 d-flex w-100" style="flex: 0; gap: 0.5rem">
@@ -553,6 +576,8 @@ watch(() => globalStore.userSettings.data, () => {
                 :model-value="structureData"
                 :structure="structure"
                 :user-data="userData"
+                location="structure"
+                size="small"
               />
               <v-tooltip
                 v-if="isFolderSynced(modelStore.structure, 'typescript')"

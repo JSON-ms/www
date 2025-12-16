@@ -3,11 +3,12 @@ import {VAceEditor} from 'vue3-ace-editor';
 import {useGlobalStore} from '@/stores/global';
 import {type Ref, ref, watch} from "vue";
 import type {VAceEditorInstance} from "vue3-ace-editor/types";
+import ModalDialog from '@/components/ModalDialog.vue';
 
 const emit = defineEmits(['apply']);
 const editor: Ref<VAceEditorInstance | null> = ref(null);
 const content = defineModel<string>({ required: true });
-const visible = defineModel<boolean>('visible');
+const visible = defineModel<boolean>('visible', { required: true });
 const options = ref({
   fontSize: 14,
   showPrintMargin: false,
@@ -47,40 +48,37 @@ watch(() => globalStore.userSettings.data, () => {
 </script>
 
 <template>
-  <v-dialog
+  <ModalDialog
     v-model="visible"
+    title="Edit JSON"
+    prepend-icon="mdi-code-json"
     max-width="800"
     persistent
     scrollable
   >
-    <v-card
-      title="Edit JSON"
-      prepend-icon="mdi-code-json"
-    >
-      <v-card theme="dark" class="pa-1 pl-0" tile elevation="0">
-        <v-ace-editor
-          ref="editor"
-          v-model:value="content"
-          :options="options"
-          style="height: 66dvh"
-          lang="json"
-          theme="github_dark"
-        />
-      </v-card>
-      <template #actions>
-        <v-btn
-          variant="flat"
-          color="primary"
-          text="Apply"
-          class="px-3"
-          @click="apply"
-        />
-        <v-btn
-          text="Cancel"
-          class="px-3"
-          @click="close"
-        />
-      </template>
+    <v-card theme="dark" class="pa-1 pl-0" tile elevation="0">
+      <v-ace-editor
+        ref="editor"
+        v-model:value="content"
+        :options="options"
+        style="height: 66dvh"
+        lang="json"
+        theme="github_dark"
+      />
     </v-card>
-  </v-dialog>
+    <v-card-actions>
+      <v-btn
+        variant="flat"
+        color="primary"
+        text="Apply"
+        class="px-3"
+        @click="apply"
+      />
+      <v-btn
+        text="Cancel"
+        class="px-3"
+        @click="close"
+      />
+    </v-card-actions>
+  </ModalDialog>
 </template>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useGlobalStore } from '@/stores/global';
 import { ref } from 'vue';
+import ModalDialog from '@/components/ModalDialog.vue';
 
 const globalStore = useGlobalStore();
 const proceed = () => {
@@ -38,40 +39,37 @@ const close = () => {
 </script>
 
 <template>
-  <v-dialog
+  <ModalDialog
     v-model="globalStore.prompt.visible"
+    :title="globalStore.prompt.title"
+    :prepend-icon="globalStore.prompt.icon"
+    :color="globalStore.prompt.color"
+    :text="globalStore.prompt.body"
+    max-width="400"
     width="auto"
     persistent
     scrollable
   >
-    <v-card
-      :color="globalStore.prompt.color"
-      :text="globalStore.prompt.body"
-      :title="globalStore.prompt.title"
-      :prepend-icon="globalStore.prompt.icon"
-      max-width="400"
-    >
-      <template #actions>
-        <v-btn
-          :loading="proceeding"
-          :disabled="proceeding || closing"
-          :text="globalStore.prompt.btnText || 'OK'"
-          :prepend-icon="globalStore.prompt.btnIcon"
-          :color="globalStore.prompt.btnColor || 'primary'"
-          :class="{
-            'px-3': !!(globalStore.prompt.btnIcon)
-          }"
-          variant="flat"
-          @click="proceed"
-        />
-        <v-btn
-          :disabled="proceeding || closing"
-          :loading="closing"
-          :text="globalStore.prompt.cancelText || 'Cancel'"
-          :prepend-icon="globalStore.prompt.cancelIcon"
-          @click="cancel"
-        />
-      </template>
-    </v-card>
-  </v-dialog>
+    <v-card-actions>
+      <v-btn
+        :loading="proceeding"
+        :disabled="proceeding || closing"
+        :text="globalStore.prompt.btnText || 'OK'"
+        :prepend-icon="globalStore.prompt.btnIcon"
+        :color="globalStore.prompt.btnColor || 'primary'"
+        :class="{
+          'px-3': !!(globalStore.prompt.btnIcon)
+        }"
+        variant="flat"
+        @click="proceed"
+      />
+      <v-btn
+        :disabled="proceeding || closing"
+        :loading="closing"
+        :text="globalStore.prompt.cancelText || 'Cancel'"
+        :prepend-icon="globalStore.prompt.cancelIcon"
+        @click="cancel"
+      />
+    </v-card-actions>
+  </ModalDialog>
 </template>
