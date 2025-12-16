@@ -2,6 +2,7 @@
 import blankStructure from '@/assets/blank-structure.yaml';
 import { getDefaultStructureContent } from '@/utils';
 import { useDisplay } from 'vuetify';
+import ModalDialog from '@/components/ModalDialog.vue';
 
 const emit = defineEmits(['apply']);
 const { smAndDown } = useDisplay()
@@ -19,42 +20,40 @@ const items: any[] = [
 </script>
 
 <template>
-  <v-dialog
+  <ModalDialog
     v-model="visible"
+    title="Select template"
     width="450"
     scrollable
   >
-    <v-card>
-      <v-card-title>Select template</v-card-title>
-      <v-sheet color="background">
-        <v-card-text>
-          <v-list v-if="smAndDown">
-            <v-list-item
-              v-for="item in items"
-              :key="item.label"
-              :title="item.label"
-              :subtitle="item.body"
-              :prepend-icon="item.icon"
-              @click="applyTemplate(item.template)"
-            />
-          </v-list>
-          <v-row v-else>
-            <v-col
-              v-for="item in items"
-              :key="item.label"
-              cols="6"
-            >
-              <v-card class="text-center" @click="applyTemplate(item.template)">
-                <div class="text-center py-2">
-                  <v-icon size="128" :icon="item.icon" />
-                </div>
-                <v-card-title class="pb-0">{{ item.label }}</v-card-title>
-                <v-card-text class="pt-0">{{ item.body }}</v-card-text>
-              </v-card>
-            </v-col>
-          </v-row>
-        </v-card-text>
-      </v-sheet>
-    </v-card>
-  </v-dialog>
+    <v-sheet color="background">
+      <v-card-text>
+        <v-list v-if="smAndDown">
+          <v-list-item
+            v-for="item in items"
+            :key="item.label"
+            :title="item.label"
+            :subtitle="item.body"
+            :prepend-icon="item.icon"
+            @click="applyTemplate(item.template)"
+          />
+        </v-list>
+        <v-row v-else>
+          <v-col
+            v-for="item in items"
+            :key="item.label"
+            cols="6"
+          >
+            <v-card class="text-center" @click="applyTemplate(item.template)">
+              <div class="text-center py-2">
+                <v-icon size="128" :icon="item.icon" />
+              </div>
+              <v-card-title class="pb-0">{{ item.label }}</v-card-title>
+              <v-card-text class="pt-0">{{ item.body }}</v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-sheet>
+  </ModalDialog>
 </template>

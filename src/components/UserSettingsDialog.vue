@@ -5,8 +5,9 @@ import type {IUserSettings} from "@/interfaces";
 import {deepToRaw, objectsAreDifferent} from "@/utils";
 import {useTypings} from "@/composables/typings";
 import {useModelStore} from "@/stores/model";
+import ModalDialog from '@/components/ModalDialog.vue';
 
-const visible = defineModel<boolean>('visible');
+const visible = defineModel<boolean>('visible', { required: true });
 const globalStore = useGlobalStore();
 const modelStore = useModelStore();
 const userSettings = ref<IUserSettings>(structuredClone(deepToRaw(globalStore.userSettings.data)));
@@ -79,222 +80,219 @@ watch(() => visible.value, () => {
 </script>
 
 <template>
-  <v-dialog
+  <ModalDialog
     v-model="visible"
     :persistent="hasChanges"
+    title="User Settings"
+    prepend-icon="mdi-tune"
     width="1000"
     scrollable
   >
-    <v-card
-      title="User Settings"
-      prepend-icon="mdi-tune"
-    >
-      <v-card-text class="bg-background pa-4">
-        <v-row>
-          <v-col cols="12" md="6" class="d-flex flex-column" style="gap: 1rem">
-            <v-card title="Code Editor">
-              <v-card-text class="d-flex flex-column" style="gap: 1rem">
-                <v-number-input
-                  v-model="userSettings.editorFontSize"
-                  :min="6"
-                  label="Font size"
-                  hint="This shows the size of the text in the code editor, measured in pixels."
-                  persistent-hint
-                />
-                <v-number-input
-                  v-model="userSettings.editorTabSize"
-                  :min="2"
-                  :step="2"
-                  label="Tab size"
-                  hint="This sets how many spaces will be added when you press the tab key. Does not apply to the structure editor in YAML."
-                  persistent-hint
-                />
-                <v-checkbox
-                  v-model="userSettings.editorShowPrintMargin"
-                  label="Show print margin"
-                  hint="A vertical line will appear at 80 characters to help you write clearer code."
-                  persistent-hint
-                />
-              </v-card-text>
-            </v-card>
+    <v-card-text class="bg-background pa-4">
+      <v-row>
+        <v-col cols="12" md="6" class="d-flex flex-column" style="gap: 1rem">
+          <v-card title="Code Editor">
+            <v-card-text class="d-flex flex-column" style="gap: 1rem">
+              <v-number-input
+                v-model="userSettings.editorFontSize"
+                :min="6"
+                label="Font size"
+                hint="This shows the size of the text in the code editor, measured in pixels."
+                persistent-hint
+              />
+              <v-number-input
+                v-model="userSettings.editorTabSize"
+                :min="2"
+                :step="2"
+                label="Tab size"
+                hint="This sets how many spaces will be added when you press the tab key. Does not apply to the structure editor in YAML."
+                persistent-hint
+              />
+              <v-checkbox
+                v-model="userSettings.editorShowPrintMargin"
+                label="Show print margin"
+                hint="A vertical line will appear at 80 characters to help you write clearer code."
+                persistent-hint
+              />
+            </v-card-text>
+          </v-card>
 
-            <v-card title="Layout">
-              <v-card-text class="d-flex flex-column" style="gap: 1rem">
-                <v-select
-                  v-model="userSettings.layoutEditorLocation"
-                  :items="locationList"
-                  label="Editor Location"
-                  hint="Displays the editor in a different location according to the layout."
-                  persistent-hint
-                />
-                <v-select
-                  v-model="userSettings.layoutSitePreviewLocation"
-                  :items="locationList"
-                  label="Site Preview Location"
-                  hint="Displays the site preview in a different location according to the layout."
-                  persistent-hint
-                />
-                <v-checkbox
-                  v-model="userSettings.layoutSitePreviewKeepRatio"
-                  label="Keep Site Preview Ratio"
-                  hint="It will zoom in and out to preserve the aspect ratio and adhere to a 16:9 format when in Desktop mode."
-                  persistent-hint
-                />
-                <v-checkbox
-                  v-model="userSettings.layoutSitePreviewPadding"
-                  label="Site Preview Inner Padding"
-                  hint="Adds a little padding that separates the site preview from the layout."
-                  persistent-hint
-                />
-                <v-checkbox
-                  v-model="userSettings.layoutAutoSplit"
-                  label="Auto-Split Data Section"
-                  hint="Whenever there is sufficient space, automatically divide the data section to maximize your available real estate."
-                  persistent-hint
-                />
-              </v-card-text>
-            </v-card>
-          </v-col>
-          <v-col cols="12" md="6" class="d-flex flex-column" style="gap: 1rem">
-            <v-card title="Structure Editor">
-              <v-card-text class="d-flex flex-column" style="gap: 1rem">
-                <v-switch
-                  v-model="userSettings.editorLiveUpdate"
-                  color="primary"
-                  label="Live update"
-                  hint="Your admin panel will refresh automatically whenever you make a change, but it might slow down if your YAML file gets too big."
-                  persistent-hint
-                  inset
-                />
-                <v-number-input
-                  v-model="userSettings.editorUpdateTimeout"
-                  :disabled="userSettings.editorLiveUpdate"
-                  label="Update timeout (milliseconds)"
-                  hint="There will be a delay of X milliseconds before the admin panel updates after a change."
-                  persistent-hint
-                />
-                <v-switch
-                  v-model="userSettings.editorAutoSyncFrom"
-                  color="primary"
-                  label="Auto-sync from local files"
-                  hint="Updates the structure automatically whenever changes are detected in your locally synced files."
-                  persistent-hint
-                  inset
-                />
-                <v-number-input
-                  v-model="userSettings.editorAutoSyncInterval"
-                  :disabled="!userSettings.editorAutoSyncFrom"
-                  label="Update timeout (milliseconds)"
-                  hint="There will be a delay of X milliseconds before the structure updates after a change."
-                  persistent-hint
-                />
-                <v-switch
-                  v-model="userSettings.autoCleanData"
-                  color="primary"
-                  label="Auto-Clean Data"
-                  hint="Data is auto-cleaned on every edit. Anything not matching the updated structure will be lost."
-                  persistent-hint
-                  inset
-                />
-              </v-card-text>
-            </v-card>
+          <v-card title="Layout">
+            <v-card-text class="d-flex flex-column" style="gap: 1rem">
+              <v-select
+                v-model="userSettings.layoutEditorLocation"
+                :items="locationList"
+                label="Editor Location"
+                hint="Displays the editor in a different location according to the layout."
+                persistent-hint
+              />
+              <v-select
+                v-model="userSettings.layoutSitePreviewLocation"
+                :items="locationList"
+                label="Site Preview Location"
+                hint="Displays the site preview in a different location according to the layout."
+                persistent-hint
+              />
+              <v-checkbox
+                v-model="userSettings.layoutSitePreviewKeepRatio"
+                label="Keep Site Preview Ratio"
+                hint="It will zoom in and out to preserve the aspect ratio and adhere to a 16:9 format when in Desktop mode."
+                persistent-hint
+              />
+              <v-checkbox
+                v-model="userSettings.layoutSitePreviewPadding"
+                label="Site Preview Inner Padding"
+                hint="Adds a little padding that separates the site preview from the layout."
+                persistent-hint
+              />
+              <v-checkbox
+                v-model="userSettings.layoutAutoSplit"
+                label="Auto-Split Data Section"
+                hint="Whenever there is sufficient space, automatically divide the data section to maximize your available real estate."
+                persistent-hint
+              />
+            </v-card-text>
+          </v-card>
+        </v-col>
+        <v-col cols="12" md="6" class="d-flex flex-column" style="gap: 1rem">
+          <v-card title="Structure Editor">
+            <v-card-text class="d-flex flex-column" style="gap: 1rem">
+              <v-switch
+                v-model="userSettings.editorLiveUpdate"
+                color="primary"
+                label="Live update"
+                hint="Your admin panel will refresh automatically whenever you make a change, but it might slow down if your YAML file gets too big."
+                persistent-hint
+                inset
+              />
+              <v-number-input
+                v-model="userSettings.editorUpdateTimeout"
+                :disabled="userSettings.editorLiveUpdate"
+                label="Update timeout (milliseconds)"
+                hint="There will be a delay of X milliseconds before the admin panel updates after a change."
+                persistent-hint
+              />
+              <v-switch
+                v-model="userSettings.editorAutoSyncFrom"
+                color="primary"
+                label="Auto-sync from local files"
+                hint="Updates the structure automatically whenever changes are detected in your locally synced files."
+                persistent-hint
+                inset
+              />
+              <v-number-input
+                v-model="userSettings.editorAutoSyncInterval"
+                :disabled="!userSettings.editorAutoSyncFrom"
+                label="Update timeout (milliseconds)"
+                hint="There will be a delay of X milliseconds before the structure updates after a change."
+                persistent-hint
+              />
+              <v-switch
+                v-model="userSettings.autoCleanData"
+                color="primary"
+                label="Auto-Clean Data"
+                hint="Data is auto-cleaned on every edit. Anything not matching the updated structure will be lost."
+                persistent-hint
+                inset
+              />
+            </v-card-text>
+          </v-card>
 
-            <v-card title="User Form">
-              <v-card-text class="d-flex flex-column" style="gap: 1rem">
-                <v-switch
-                  v-model="userSettings.userDataAutoFetch"
-                  color="primary"
-                  label="Auto-fetch"
-                  hint="Data will be automatically retrieved when the structure is loaded."
-                  persistent-hint
-                  inset
-                />
-              </v-card-text>
-            </v-card>
+          <v-card title="User Form">
+            <v-card-text class="d-flex flex-column" style="gap: 1rem">
+              <v-switch
+                v-model="userSettings.userDataAutoFetch"
+                color="primary"
+                label="Auto-fetch"
+                hint="Data will be automatically retrieved when the structure is loaded."
+                persistent-hint
+                inset
+              />
+            </v-card-text>
+          </v-card>
 
-            <v-card title="Synchronization">
-              <v-card-text class="d-flex flex-column" style="gap: 1rem">
+          <v-card title="Synchronization">
+            <v-card-text class="d-flex flex-column" style="gap: 1rem">
 
-                <v-checkbox
-                  v-model="userSettings.blueprintsIncludeTypings"
-                  label="Include Typings"
-                  hint="When enabled, typings will be included in your synced files."
-                  persistent-hint
-                />
+              <v-checkbox
+                v-model="userSettings.blueprintsIncludeTypings"
+                label="Include Typings"
+                hint="When enabled, typings will be included in your synced files."
+                persistent-hint
+              />
 
-                <v-alert
-                  type="warning"
-                  variant="tonal"
-                  density="compact"
-                >
-                  To prevent accidental overriding, <strong>Read From</strong> values are only synchronized once when loading the project.
-                </v-alert>
+              <v-alert
+                type="warning"
+                variant="tonal"
+                density="compact"
+              >
+                To prevent accidental overriding, <strong>Read From</strong> values are only synchronized once when loading the project.
+              </v-alert>
 
-                <v-select
-                  v-model="syncingFrom"
-                  :items="syncingFromList"
-                  :menu-props="{ maxWidth: '100%' }"
-                  :list-props="{ lines: 'two' }"
-                  label="Read From"
-                  multiple
-                  hint="Locale files that your project will read from."
-                  persistent-hint
-                  return-object
-                >
-                  <template #item="{ props: itemProps, item }">
-                    <v-list-item
-                      v-bind="itemProps"
-                      :subtitle="item.raw.hint"
-                    >
-                      <template #prepend>
-                        <v-checkbox-btn :model-value="syncingFrom.includes(item.raw)" />
-                      </template>
-                    </v-list-item>
-                  </template>
-                </v-select>
+              <v-select
+                v-model="syncingFrom"
+                :items="syncingFromList"
+                :menu-props="{ maxWidth: '100%' }"
+                :list-props="{ lines: 'two' }"
+                label="Read From"
+                multiple
+                hint="Locale files that your project will read from."
+                persistent-hint
+                return-object
+              >
+                <template #item="{ props: itemProps, item }">
+                  <v-list-item
+                    v-bind="itemProps"
+                    :subtitle="item.raw.hint"
+                  >
+                    <template #prepend>
+                      <v-checkbox-btn :model-value="syncingFrom.includes(item.raw)" />
+                    </template>
+                  </v-list-item>
+                </template>
+              </v-select>
 
-                <v-select
-                  v-model="syncingTo"
-                  :items="syncingToList"
-                  :menu-props="{ maxWidth: '100%' }"
-                  :list-props="{ lines: 'two' }"
-                  label="Write To"
-                  multiple
-                  hint="Locale files that your project will write to."
-                  persistent-hint
-                  return-object
-                >
-                  <template #item="{ props: itemProps, item }">
-                    <v-list-item
-                      v-bind="itemProps"
-                      :subtitle="item.raw.hint"
-                    >
-                      <template #prepend>
-                        <v-checkbox-btn :model-value="syncingTo.includes(item.raw)" />
-                      </template>
-                    </v-list-item>
-                  </template>
-                </v-select>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
-      </v-card-text>
-      <v-card-actions>
-        <v-btn
-          :disabled="!hasChanges"
-          :color="hasChanges ? 'primary' : undefined"
-          variant="flat"
-          @click="apply"
-        >
-          Apply
-        </v-btn>
-        <v-btn
-          @click="close"
-        >
-          <span>Cancel</span>
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+              <v-select
+                v-model="syncingTo"
+                :items="syncingToList"
+                :menu-props="{ maxWidth: '100%' }"
+                :list-props="{ lines: 'two' }"
+                label="Write To"
+                multiple
+                hint="Locale files that your project will write to."
+                persistent-hint
+                return-object
+              >
+                <template #item="{ props: itemProps, item }">
+                  <v-list-item
+                    v-bind="itemProps"
+                    :subtitle="item.raw.hint"
+                  >
+                    <template #prepend>
+                      <v-checkbox-btn :model-value="syncingTo.includes(item.raw)" />
+                    </template>
+                  </v-list-item>
+                </template>
+              </v-select>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-card-text>
+    <v-card-actions>
+      <v-btn
+        :disabled="!hasChanges"
+        :color="hasChanges ? 'primary' : undefined"
+        variant="flat"
+        @click="apply"
+      >
+        Apply
+      </v-btn>
+      <v-btn
+        @click="close"
+      >
+        <span>Cancel</span>
+      </v-btn>
+    </v-card-actions>
+  </ModalDialog>
 </template>
