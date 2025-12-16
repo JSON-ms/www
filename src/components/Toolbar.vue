@@ -16,10 +16,12 @@ import {useLayout} from '@/composables/layout';
 import {useIframe} from '@/composables/iframe';
 import {useModelStore} from "@/stores/model";
 import {useMigration} from "@/composables/migration";
+import TriggerMenu from "@/components/TriggerMenu.vue";
 
 const structure = defineModel<IStructure>({ required: true });
-const { structureData, structures = [], defaultLocale = 'en-US' } = defineProps<{
+const { structureData, structures = [], defaultLocale = 'en-US', userData } = defineProps<{
   structureData: IStructureData,
+  userData: any,
   structures: IStructure[],
   defaultLocale?: string,
 }>();
@@ -223,6 +225,13 @@ watch(() => currentRoute.params.locale, () => {
           </template>
         </v-tooltip>
       </v-btn-toggle>
+
+      <TriggerMenu
+        :model-value="structureData"
+        :structure="structure"
+        :user-data="userData"
+        location="toolbar"
+      />
 
       <v-alert
         v-if="!globalStore.session.loggedIn && windowWidth > 1700"

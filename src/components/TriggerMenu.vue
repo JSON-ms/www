@@ -5,9 +5,11 @@ import {Services} from "@/services";
 import {useGlobalStore} from "@/stores/global";
 
 const structureData = defineModel<IStructureData>({ required: true });
-const { structure, userData } = defineProps<{
+const { structure, userData, location = 'structure', size } = defineProps<{
   structure: IStructure,
   userData: IStructure,
+  location?: 'structure' | 'toolbar' | 'data'
+  size?: string
 }>();
 
 const globalStore = useGlobalStore();
@@ -24,7 +26,7 @@ const triggers = computed((): ITrigger[] => {
       ...structureData.value.triggers[key],
     })
   }
-  return triggers;
+  return triggers.filter(item => item.location === location || (!item.location && location === 'editor'));
 })
 const hasManyItems = computed((): boolean => {
   return triggers.value.length > 1;
@@ -33,10 +35,12 @@ const otherTriggers = computed((): ITrigger[] => {
   return triggers.value.filter((item: ITrigger) => item !== firstTrigger.value && item.key !== lastTrigger.value?.key);
 })
 const firstTrigger = computed((): ITrigger => {
-  return lastTrigger.value || triggers.value[0] || {
+  return Object.assign({
+    icon: 'mdi-wrench'
+  }, lastTrigger.value || triggers.value[0] || {
     label: '',
     url: '',
-  }
+  });
 })
 
 const run = (trigger: ITrigger): Promise<any> => {
@@ -60,7 +64,7 @@ const run = (trigger: ITrigger): Promise<any> => {
       <div class="position-relative" style="flex: 1">
         <v-btn
           variant="outlined"
-          size="small"
+          :size="size"
           :disabled="running"
           :text="firstTrigger.label"
           :class="hasManyItems ? ['w-100 pr-12'] : []"

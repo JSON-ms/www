@@ -88,7 +88,7 @@ export const useGlobalStore = defineStore('global', {
         layoutAutoSplit: true,
         blueprintsIncludeTypings: true,
         blueprintsReadFromData: true,
-        blueprintsReadFromStructure: false,
+        blueprintsReadFromStructure: true,
         blueprintsWriteToData: true,
         blueprintsWriteToDefault: true,
         blueprintsWriteToIndex: true,

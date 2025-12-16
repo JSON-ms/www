@@ -6,6 +6,14 @@ import {useGlobalStore} from '@/stores/global';
 import {computed} from "vue";
 import {useTypings} from "@/composables/typings";
 import {useModelStore} from "@/stores/model";
+import TriggerMenu from "@/components/TriggerMenu.vue";
+import type {IStructure, IStructureData} from "@/interfaces";
+
+const structure = defineModel<IStructure>({ required: true });
+const { structureData, userData } = defineProps<{
+  structureData: IStructureData,
+  userData: any,
+}>();
 
 const globalStore = useGlobalStore();
 const modelStore = useModelStore();
@@ -56,6 +64,12 @@ const reset = () => {
 </script>
 
 <template>
+  <TriggerMenu
+    :model-value="structureData"
+    :structure="structure"
+    :user-data="userData"
+    location="data"
+  />
   <div
     v-if="globalStore.session.loggedIn"
     class="w-100 pr-3"

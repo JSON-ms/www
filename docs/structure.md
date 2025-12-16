@@ -447,6 +447,9 @@ triggers:
 
     # URL called when the trigger is executed
     url: https://json.ms/?action=build
+    
+    # Location of the trigger button (structure, toolbar, data)
+    location: editor
 
     # HTTP method used for the request
     method: POST

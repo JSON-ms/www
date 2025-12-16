@@ -13,7 +13,7 @@ import {useTypings} from "@/composables/typings";
 import {useModelStore} from "@/stores/model";
 // import yaml from 'js-yaml';
 
-const emit = defineEmits(['save', 'create', 'change'])
+const emit = defineEmits(['save', 'create', 'change', 'focus', 'blur']);
 const structure = defineModel<IStructure>({ required: true });
 const { columns = false, userData } = defineProps<{
   columns?: boolean,
@@ -153,6 +153,16 @@ const findNeedleInString = (haystack: string, needle: string) => {
   }
 
   return -1
+}
+
+
+const onFocus = () => {
+  setTimeout(() => {
+    emit('focus');
+  }, 100);
+}
+const onBlur = () => {
+  emit('blur');
 }
 
 const scrollToSection = (section: string) => {
@@ -443,8 +453,8 @@ watch(() => globalStore.userSettings.data, () => {
     text="Access to this template has not been granted by the owner."
   />
   <div v-else class="d-flex flex-column">
-    <div class="d-flex align-center pa-1">
-      <v-menu v-model="sectionMenu" :close-on-content-click="false">
+    <div class="d-flex align-center pa-1" style="gap: 1rem">
+      <v-menu v-model="sectionMenu" contained :close-on-content-click="false">
         <template #activator="{ props }">
           <v-btn v-bind="props">
             <v-icon :icon="selectedSection?.icon" start />
@@ -466,6 +476,7 @@ watch(() => globalStore.userSettings.data, () => {
         </v-list>
       </v-menu>
       <v-spacer />
+      <slot name="header.end"></slot>
       <div class="d-flex align-center pr-1" style="gap: 0.5rem">
         <div
           v-if="!globalStore.userSettings.data.editorLiveUpdate"
@@ -514,6 +525,8 @@ watch(() => globalStore.userSettings.data, () => {
               theme="github_dark"
               class="fill-height"
               @change="onChange"
+              @focus="onFocus"
+              @blur="onBlur"
             />
           </div>
           <div class="pa-2 d-flex w-100" style="flex: 0; gap: 0.5rem">
@@ -553,6 +566,8 @@ watch(() => globalStore.userSettings.data, () => {
                 :model-value="structureData"
                 :structure="structure"
                 :user-data="userData"
+                location="structure"
+                size="small"
               />
               <v-tooltip
                 v-if="isFolderSynced(modelStore.structure, 'typescript')"

@@ -190,6 +190,7 @@ export interface ITrigger {
   headers?: {[key: string]: string}
   method?: string
   url: string
+  location: 'editor' | 'toolbar'
 }
 
 export interface IStructureData {
