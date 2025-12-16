@@ -501,7 +501,7 @@ export function useStructure() {
       }
 
       const saveCallback = () => {
-        useTypings().syncToFolder(structure, 'typescript', ['structure', 'typings', 'default', 'settings', 'index']);
+        useTypings().syncToFolder(structure, ['structure', 'typings', 'default', 'settings', 'index']);
         structureStates.value.saved = true;
         setTimeout(() => structureStates.value.saved = false, 2000);
       }

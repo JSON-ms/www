@@ -64,7 +64,7 @@ const hasChanges = computed((): boolean => {
 
 const apply = () => {
   globalStore.setUserSettings(userSettings.value);
-  useTypings().syncToFolder(modelStore.structure, 'typescript');
+  useTypings().syncToFolder(modelStore.structure);
   visible.value = false;
 }
 

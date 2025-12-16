@@ -45,7 +45,7 @@ const onSetAsDefaultValues = () => {
 }
 
 const onSyncWithLocalOnly = () => {
-  useTypings().syncToFolder(modelStore.structure, 'typescript', ['data']);
+  useTypings().syncToFolder(modelStore.structure, ['data']);
   userDataSaved.value = true;
   setTimeout(() => userDataSaved.value = false, 1000);
 }

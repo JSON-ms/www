@@ -23,7 +23,8 @@ import {
 } from '@/utils';
 import Rules from '@/rules';
 import {useModelStore} from '@/stores/model';
-import {useTypings, isFolderSynced, lastStateTimestamp} from "@/composables/typings";
+import {useTypings} from "@/composables/typings";
+import {isFolderSynced, lastStateTimestamp} from "@/composables/syncing";
 import {useStructure} from "@/composables/structure";
 
 const loading = ref(false);
@@ -51,7 +52,7 @@ export function useUserData() {
 
   const canInteractWithSyncedFolder = computed((): boolean => {
     // lastStateTimestamp is a hack to force digestion of typings
-    return lastStateTimestamp.value > 0 && isFolderSynced(modelStore.structure, 'typescript');
+    return lastStateTimestamp.value > 0 && isFolderSynced(modelStore.structure);
   })
 
   const userDataHasChanged = computed((): boolean => objectsAreDifferent(modelStore.userData, modelStore.originalUserData));
@@ -255,7 +256,7 @@ export function useUserData() {
         return saveUserDataSimple(structure, data).then(response => {
           setUserData(response.data, true);
           if (!onlyEndpoint) {
-            useTypings().syncToFolder(structure, 'typescript', ['data']);
+            useTypings().syncToFolder(structure, ['data']);
           }
           saved.value = true;
           setTimeout(() => saved.value = false, 1000);
@@ -263,7 +264,7 @@ export function useUserData() {
         })
         .catch(reason => {
           if (canInteractWithSyncedFolder.value && !onlyEndpoint) {
-            useTypings().syncToFolder(structure, 'typescript', ['data']);
+            useTypings().syncToFolder(structure, ['data']);
             saved.value = true;
             setTimeout(() => saved.value = false, 1000);
           }
@@ -273,7 +274,7 @@ export function useUserData() {
       } else {
         setUserData(data, true);
         if (!onlyEndpoint) {
-          useTypings().syncToFolder(structure, 'typescript', ['data']);
+          useTypings().syncToFolder(structure, ['data']);
         }
         resolve(data);
       }

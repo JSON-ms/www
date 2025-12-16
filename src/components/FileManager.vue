@@ -7,8 +7,10 @@ import ImgTag from '@/components/ImgTag.vue';
 import VideoPlayer from '@/components/VideoPlayer.vue';
 import {downloadFilesAsZip, getFileIcon, phpStringSizeToBytes} from '@/utils';
 import ModalDialog from '@/components/ModalDialog.vue';
+import {useSyncing} from "@/composables/syncing";
 
 const globalStore = useGlobalStore();
+const syncing = useSyncing();
 const structure = defineModel<IStructure>({ required: true });
 const { selected = [], serverSettings, canUpload = false, canDelete = false, canSelect = false, canDownload = false } = defineProps<{
   selected?: IFile[],
@@ -254,6 +256,8 @@ watch(() => globalStore.fileManager.visible, () => {
   if (globalStore.fileManager.visible) {
     selectedFiles.value = [];
     load();
+
+    syncing.getFiles(structure.value);
   }
 })
 </script>
