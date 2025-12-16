@@ -65,27 +65,37 @@ const sections = ref([{
   icon: 'mdi-invoice-text-edit-outline',
   title: "Structure",
   subtitle: "YAML schema and layout",
+  disabledSubtitle: (): string => 'Must be logged in',
   disabled: () => false
 }, {
   key: 'blueprints',
   icon: 'mdi-ruler-square',
   title: "Blueprints",
   subtitle: "TypeScript types and default data",
+  disabledSubtitle: (): string => 'Must be logged in',
   disabled: () => false
 }, {
   key: 'settings',
   icon: 'mdi-cog',
   title: "Settings",
   subtitle: "Configure project behavior",
-  disabledSubtitle: 'Must be logged in',
+  disabledSubtitle: (): string => 'Must be logged in',
   disabled: () => !globalStore.session.loggedIn
 }, {
   key: 'integration',
   icon: 'mdi-download-circle-outline',
   title: "Integration",
   subtitle: "Install and connect your custom endpoint",
-  disabledSubtitle: 'Must be logged in',
-  disabled: () => !globalStore.session.loggedIn
+  disabledSubtitle: (): string => {
+    if (!globalStore.session.loggedIn) {
+      return 'Must be logged in';
+    }
+    if (!structure.value.endpoint) {
+      return 'Must connect an endpoint to your project'
+    }
+    return 'Unknown'
+  },
+  disabled: () => !globalStore.session.loggedIn || !structure.value.endpoint
 }])
 
 let parseInterval: any;
@@ -468,7 +478,7 @@ watch(() => globalStore.userSettings.data, () => {
             :key="section.key"
             :prepend-icon="section.disabled() ? 'mdi-alert' : section.icon"
             :title="section.title"
-            :subtitle="section.disabled() ? section.disabledSubtitle : section.subtitle"
+            :subtitle="section.disabled() ? section.disabledSubtitle() : section.subtitle"
             :active="selectedSection?.key === section.key"
             :disabled="section.disabled()"
             @click="setSection(section)"
@@ -476,8 +486,8 @@ watch(() => globalStore.userSettings.data, () => {
         </v-list>
       </v-menu>
       <v-spacer />
-      <slot name="header.end"></slot>
       <div class="d-flex align-center pr-1" style="gap: 0.5rem">
+        <slot name="header.end" />
         <div
           v-if="!globalStore.userSettings.data.editorLiveUpdate"
           :style="{
