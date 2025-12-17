@@ -1,11 +1,10 @@
 <script setup lang="ts">
 const visible = defineModel<boolean>({ required: true });
-const { title, prependIcon, maxWidth } = defineProps<{
+const { title, prependIcon } = defineProps<{
   title?: string,
   prependIcon?: string,
   color?: string,
   text?: string,
-  maxWidth?: number | string,
 }>();
 </script>
 
@@ -19,7 +18,6 @@ const { title, prependIcon, maxWidth } = defineProps<{
       :text="text"
       :color="color"
       :prepend-icon="prependIcon"
-      :max-width="maxWidth"
     >
       <template #append>
         <div class="d-flex align-center" style="gap: 1rem">
