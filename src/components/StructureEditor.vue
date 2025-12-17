@@ -12,6 +12,7 @@ import {useGlobalStore} from '@/stores/global';
 import {useTypings} from "@/composables/typings";
 import {useModelStore} from "@/stores/model";
 import {useSyncing} from "@/composables/syncing";
+import {useUserData} from "@/composables/user-data";
 // import yaml from 'js-yaml';
 
 const emit = defineEmits(['save', 'create', 'change', 'focus', 'blur']);
@@ -23,8 +24,8 @@ const { columns = false, userData } = defineProps<{
 }>();
 const { canSaveStructure, yamlException, structureStates } = useStructure();
 const modelStore = useModelStore();
-const { getTypescriptTypings, getTypescriptDefaultObj, lastStateTimestamp } = useTypings();
-const { isFolderSynced, askToSyncFolder, unSyncFolder } = useSyncing();
+const { getTypescriptTypings, getTypescriptDefaultObj } = useTypings();
+const { isFolderSynced, askToSyncFolder, unSyncFolder, lastStateTimestamp } = useSyncing();
 const showParsingDelay = ref(false);
 const progressBarValue = ref(0);
 const progressBarCompleted = ref(false);
@@ -108,11 +109,10 @@ const value = computed({
     return structure.value.content;
   },
   set(value: string) {
+    modelStore.setTemporaryContent(value);
     if (globalStore.userSettings.data.editorLiveUpdate) {
       emit('change', value);
     } else {
-      modelStore.setTemporaryContent(value);
-
       clearInterval(parseInterval);
       clearInterval(showParseInterval);
       clearInterval(parseValueInterval);
@@ -582,7 +582,7 @@ watch(() => globalStore.userSettings.data, () => {
                 size="small"
               />
               <v-tooltip
-                v-if="isFolderSynced(modelStore.structure)"
+                v-if="modelStore.structure.server_url || isFolderSynced(modelStore.structure)"
                 text="Save (CTRL+S)"
                 location="bottom"
               >
@@ -591,7 +591,7 @@ watch(() => globalStore.userSettings.data, () => {
                     v-if="structure"
                     v-bind="props"
                     :loading="structureStates.saving"
-                    :disabled="!canSaveStructure || structureStates.saving || structureStates.saved"
+                    :disabled="!canSaveStructure || (!modelStore.structure.server_url && !isFolderSynced(modelStore.structure)) || structureStates.saving || structureStates.saved"
                     :prepend-icon="!structureStates.saved ? 'mdi-content-save' : 'mdi-check'"
                     variant="outlined"
                     color="primary"
