@@ -365,18 +365,21 @@ watch(() => currentRoute.params.locale, () => {
         <v-divider class="my-1" />
         <v-list-item
           :disabled="userDataLoading || !canFetchUserData"
+          :subtitle="!canFetchUserData ? 'Requires an endpoint' : ''"
           prepend-icon="mdi-monitor-arrow-down"
           title="Fetch data"
           @click="onFetchUserData"
         />
         <v-list-item
           :disabled="downloading || !canInteractWithServer"
+          :subtitle="!canInteractWithServer ? 'Requires an endpoint' : ''"
           title="Download data"
           prepend-icon="mdi-tray-arrow-down"
           @click="downloadUserData"
         />
         <v-list-item
           :disabled="migrating || !canInteractWithServer"
+          :subtitle="!canInteractWithServer ? 'Requires an endpoint' : ''"
           title="Migrate data"
           prepend-icon="mdi-folder-arrow-left-right-outline"
           @click="onMigrateData"
