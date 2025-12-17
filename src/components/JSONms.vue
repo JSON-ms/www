@@ -16,7 +16,6 @@ import {useUserData} from '@/composables/user-data';
 import {type RouteLocationNormalizedGeneric, useRoute} from 'vue-router';
 import router from '@/router';
 import {useStructure} from '@/composables/structure';
-import {useTypings} from '@/composables/typings';
 import {useLayout} from '@/composables/layout';
 import {useShortcut} from '@/composables/shortcut';
 import {deepToRaw, getStructure} from '@/utils';
@@ -48,7 +47,7 @@ const dataEditor = ref<InstanceType<typeof DataEditor> | null>();
 const { serverSettings, structureParsedData, structureStates, structureHasSettingsError, getAvailableSection, deleteStructure, getAvailableLocale, structureHasSection, structureHasLocale, saveStructure, canSaveStructure, canDeleteStructure, resetStructure } = useStructure();
 const { fetchUserData, canSave, saveUserData, downloading, userDataLoaded, userDataLoading, setUserData } = useUserData();
 const { sendMessageToIframe } = useIframe();
-const { syncFromFolder, autoAskToSyncFolder, syncToFolder, unSyncFolder, stopWatchSnapshotDirectory, watchSnapshotDirectory } = useSyncing();
+const { isFolderSynced, syncFromFolder, autoAskToSyncFolder, syncToFolder, unSyncFolder, stopWatchSnapshotDirectory, watchSnapshotDirectory } = useSyncing();
 
 globalStore.initUserSettings();
 
@@ -521,7 +520,8 @@ if (globalStore.session.loggedIn) {
     :selected="globalStore.fileManager.selected"
     :can-select="globalStore.fileManager.canSelect"
     :can-upload="globalStore.session.loggedIn"
-    :can-delete="globalStore.session.loggedIn"
+    :can-add-to-local="isFolderSynced(structure)"
+    :can-delete="globalStore.session.loggedIn || isFolderSynced(structure)"
     :server-settings="serverSettings"
     can-download
   />

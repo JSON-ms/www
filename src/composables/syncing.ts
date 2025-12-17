@@ -17,12 +17,15 @@ type Snapshot = Map<string, FileMeta>
 type ReadFileResult = {
   path: string
   file: File
+  width?: number
+  height?: number
 }
 type FileMeta = {
   lastModified: number
   size: number
 }
 
+export const blobFileList: {[key: string]: string} = {};
 const syncHandleRef: {[key: string]: FileSystemDirectoryHandle | null} = {}
 const localStorageHandleKey = 'jsonms/typings:handle-list';
 const localStorageExplanationsKey = 'jsonms/typings:explanations';
@@ -357,8 +360,10 @@ export function useSyncing() {
       const path = prefix ? `${prefix}/${name}` : name
 
       if (handle.kind === 'file') {
-        const file = await (handle as FileSystemFileHandle).getFile()
-        files.push({ path, file })
+        const file = await (handle as FileSystemFileHandle).getFile();
+        const metadata = await getFileMetadata(file, path);
+        loadBlob(file, path);
+        files.push(metadata)
       } else if (handle.kind === 'directory') {
         files.push(
           ...(await readAllFiles(handle as FileSystemDirectoryHandle, path))
@@ -369,10 +374,44 @@ export function useSyncing() {
     return files
   }
 
-  const getFiles = async (structure: IStructure) => {
+  const loadBlob = async (file: File, path: string): Promise<void> => {
+    blobFileList[path] = URL.createObjectURL(file);
+  }
+
+  const getFileMetadata = async (file: File, path: string): Promise<ReadFileResult> => {
+    let width = undefined;
+    let height = undefined;
+    if (file.type.startsWith('image')) {
+      const bitmap = await createImageBitmap(file)
+      width = bitmap.width;
+      height = bitmap.height;
+    }
+    return { path, file, width, height };
+  }
+
+  const getFiles = async (structure: IStructure): Promise<ReadFileResult[]> => {
     const id = `${structure.hash ?? 'unknown'}`;
     if (syncHandleRef[id]) {
-      const files = await readAllFiles(syncHandleRef[id]);
+      return await readAllFiles(syncHandleRef[id]);
+    }
+    return [];
+  }
+
+  const addFile = async (
+    structure: IStructure,
+    file: File,
+    folder = ''
+  ): Promise<void> => {
+    const id = `${structure.hash ?? 'unknown'}`;
+    if (syncHandleRef[id]) {
+      let dir = syncHandleRef[id];
+      if (folder) {
+        dir = await syncHandleRef[id].getDirectoryHandle(folder, { create: true })
+      }
+      const handle = await dir.getFileHandle(file.name, { create: true })
+      const writable = await handle.createWritable()
+      await writable.write(file)
+      await writable.close()
     }
   }
 
@@ -440,6 +479,23 @@ export function useSyncing() {
     clearInterval(snalshopCheckInterval);
   }
 
+  const removeFile = async (structure: IStructure, path: string): Promise<void> => {
+    return new Promise(async resolve => {
+      const id = `${structure.hash ?? 'unknown'}`;
+      if (syncHandleRef[id]) {
+        const parts = path.split('/').filter(Boolean)
+        const name = parts.pop()!
+        let dir = syncHandleRef[id];
+        for (const part of parts) {
+          dir = await dir.getDirectoryHandle(part)
+        }
+        await dir.removeEntry(name);
+        return resolve();
+      }
+      return resolve();
+    })
+  }
+
   return {
     isFolderSynced,
     autoAskToSyncFolder,
@@ -455,5 +511,9 @@ export function useSyncing() {
     stopWatchSnapshotDirectory,
     syncHandleRef,
     lastStateTimestamp,
+    loadBlob,
+    removeFile,
+    addFile,
+    getFileMetadata,
   }
 }

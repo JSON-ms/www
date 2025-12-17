@@ -6,6 +6,7 @@ import {useDisplay} from "vuetify";
 import {useGlobalStore} from "@/stores/global";
 import ImgTag from "@/components/ImgTag.vue";
 import VideoPlayer from "@/components/VideoPlayer.vue";
+import {blobFileList} from "@/composables/syncing";
 
 const value = defineModel<any>({ required: true });
 const {
@@ -40,12 +41,15 @@ const thumbnailSize = (file: IFile): { width: number, height: number } => {
   };
 }
 const isImage = (file: IFile): boolean => {
-  return file.meta.type.startsWith('image/');
+  return file.meta.type?.startsWith('image/') || false;
 }
 const isVideo = (file: IFile): boolean => {
-  return file.meta.type.startsWith('video/');
+  return file.meta.type?.startsWith('video/') || false;
 }
 const src = computed((): string => {
+  if (file.path && blobFileList[file.path]) {
+    return blobFileList[file.path];
+  }
   if (file.path && (file.path.startsWith('http://') || file.path.startsWith('https://'))) {
     return file.path;
   }
@@ -60,7 +64,7 @@ const onDownloadFile = (file: IFile) => {
     .then(blob => {
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = file.meta.originalFileName;
+      link.download = file.meta.originalFileName || 'unknown';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -155,12 +159,11 @@ const onRemoveFile = (file: IFile) => {
                 v-bind="props"
                 :disabled="disabled"
                 :size="smAndDown ? 'small' : 'default'"
-                color="error"
                 variant="text"
                 icon
                 @click="() => onRemoveFile(file)"
               >
-                <v-icon icon="mdi-trash-can-outline" />
+                <v-icon icon="mdi-close" />
               </v-btn>
             </template>
           </v-tooltip>

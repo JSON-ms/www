@@ -7,14 +7,15 @@ import ImgTag from '@/components/ImgTag.vue';
 import VideoPlayer from '@/components/VideoPlayer.vue';
 import {downloadFilesAsZip, getFileIcon, phpStringSizeToBytes} from '@/utils';
 import ModalDialog from '@/components/ModalDialog.vue';
-import {useSyncing} from "@/composables/syncing";
+import {isFolderSynced, useSyncing, blobFileList} from "@/composables/syncing";
 
 const globalStore = useGlobalStore();
 const syncing = useSyncing();
 const structure = defineModel<IStructure>({ required: true });
-const { selected = [], serverSettings, canUpload = false, canDelete = false, canSelect = false, canDownload = false } = defineProps<{
+const { selected = [], serverSettings, canUpload = false, canAddToLocal = false, canDelete = false, canSelect = false, canDownload = false } = defineProps<{
   selected?: IFile[],
   canUpload?: boolean,
+  canAddToLocal?: boolean,
   canDelete?: boolean,
   canSelect?: boolean,
   canDownload?: boolean,
@@ -107,68 +108,116 @@ const onFileClick = (file: IFile) => {
 }
 
 const load = () => {
-  if (structure.value.endpoint) {
-    loading.value = true;
-    return Services.get(structure.value.server_url + '/file/list/' + structure.value.hash, {
+  loading.value = true;
+  Promise.all([
+    isFolderSynced(structure.value) ? syncing.getFiles(structure.value) : [],
+    structure.value.endpoint ? Services.get(structure.value.server_url + '/file/list/' + structure.value.hash, {
       'Content-Type': 'application/json',
       'X-Jms-Api-Key': structure.value.server_secret,
-    })
-      .then(response => files.value = response)
-      .then(() => {
-        selectedFiles.value = [];
-        selected.forEach(selectedFile => {
-          const file = files.value.find(file => file.path === selectedFile.path);
-          if (file) {
-            selectedFiles.value.push(file);
+    }) : []
+  ]).then(([syncResponse, endpointResponse]) => {
+    files.value = [];
+    syncResponse.forEach(item => {
+      if (!['data.json', 'structure.json', 'structure.yml', 'default.ts', 'index.ts', 'typings.ts', 'settings.json'].includes(item.path)) {
+        files.value.push({
+          path: item.path,
+          meta: {
+            type: item.file.type,
+            width: item.width,
+            height: item.height,
+            size: item.file.size,
+            timestamp: item.file.lastModified / 1000,
+            originalFileName: item.file.name,
           }
-        })
-      })
-      .catch(globalStore.catchError)
-      .finally(() => loading.value = false);
-  }
+        });
+      }
+    });
+
+    endpointResponse.forEach((item: IFile) => {
+      files.value.push(item);
+    });
+
+    selectedFiles.value = [];
+    selected.forEach(selectedFile => {
+      const file = files.value.find(file => file.path === selectedFile.path);
+      if (file) {
+        selectedFiles.value.push(file);
+      }
+    })
+  })
+    .catch(globalStore.catchError)
+    .finally(() => loading.value = false);
 }
 
-const promptUpload = () => {
+const promptUpload = (type: 'remote' | 'local' | null = null) => {
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
   fileInput.multiple = true;
   if (globalStore.fileManager.accept) {
     fileInput.accept = globalStore.fileManager.accept;
   }
+  if (type === null && canAddToLocal) {
+    type = 'local';
+  }
+  if (type === null && canUpload) {
+    type = 'remote';
+  }
   fileInput.addEventListener('change', function() {
-    if (fileInput.files && fileInput.files.length > 0) {
-      upload(fileInput.files);
+    if (fileInput.files && fileInput.files.length > 0 && type) {
+      upload(fileInput.files, type);
     }
   });
   fileInput.click();
 }
 
-const upload = async (fileList: FileList) => {
+const upload = async (fileList: FileList, type: 'remote' | 'local') => {
   uploading.value = true;
   uploadProgress.value = 0;
   const promises = [];
-  for (let i = 0; i < fileList.length; i++) {
-    const file = fileList[i];
-    if (file.size > phpStringSizeToBytes(serverSettings.uploadMaxSize)) {
-      globalStore.catchError(new Error(
-        'This file is exceeding the maximum size of ' + serverSettings.uploadMaxSize + ' defined by the server.'
-      ));
+  if (type === 'remote') {
+    for (let i = 0; i < fileList.length; i++) {
+      const file = fileList[i];
+      if (file.size > phpStringSizeToBytes(serverSettings.uploadMaxSize)) {
+        globalStore.catchError(new Error(
+          'This file is exceeding the maximum size of ' + serverSettings.uploadMaxSize + ' defined by the server.'
+        ));
+      }
     }
   }
   for (let i = 0; i < fileList.length; i++) {
     const file = fileList[i];
-    promises.push(
-      Services.upload(structure.value.server_url + '/file/upload/' + structure.value.hash, file, progress => uploadProgress.value = progress, {
-        'X-Jms-Api-Key': structure.value.server_secret,
-      })
-      .then(response => {
-        if (!files.value.find(item => item.path === response.internalPath)) {
-          files.value.push({
-            'path': response.internalPath,
-            'meta': response.meta,
-          })
-        }
+    if (type === 'remote') {
+      promises.push(
+        Services.upload(structure.value.server_url + '/file/upload/' + structure.value.hash, file, progress => uploadProgress.value = progress, {
+          'X-Jms-Api-Key': structure.value.server_secret,
+        })
+        .then(response => {
+          if (!files.value.find(item => item.path === response.internalPath)) {
+            files.value.push({
+              'path': response.internalPath,
+              'meta': response.meta,
+            })
+          }
+        }))
+    } else if (type === 'local') {
+      const folder = 'files';
+      promises.push(syncing.addFile(structure.value, file, folder).then(async () => {
+        const path = folder + '/' + file.name;
+        const metadata = await syncing.getFileMetadata(file, path);
+        syncing.loadBlob(file, path)
+        files.value.push({
+          path,
+          meta: {
+            type: file.type,
+            width: metadata.width,
+            height: metadata.height,
+            size: file.size,
+            timestamp: file.lastModified / 1000,
+            originalFileName: file.name,
+          }
+        });
       }))
+    }
   }
   return Promise.all(promises)
     .catch(globalStore.catchError)
@@ -189,23 +238,33 @@ const remove = () => {
       const promises = [];
       for (let i = 0; i < selectedFiles.value.length; i++) {
         const file = selectedFiles.value[i];
-        promises.push(
-          Services.delete(structure.value.server_url + '/file/delete/' + structure.value.hash + '/' + file.path, {
-            'X-Jms-Api-Key': structure.value.server_secret,
-          })
-            .then(() => {
-              selectedFiles.value = selectedFiles.value.filter(item => item.path !== file.path);
-              files.value = files.value.filter(item => item.path !== file.path);
+        const removeCallback = () => {
+          selectedFiles.value = selectedFiles.value.filter(item => item.path !== file.path);
+          files.value = files.value.filter(item => item.path !== file.path);
+        }
+        if (file.path && blobFileList[file.path]) {
+          promises.push(
+            syncing.removeFile(structure.value, file.path)
+              .then(removeCallback)
+          );
+        } else {
+          promises.push(
+            Services.delete(structure.value.server_url + '/file/delete/' + structure.value.hash + '/' + file.path, {
+              'X-Jms-Api-Key': structure.value.server_secret,
             })
-        );
+              .then(removeCallback)
+          );
+        }
       }
       return Promise.all(promises)
         .catch(err => {
           reject();
           globalStore.catchError(err);
         })
-        .finally(resolve)
-        .finally(() => deleting.value = false);
+        .finally(() => {
+          resolve();
+          deleting.value = false;
+        })
     })
   });
 }
@@ -222,7 +281,7 @@ const select = () => {
 const download = () => {
   downloading.value = true;
   nextTick(() => {
-    downloadFilesAsZip(selectedFiles.value.map(item => serverSettings.publicUrl + item.path), false, 'jsonms-file-download.zip', globalStore.userSettings.data.editorTabSize);
+    downloadFilesAsZip(selectedFiles.value.map(item => (item.path && blobFileList[item.path]) || (serverSettings.publicUrl + item.path)), false, 'jsonms-file-download.zip', globalStore.userSettings.data.editorTabSize);
     downloading.value = false;
   })
 }
@@ -256,8 +315,6 @@ watch(() => globalStore.fileManager.visible, () => {
   if (globalStore.fileManager.visible) {
     selectedFiles.value = [];
     load();
-
-    syncing.getFiles(structure.value);
   }
 })
 </script>
@@ -338,7 +395,7 @@ watch(() => globalStore.fileManager.visible, () => {
       @dragover.prevent.stop="onDragEnter"
       @dragleave.prevent.stop="onDragLeave"
     >
-      <div v-if="loading || filteredFiles.length === 0 || !structure.endpoint" class="d-flex align-center justify-center text-center" style="height: 33dvh">
+      <div v-if="loading || filteredFiles.length === 0" class="d-flex align-center justify-center text-center" style="height: 33dvh">
         <v-progress-circular
           v-if="loading"
           size="96"
@@ -353,7 +410,13 @@ watch(() => globalStore.fileManager.visible, () => {
           flat
         >
           <v-empty-state
-            v-if="structure.endpoint"
+            v-if="!isFolderSynced(structure) && !structure.endpoint"
+            icon="mdi-help-network-outline"
+            title="No endpoint or syncing detected"
+            text="Files cannot be loaded without a synced local directory or a properly configured endpoint. Please check your project's settings in advanced mode."
+          />
+          <v-empty-state
+            v-else-if="structure.endpoint || isFolderSynced(structure)"
             icon="mdi-file-hidden"
             title="Empty"
             text="No files available yet."
@@ -393,12 +456,12 @@ watch(() => globalStore.fileManager.visible, () => {
               <div class="bg-blue-grey-lighten-4">
                 <ImgTag
                   v-if="item.meta.type?.startsWith('image')"
-                  :src="serverSettings.publicUrl + item.path"
+                  :src="blobFileList[item.path || 'unknown'] || (serverSettings.publicUrl + item.path)"
                   :aspect-ratio="(item.meta.width || 1) / (item.meta.height || 1)"
                 />
                 <VideoPlayer
                   v-else-if="item.meta.type?.startsWith('video')"
-                  :src="serverSettings.publicUrl + item.path"
+                  :src="blobFileList[item.path || 'unknown'] || (serverSettings.publicUrl + item.path)"
                   :aspect-ratio="(item.meta.width || 1) / (item.meta.height || 1)"
                 />
                 <v-sheet v-else>
@@ -445,6 +508,17 @@ watch(() => globalStore.fileManager.visible, () => {
     </v-card-text>
     <v-card-actions>
       <v-btn
+        v-if="canAddToLocal"
+        :loading="uploading"
+        :disabled="uploading"
+        :color="uploading ? undefined : 'secondary'"
+        prepend-icon="mdi-upload"
+        text="Add to local"
+        variant="outlined"
+        class="px-3"
+        @click="() => promptUpload('local')"
+      />
+      <v-btn
         v-if="canUpload"
         :loading="uploading"
         :disabled="uploading"
@@ -453,7 +527,7 @@ watch(() => globalStore.fileManager.visible, () => {
         text="Upload"
         variant="outlined"
         class="px-3"
-        @click="promptUpload"
+        @click="() => promptUpload('remote')"
       />
       <v-menu location="top">
         <template #activator="{ props }">
