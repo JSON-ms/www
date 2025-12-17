@@ -4,7 +4,7 @@ import {useStructure} from '@/composables/structure';
 import {useLayout} from '@/composables/layout';
 import {useGlobalStore} from '@/stores/global';
 import {computed} from "vue";
-import {useTypings} from "@/composables/typings";
+import {useSyncing} from "@/composables/syncing";
 import {useModelStore} from "@/stores/model";
 import TriggerMenu from "@/components/TriggerMenu.vue";
 import type {IStructure, IStructureData} from "@/interfaces";
@@ -45,7 +45,7 @@ const onSetAsDefaultValues = () => {
 }
 
 const onSyncWithLocalOnly = () => {
-  useTypings().syncToFolder(modelStore.structure, 'typescript', ['data']);
+  useSyncing().syncToFolder(modelStore.structure, ['data']);
   userDataSaved.value = true;
   setTimeout(() => userDataSaved.value = false, 1000);
 }

@@ -16,7 +16,6 @@ import {useUserData} from '@/composables/user-data';
 import {type RouteLocationNormalizedGeneric, useRoute} from 'vue-router';
 import router from '@/router';
 import {useStructure} from '@/composables/structure';
-import {useTypings} from '@/composables/typings';
 import {useLayout} from '@/composables/layout';
 import {useShortcut} from '@/composables/shortcut';
 import {deepToRaw, getStructure} from '@/utils';
@@ -26,6 +25,7 @@ import Docs from '@/components/Docs.vue';
 import FileManager from '@/components/FileManager.vue';
 import {useModelStore} from '@/stores/model';
 import structureMd from "../../docs/structure.md";
+import {useSyncing} from "@/composables/syncing";
 
 // Model & Props
 const structure = defineModel<IStructure>({ required: true });
@@ -47,7 +47,7 @@ const dataEditor = ref<InstanceType<typeof DataEditor> | null>();
 const { serverSettings, structureParsedData, structureStates, structureHasSettingsError, getAvailableSection, deleteStructure, getAvailableLocale, structureHasSection, structureHasLocale, saveStructure, canSaveStructure, canDeleteStructure, resetStructure } = useStructure();
 const { fetchUserData, canSave, saveUserData, downloading, userDataLoaded, userDataLoading, setUserData } = useUserData();
 const { sendMessageToIframe } = useIframe();
-const { syncFromFolder, autoAskToSyncFolder, syncToFolder, unSyncFolder, stopWatchSnapshotDirectory, watchSnapshotDirectory, isFolderSynced } = useTypings();
+const { isFolderSynced, syncFromFolder, autoAskToSyncFolder, syncToFolder, unSyncFolder, stopWatchSnapshotDirectory, watchSnapshotDirectory } = useSyncing();
 
 globalStore.initUserSettings();
 
@@ -156,7 +156,7 @@ const onSaveStructure = () => {
     modelStore.structure.content = modelStore.temporaryContent || modelStore.structure.content;
     saveStructure().then(() => {
       bottomSheetData.value = { text: 'Structure saved!', color: 'success', icon: 'mdi-check' };
-      syncToFolder(modelStore.structure, 'typescript', ['structure', 'default', 'typings', 'settings', 'index']);
+      syncToFolder(modelStore.structure, ['structure', 'default', 'typings', 'settings', 'index']);
       const newModel = modelStore.structure;
       globalStore.addStructure(newModel);
       updateRoute(newModel.hash, getAvailableSection(), getAvailableLocale()).then(() => {
@@ -219,7 +219,7 @@ const onApplyJsonContent = (json: any) => {
 let oldModel: IStructure | null = null;
 const onStructureChange = (model: IStructure) => {
   if (oldModel) {
-    unSyncFolder(oldModel, 'typescript');
+    unSyncFolder(oldModel);
   }
   oldModel = model;
   resetStructure();
@@ -232,7 +232,7 @@ const onStructureChange = (model: IStructure) => {
     dataEditor.value?.resetValidation()
   }
   if (globalStore.session.loggedIn) {
-    autoAskToSyncFolder(model, 'typescript');
+    autoAskToSyncFolder(model);
   }
 }
 
@@ -259,7 +259,7 @@ watch(() => [
 ], autoSyncCallback, { deep: true });
 autoSyncCallback();
 window.addEventListener('fs-change', () => {
-  syncFromFolder(structure.value, 'typescript');
+  syncFromFolder(structure.value);
 })
 
 const refreshUserData = async (): Promise<any> => {
@@ -311,7 +311,7 @@ if (globalStore.userSettings.data.userDataAutoFetch) {
   refreshUserData();
 }
 if (globalStore.session.loggedIn) {
-  autoAskToSyncFolder(modelStore.structure, 'typescript');
+  autoAskToSyncFolder(modelStore.structure);
 }
 </script>
 
@@ -520,7 +520,8 @@ if (globalStore.session.loggedIn) {
     :selected="globalStore.fileManager.selected"
     :can-select="globalStore.fileManager.canSelect"
     :can-upload="globalStore.session.loggedIn"
-    :can-delete="globalStore.session.loggedIn"
+    :can-add-to-local="isFolderSynced(structure)"
+    :can-delete="globalStore.session.loggedIn || isFolderSynced(structure)"
     :server-settings="serverSettings"
     can-download
   />

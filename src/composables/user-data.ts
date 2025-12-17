@@ -19,11 +19,12 @@ import {
   getFieldDefaultValue,
   isValidField,
   isFieldI18n,
-  fieldHasChildren
+  fieldHasChildren,
+  cleanProperties,
 } from '@/utils';
 import Rules from '@/rules';
 import {useModelStore} from '@/stores/model';
-import {useTypings, isFolderSynced, lastStateTimestamp} from "@/composables/typings";
+import {isFolderSynced, lastStateTimestamp, useSyncing} from "@/composables/syncing";
 import {useStructure} from "@/composables/structure";
 
 const loading = ref(false);
@@ -51,7 +52,7 @@ export function useUserData() {
 
   const canInteractWithSyncedFolder = computed((): boolean => {
     // lastStateTimestamp is a hack to force digestion of typings
-    return lastStateTimestamp.value > 0 && isFolderSynced(modelStore.structure, 'typescript');
+    return lastStateTimestamp.value > 0 && isFolderSynced(modelStore.structure);
   })
 
   const userDataHasChanged = computed((): boolean => objectsAreDifferent(modelStore.userData, modelStore.originalUserData));
@@ -255,7 +256,7 @@ export function useUserData() {
         return saveUserDataSimple(structure, data).then(response => {
           setUserData(response.data, true);
           if (!onlyEndpoint) {
-            useTypings().syncToFolder(structure, 'typescript', ['data']);
+            useSyncing().syncToFolder(structure, ['data']);
           }
           saved.value = true;
           setTimeout(() => saved.value = false, 1000);
@@ -263,7 +264,7 @@ export function useUserData() {
         })
         .catch(reason => {
           if (canInteractWithSyncedFolder.value && !onlyEndpoint) {
-            useTypings().syncToFolder(structure, 'typescript', ['data']);
+            useSyncing().syncToFolder(structure, ['data']);
             saved.value = true;
             setTimeout(() => saved.value = false, 1000);
           }
@@ -273,7 +274,7 @@ export function useUserData() {
       } else {
         setUserData(data, true);
         if (!onlyEndpoint) {
-          useTypings().syncToFolder(structure, 'typescript', ['data']);
+          useSyncing().syncToFolder(structure, ['data']);
         }
         resolve(data);
       }
@@ -326,7 +327,7 @@ export function useUserData() {
       // Files
       if (isFieldType(field, 'file')) {
         if (typeof overrideValue === 'object' && overrideValue !== null && typeof overrideValue.path === 'string' && typeof overrideValue.meta === 'object') {
-          return parent[key] = overrideValue;
+          return parent[key] = cleanProperties(overrideValue, defaultValue);
         } else if (Array.isArray(overrideValue)) {
           parent[key] = [];
           overrideValue.forEach(value => {

@@ -52,6 +52,7 @@ export interface IError {
 
 export interface IFile {
   path: string | null,
+  blob?: string | undefined,
   meta: {
     type?: string,
     size?: number | null,

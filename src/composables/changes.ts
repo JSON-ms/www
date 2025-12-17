@@ -1,6 +1,6 @@
 import { objectsAreDifferent } from '@/utils';
 import { useGlobalStore } from '@/stores/global';
-import type { RouteLocationNormalizedGeneric } from 'vue-router';
+import type {NavigationGuardNext, RouteLocationNormalizedGeneric} from 'vue-router';
 import Router from '@/router';
 
 let initialized = false;
@@ -19,7 +19,7 @@ export function useChanges(router: typeof Router) {
     };
     window.addEventListener('beforeunload', beforeUnloadCallback);
 
-    router.beforeResolve((to, from, next) => {
+    router.beforeResolve((to: RouteLocationNormalizedGeneric, from: RouteLocationNormalizedGeneric, next: NavigationGuardNext) => {
       if (!from.name) {
         return next();
       }

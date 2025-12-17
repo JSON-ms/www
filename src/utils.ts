@@ -677,3 +677,36 @@ export function formatDate(date: Date, format = 'YYYY-MM-DD HH:mm:ss') {
     .replace('mm', minutes)
     .replace('ss', seconds);
 }
+
+export function cleanProperties(data: any, defaultValue: any): any {
+  const result: any = Array.isArray(defaultValue) ? [] : {}
+
+  for (const key in defaultValue) {
+    const defVal = defaultValue[key]
+    const dataVal = data?.[key]
+
+    if (
+      defVal !== null &&
+      typeof defVal === 'object' &&
+      !Array.isArray(defVal)
+    ) {
+      result[key] =
+        dataVal !== null &&
+        typeof dataVal === 'object' &&
+        !Array.isArray(dataVal)
+          ? cleanProperties(dataVal, defVal)
+          : defVal
+    } else if (Array.isArray(defVal)) {
+      result[key] = Array.isArray(dataVal) ? dataVal : defVal
+    } else {
+      if (dataVal === null || defVal === null) {
+        result[key] = dataVal !== undefined ? dataVal : defVal
+      } else {
+        result[key] =
+          typeof dataVal === typeof defVal ? dataVal : defVal
+      }
+    }
+  }
+
+  return result
+}

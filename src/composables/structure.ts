@@ -22,8 +22,8 @@ import defaultStructure  from '@/assets/default-structure.json';
 import {Composer, Parser, LineCounter, Document } from 'yaml'
 import merge from 'ts-deepmerge';
 import {useModelStore} from '@/stores/model';
-import {useTypings} from "@/composables/typings";
 import {parseYamlAndFindPaths, type PathValue} from "@/composables/yaml";
+import {useSyncing} from "@/composables/syncing";
 
 export interface EditorAnnotation {
   row: number,
@@ -501,7 +501,7 @@ export function useStructure() {
       }
 
       const saveCallback = () => {
-        useTypings().syncToFolder(structure, 'typescript', ['structure', 'typings', 'default', 'settings', 'index']);
+        useSyncing().syncToFolder(structure, ['structure', 'typings', 'default', 'settings', 'index']);
         structureStates.value.saved = true;
         setTimeout(() => structureStates.value.saved = false, 2000);
       }

@@ -11,6 +11,7 @@ import '@/plugins/aceeditor';
 import {useGlobalStore} from '@/stores/global';
 import {useTypings} from "@/composables/typings";
 import {useModelStore} from "@/stores/model";
+import {useSyncing} from "@/composables/syncing";
 // import yaml from 'js-yaml';
 
 const emit = defineEmits(['save', 'create', 'change', 'focus', 'blur']);
@@ -22,7 +23,8 @@ const { columns = false, userData } = defineProps<{
 }>();
 const { canSaveStructure, yamlException, structureStates } = useStructure();
 const modelStore = useModelStore();
-const { getTypescriptTypings, getTypescriptDefaultObj, isFolderSynced, lastStateTimestamp, askToSyncFolder, unSyncFolder } = useTypings();
+const { getTypescriptTypings, getTypescriptDefaultObj, lastStateTimestamp } = useTypings();
+const { isFolderSynced, askToSyncFolder, unSyncFolder } = useSyncing();
 const showParsingDelay = ref(false);
 const progressBarValue = ref(0);
 const progressBarCompleted = ref(false);
@@ -32,7 +34,7 @@ const blueprintEditorTypings: Ref<VAceEditorInstance | null> = ref(null);
 const blueprintEditorDefault: Ref<VAceEditorInstance | null> = ref(null);
 const blueprintTypings = ref('')
 const blueprintDefault = ref('')
-const blueprintLanguage = ref<'typescript' | 'php'>('typescript')
+const blueprintLanguage = ref<'typescript'>('typescript')
 
 const sectionMenu = ref(false);
 
@@ -210,10 +212,10 @@ watch(tab, () => {
 updateBlueprintContent();
 
 const onUnSync = () => {
-  unSyncFolder(modelStore.structure, 'typescript', true);
+  unSyncFolder(modelStore.structure, true);
 }
 const onSync = () => {
-  askToSyncFolder(modelStore.structure, 'typescript');
+  askToSyncFolder(modelStore.structure);
 }
 
 let lastPosition: { row: number, column: number } | null;
@@ -546,7 +548,7 @@ watch(() => globalStore.userSettings.data, () => {
             >
               <template #activator="{ props }">
                 <v-btn
-                  v-if="isFolderSynced(modelStore.structure, 'typescript')"
+                  v-if="isFolderSynced(modelStore.structure)"
                   v-bind="props"
                   :key="lastStateTimestamp"
                   color="secondary"
@@ -580,7 +582,7 @@ watch(() => globalStore.userSettings.data, () => {
                 size="small"
               />
               <v-tooltip
-                v-if="isFolderSynced(modelStore.structure, 'typescript')"
+                v-if="isFolderSynced(modelStore.structure)"
                 text="Save (CTRL+S)"
                 location="bottom"
               >

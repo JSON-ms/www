@@ -3,9 +3,9 @@ import {useGlobalStore} from "@/stores/global";
 import {computed, ref, watch} from "vue";
 import type {IUserSettings} from "@/interfaces";
 import {deepToRaw, objectsAreDifferent} from "@/utils";
-import {useTypings} from "@/composables/typings";
 import {useModelStore} from "@/stores/model";
 import ModalDialog from '@/components/ModalDialog.vue';
+import {useSyncing} from "@/composables/syncing";
 
 const visible = defineModel<boolean>('visible', { required: true });
 const globalStore = useGlobalStore();
@@ -64,7 +64,7 @@ const hasChanges = computed((): boolean => {
 
 const apply = () => {
   globalStore.setUserSettings(userSettings.value);
-  useTypings().syncToFolder(modelStore.structure, 'typescript');
+  useSyncing().syncToFolder(modelStore.structure);
   visible.value = false;
 }
 
@@ -90,70 +90,6 @@ watch(() => visible.value, () => {
   >
     <v-card-text class="bg-background pa-4">
       <v-row>
-        <v-col cols="12" md="6" class="d-flex flex-column" style="gap: 1rem">
-          <v-card title="Code Editor">
-            <v-card-text class="d-flex flex-column" style="gap: 1rem">
-              <v-number-input
-                v-model="userSettings.editorFontSize"
-                :min="6"
-                label="Font size"
-                hint="This shows the size of the text in the code editor, measured in pixels."
-                persistent-hint
-              />
-              <v-number-input
-                v-model="userSettings.editorTabSize"
-                :min="2"
-                :step="2"
-                label="Tab size"
-                hint="This sets how many spaces will be added when you press the tab key. Does not apply to the structure editor in YAML."
-                persistent-hint
-              />
-              <v-checkbox
-                v-model="userSettings.editorShowPrintMargin"
-                label="Show print margin"
-                hint="A vertical line will appear at 80 characters to help you write clearer code."
-                persistent-hint
-              />
-            </v-card-text>
-          </v-card>
-
-          <v-card title="Layout">
-            <v-card-text class="d-flex flex-column" style="gap: 1rem">
-              <v-select
-                v-model="userSettings.layoutEditorLocation"
-                :items="locationList"
-                label="Editor Location"
-                hint="Displays the editor in a different location according to the layout."
-                persistent-hint
-              />
-              <v-select
-                v-model="userSettings.layoutSitePreviewLocation"
-                :items="locationList"
-                label="Site Preview Location"
-                hint="Displays the site preview in a different location according to the layout."
-                persistent-hint
-              />
-              <v-checkbox
-                v-model="userSettings.layoutSitePreviewKeepRatio"
-                label="Keep Site Preview Ratio"
-                hint="It will zoom in and out to preserve the aspect ratio and adhere to a 16:9 format when in Desktop mode."
-                persistent-hint
-              />
-              <v-checkbox
-                v-model="userSettings.layoutSitePreviewPadding"
-                label="Site Preview Inner Padding"
-                hint="Adds a little padding that separates the site preview from the layout."
-                persistent-hint
-              />
-              <v-checkbox
-                v-model="userSettings.layoutAutoSplit"
-                label="Auto-Split Data Section"
-                hint="Whenever there is sufficient space, automatically divide the data section to maximize your available real estate."
-                persistent-hint
-              />
-            </v-card-text>
-          </v-card>
-        </v-col>
         <v-col cols="12" md="6" class="d-flex flex-column" style="gap: 1rem">
           <v-card title="Structure Editor">
             <v-card-text class="d-flex flex-column" style="gap: 1rem">
@@ -198,7 +134,35 @@ watch(() => visible.value, () => {
             </v-card-text>
           </v-card>
 
-          <v-card title="User Form">
+          <v-card title="Code Editor">
+            <v-card-text class="d-flex flex-column" style="gap: 1rem">
+              <v-number-input
+                v-model="userSettings.editorFontSize"
+                :min="6"
+                label="Font size"
+                hint="This shows the size of the text in the code editor, measured in pixels."
+                persistent-hint
+              />
+              <v-number-input
+                v-model="userSettings.editorTabSize"
+                :min="2"
+                :step="2"
+                label="Tab size"
+                hint="This sets how many spaces will be added when you press the tab key. Does not apply to the structure editor in YAML."
+                persistent-hint
+              />
+              <v-checkbox
+                v-model="userSettings.editorShowPrintMargin"
+                label="Show print margin"
+                hint="A vertical line will appear at 80 characters to help you write clearer code."
+                persistent-hint
+              />
+            </v-card-text>
+          </v-card>
+        </v-col>
+        <v-col cols="12" md="6" class="d-flex flex-column" style="gap: 1rem">
+
+          <v-card title="Data Form">
             <v-card-text class="d-flex flex-column" style="gap: 1rem">
               <v-switch
                 v-model="userSettings.userDataAutoFetch"
@@ -207,6 +171,43 @@ watch(() => visible.value, () => {
                 hint="Data will be automatically retrieved when the structure is loaded."
                 persistent-hint
                 inset
+              />
+            </v-card-text>
+          </v-card>
+
+          <v-card title="Layout">
+            <v-card-text class="d-flex flex-column" style="gap: 1rem">
+              <v-select
+                v-model="userSettings.layoutEditorLocation"
+                :items="locationList"
+                label="Editor Location"
+                hint="Displays the editor in a different location according to the layout."
+                persistent-hint
+              />
+              <v-select
+                v-model="userSettings.layoutSitePreviewLocation"
+                :items="locationList"
+                label="Site Preview Location"
+                hint="Displays the site preview in a different location according to the layout."
+                persistent-hint
+              />
+              <v-checkbox
+                v-model="userSettings.layoutSitePreviewKeepRatio"
+                label="Keep Site Preview Ratio"
+                hint="It will zoom in and out to preserve the aspect ratio and adhere to a 16:9 format when in Desktop mode."
+                persistent-hint
+              />
+              <v-checkbox
+                v-model="userSettings.layoutSitePreviewPadding"
+                label="Site Preview Inner Padding"
+                hint="Adds a little padding that separates the site preview from the layout."
+                persistent-hint
+              />
+              <v-checkbox
+                v-model="userSettings.layoutAutoSplit"
+                label="Auto-Split Data Section"
+                hint="Whenever there is sufficient space, automatically divide the data section to maximize your available real estate."
+                persistent-hint
               />
             </v-card-text>
           </v-card>
@@ -221,13 +222,13 @@ watch(() => visible.value, () => {
                 persistent-hint
               />
 
-              <v-alert
-                type="warning"
-                variant="tonal"
-                density="compact"
-              >
-                To prevent accidental overriding, <strong>Read From</strong> values are only synchronized once when loading the project.
-              </v-alert>
+<!--              <v-alert-->
+<!--                type="warning"-->
+<!--                variant="tonal"-->
+<!--                density="compact"-->
+<!--              >-->
+<!--                To prevent accidental overriding, <strong>Read From</strong> values are only synchronized once when loading the project.-->
+<!--              </v-alert>-->
 
               <v-select
                 v-model="syncingFrom"
