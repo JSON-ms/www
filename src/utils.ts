@@ -263,7 +263,7 @@ export const getFieldDefaultValue = (field: IField, locales: {[key: string]: str
     }
     return finalItems;
   }
-  return field.default ?? null;
+  return field.default ?? (field.multiple ? [] : null);
 }
 
 export const processObject = (
@@ -554,13 +554,13 @@ export async function downloadFilesAsZip(urls: string[], jsonData: object | fals
     }
 
     // Fetch each URL and add it as a blob to the zip
-    const files = await urlsToBlobArray(urls, modelStore.structure.server_secret);
-    files.forEach(file => {
-      zip.file(file.filename, file.blob);
-    })
-
-    // Generate the zip file
     try {
+      const files = await urlsToBlobArray(urls, modelStore.structure.server_secret)
+      files.forEach(file => {
+        zip.file(file.filename, file.blob);
+      })
+
+      // Generate the zip file
       const content = await zip.generateAsync({ type: "blob" });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(content);
@@ -569,7 +569,8 @@ export async function downloadFilesAsZip(urls: string[], jsonData: object | fals
       link.click();
       document.body.removeChild(link);
       resolve(content);
-    } catch (error) {
+    }
+    catch (error) {
       reject(error);
     }
   })

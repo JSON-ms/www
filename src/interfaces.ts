@@ -33,6 +33,7 @@ export interface IAdmin {
   previewMode: 'mobile' | 'desktop' | null,
   dataTab: 'data' | 'settings' | 'docs',
   editorTab: 'structure' | 'blueprints' | 'settings' | 'integration',
+  editorExpanded: boolean,
 }
 
 export interface ISnack {

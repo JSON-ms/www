@@ -51,7 +51,6 @@ export function useTypings() {
       keys['i18n:' + key] = keys[key];
     })
     keys.i18n = 'string';
-
     let type = keys[field.type || 'string'];
     if (field?.items && typeof field.items === 'string' && field.items.startsWith('enums.')) {
       const name = field.items.split('enums.');
@@ -65,7 +64,7 @@ export function useTypings() {
       if (!field.required && !field.multiple) {
         i18nType += ' | null';
       }
-      type = `JmsLocaleSet<${i18nType}>`;
+      type = `JmsLocaleSet<${i18nType}> | null`;
     } else if (!field.required && !field.multiple && type !== '[]') {
       type += ' | null';
     } else if (field.multiple) {
@@ -85,14 +84,15 @@ export function useTypings() {
         if (lastKey) {
           if (isFieldType(field, 'array')) {
             const name = getStructureName(nameKey + '.' + lastKey + '.items');
-            const jmsArrStructure = { name, fields: [] };
+            const nameSingular = getStructureName(nameKey + '.' + lastKey + '.item');
+            const jmsArrStructure = { name: nameSingular, fields: [] };
             const fields = structuredClone(field.fields);
             fields.hash = { type: 'string', required: true, label: '', fields: {} }
             innerLoop(fields, lastKey, jmsArrStructure, nameKey);
             if (isFieldI18n(field)) {
-              jmsStructure.fields.push({ key: lastKey, type: `JmsLocaleSet<Jms${name}[]>` })
+              jmsStructure.fields.push({ key: lastKey, type: `JmsLocaleSet<Jms${nameSingular}[]>` })
             } else {
-              jmsStructure.fields.push({ key: lastKey, type: `Jms${name}[]` })
+              jmsStructure.fields.push({ key: lastKey, type: `Jms${nameSingular}[]` })
             }
           } else if (isFieldType(field, 'node')) {
             const nodeKey = nameKey + '.' + path;
