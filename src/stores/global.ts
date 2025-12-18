@@ -46,6 +46,7 @@ export const useGlobalStore = defineStore('global', {
       previewMode: window.innerWidth >= 1400 ? 'desktop' : 'mobile',
       dataTab: 'data',
       editorTab: 'structure',
+      editorExpanded: false,
     },
     session: {
       loggedIn: false,

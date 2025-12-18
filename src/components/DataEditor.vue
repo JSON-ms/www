@@ -82,7 +82,7 @@ const canEditData = computed((): boolean => {
   <div v-else class="d-flex flex-column pa-4" style="gap: 1rem">
     <div>
       <h1 class="mb-2">
-        {{ selectedSection.label }}
+        {{ selectedSection.title || selectedSection.label }}
       </h1>
       <v-divider />
     </div>

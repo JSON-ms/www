@@ -398,7 +398,7 @@ if (globalStore.session.loggedIn) {
       <template v-if="!splitTabs">
         <v-expand-transition group>
           <div v-if="globalStore.admin.structure && windowWidth > 900">
-            <v-tabs v-model="tab" grow>
+            <v-tabs v-model="tab" height="44" grow>
               <v-tab value="data">
                 <v-icon icon="mdi-pencil" start />
                 Data
@@ -467,8 +467,9 @@ if (globalStore.session.loggedIn) {
       v-if="showActionBar"
       flat
       location="bottom"
-      style="border-top: rgba(0, 0, 0, 0.1) solid 1px"
-      class="pl-3"
+      color="background"
+      class="pl-3 py-0"
+      height="44"
     >
       <div class="w-100 d-flex align-center justify-space-between">
         <ActionBar

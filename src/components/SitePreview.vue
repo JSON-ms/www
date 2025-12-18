@@ -24,7 +24,6 @@ const loaded = ref(false);
 const loading = ref(false);
 const killIframe = ref(false);
 const siteNotCompatibleSnack = ref(false);
-const expanded = ref(false);
 const { layoutSize, windowHeight, layoutPx } = useLayout();
 const { reloading, siteCompatible, sendMessageToIframe, getPathsFromSectionKey, listenIframeMessage, sendUserDataToIframe } = useIframe();
 const { userDataLoading } = useUserData();
@@ -33,7 +32,7 @@ const iframeErrorMsg = ref('This site is not JSONms compatible');
 const editorHeight = computed((): number => {
   const padding = (globalStore.userSettings.data.layoutSitePreviewPadding ? 96 : 63);
   const result = windowHeight.value - padding;
-  if (expanded.value) {
+  if (globalStore.admin.editorExpanded) {
     return result + 32;
   }
   return result - layoutSize.value.preview.height;
@@ -244,11 +243,11 @@ defineExpose({
               <template #header.end>
                 <v-btn
                   size="small"
-                  @click="expanded = !expanded"
+                  @click="globalStore.admin.editorExpanded = !globalStore.admin.editorExpanded"
                 >
-                  <span v-if="expanded">Collapse</span>
+                  <span v-if="globalStore.admin.editorExpanded">Collapse</span>
                   <span v-else>Expand</span>
-                  <v-icon v-if="expanded" icon="mdi-unfold-less-horizontal" end />
+                  <v-icon v-if="globalStore.admin.editorExpanded" icon="mdi-unfold-less-horizontal" end />
                   <v-icon v-else icon="mdi-unfold-more-horizontal" end />
                 </v-btn>
               </template>

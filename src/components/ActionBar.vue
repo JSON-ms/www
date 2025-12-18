@@ -79,7 +79,7 @@ const reset = () => {
       <div v-if="!structureIsPristine">
         <v-tooltip v-if="layoutSize.data < 850" location="top" text="Please save your structure before continuing.">
           <template #activator="{ props }">
-            <v-btn icon color="error" variant="tonal" style="cursor: default">
+            <v-btn icon color="error" variant="tonal" size="x-small" style="cursor: default">
               <v-icon v-bind="props" icon="mdi-alert" />
             </v-btn>
           </template>
@@ -155,8 +155,9 @@ const reset = () => {
             :readonly="userDataSaved"
             :color="canSave ? 'primary' : undefined"
             :class="['w-100', {
-              'pr-16': globalStore.admin.structure
+              'pr-10': globalStore.admin.structure
             }]"
+            size="small"
             @click.stop.prevent="save"
           >
             <template v-if="!userDataSaved">
@@ -177,8 +178,9 @@ const reset = () => {
             v-if="globalStore.admin.structure"
             v-bind="props"
             :disabled="!userDataHasChanged"
-            variant="flat"
             :color="userDataHasChanged ? 'primary' : undefined"
+            variant="flat"
+            size="small"
             class="position-absolute"
             style="right: 0; border-top-left-radius: 0; border-bottom-left-radius: 0"
             min-width="0"
@@ -210,6 +212,7 @@ const reset = () => {
     <v-btn
       :disabled="!userDataHasChanged"
       variant="text"
+      size="small"
       style="flex: 1"
       @click="reset"
     >

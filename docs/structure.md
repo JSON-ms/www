@@ -37,6 +37,7 @@ The following YAML example defines a simplified section for an admin panel, spec
 sections:
   home: # Customizable key
     label: Home page
+    title: My data # Optional (to be displayed in the data sidebar)
     fields:
       title: # Customizable key
         type: i18n
