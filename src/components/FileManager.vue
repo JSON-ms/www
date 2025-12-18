@@ -8,9 +8,11 @@ import VideoPlayer from '@/components/VideoPlayer.vue';
 import {downloadFilesAsZip, getFileIcon, phpStringSizeToBytes} from '@/utils';
 import ModalDialog from '@/components/ModalDialog.vue';
 import {isFolderSynced, useSyncing, blobFileList} from "@/composables/syncing";
+import {useDisplay} from "vuetify/framework";
 
 const globalStore = useGlobalStore();
 const syncing = useSyncing();
+const { smAndDown } = useDisplay()
 const structure = defineModel<IStructure>({ required: true });
 const { selected = [], serverSettings, canUpload = false, canAddToLocal = false, canDelete = false, canSelect = false, canDownload = false } = defineProps<{
   selected?: IFile[],
@@ -328,7 +330,7 @@ watch(() => globalStore.fileManager.visible, () => {
     persistent
     scrollable
   >
-    <template v-if="globalStore.session.loggedIn" #append>
+    <template v-if="globalStore.session.loggedIn && !smAndDown" #append>
       <v-tabs v-model="filter" class="my-n4" density="compact">
         <v-tab value="all">
           All ({{ getFilesByType('all').length }})
@@ -351,7 +353,7 @@ watch(() => globalStore.fileManager.visible, () => {
         prepend-inner-icon="mdi-magnify"
         hide-details
       >
-        <template #append-inner>
+        <template v-if="!smAndDown" #append-inner>
           <div class="d-flex align-center" style="gap: 0.5rem">
             <v-select
               v-model="sortBy"
@@ -535,10 +537,14 @@ watch(() => globalStore.fileManager.visible, () => {
             v-if="!canSelect || globalStore.fileManager.multiple"
             v-bind="props"
             :disabled="loading || selectedFiles.length === 0"
+            :icon="smAndDown"
             variant="text"
           >
-            Bulk Actions
-            <v-icon icon="mdi-chevron-up" end />
+            <template v-if="!smAndDown">
+              Bulk Actions
+              <v-icon icon="mdi-chevron-up" end />
+            </template>
+            <v-icon v-else icon="mdi-dots-vertical" />
           </v-btn>
         </template>
         <v-list>
@@ -563,6 +569,7 @@ watch(() => globalStore.fileManager.visible, () => {
         </v-list>
       </v-menu>
       <v-checkbox
+        v-if="!smAndDown"
         v-model="showInfo"
         label="Show additional info"
         hide-details

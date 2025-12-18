@@ -591,7 +591,7 @@ watch(() => globalStore.userSettings.data, () => {
                     v-if="structure"
                     v-bind="props"
                     :loading="structureStates.saving"
-                    :disabled="!canSaveStructure || (!modelStore.structure.server_url && !isFolderSynced(modelStore.structure)) || structureStates.saving || structureStates.saved"
+                    :disabled="!canSaveStructure || ((!modelStore.structure.server_url || !globalStore.session.loggedIn) && !isFolderSynced(modelStore.structure)) || structureStates.saving || structureStates.saved"
                     :prepend-icon="!structureStates.saved ? 'mdi-content-save' : 'mdi-check'"
                     variant="outlined"
                     color="primary"
