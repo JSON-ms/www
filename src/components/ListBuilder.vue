@@ -26,7 +26,7 @@ const {
   min?: number,
   max?: number,
   removeItemCallback?: (index: number, list: any[]) => void
-  onCollapsableHeader?: (item: any, index: number) => ({ title?: string, thumbnail?: string})
+  onCollapsableHeader?: (item: any, index: number) => ({ title: string, thumbnail: string | boolean})
 }>()
 
 const panel = ref<null | number>(null);

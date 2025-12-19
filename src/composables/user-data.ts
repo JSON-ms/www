@@ -350,7 +350,7 @@ export function useUserData() {
           if (isArray && field.fields && isFieldType(field, 'array')) {
             parent[key] = [];
             overrideValue.forEach(overrideItem => {
-              parent[key].push(getParsedFields(field.fields, locales, overrideItem));
+              parent[key].push(getParsedFields(field.fields, locales, overrideItem, clean));
             })
           } else if (field.items && Array.isArray(overrideValue)) {
             return parent[key] = overrideValue;
