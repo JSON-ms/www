@@ -209,12 +209,16 @@ const onEditJson = () => {
   editJsonContent.value = JSON.stringify(deepToRaw(modelStore.userData), null, globalStore.userSettings.data.editorTabSize);
 }
 
-const onMigrateData = () => {
-  showMigrationDialog.value = true;
+const onCleanJson = (data: any) => {
+  editJsonContent.value = JSON.stringify(data || {}, null, globalStore.userSettings.data.editorTabSize);
 }
 
 const onApplyJsonContent = (json: any) => {
   setUserData(json);
+}
+
+const onMigrateData = () => {
+  showMigrationDialog.value = true;
 }
 
 let oldModel: IStructure | null = null;
@@ -265,7 +269,7 @@ window.addEventListener('fs-change', () => {
 
 const theme = useTheme();
 const toggleDarkMode = () => {
-  theme.global.name.value = globalStore.userSettings.data.appearanceDarkMode ? 'dark' : 'light'
+  theme.change(globalStore.userSettings.data.appearanceDarkMode ? 'dark' : 'light');
 }
 watch(() => [
   globalStore.userSettings.data.appearanceDarkMode,
@@ -496,7 +500,7 @@ if (globalStore.session.loggedIn) {
     v-model="editJsonContent"
     v-model:visible="showEditJson"
     @apply="onApplyJsonContent"
-    @clean="onEditJson"
+    @clean="onCleanJson"
   />
 
   <!-- MIGRATION DIALOG -->
