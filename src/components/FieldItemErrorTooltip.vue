@@ -35,17 +35,17 @@ const errorMessage = computed((): string | null => {
   if (errors.value.general.length > 0) {
     const item = errors.value.general[0].split('.').pop();
     if (item) {
-      return `${fields[item].label} field has an issue`;
+      return `${fields[item].label} field is missing a value`;
     }
   } else if (errors.value.currentI18n.length > 0) {
     const errorField = getFieldByPath(root.sections, errors.value.currentI18n[0]);
-    return `${errorField.label} field has an issue`;
+    return `${errorField.label} field is missing a value`;
   } else if (errors.value.i18n.length > 0) {
     const items = errors.value.i18n[0].split('.');
     const key = items.pop();
     const errorField = getFieldByPath(root.sections, errors.value.i18n[0]);
     if (errorField && key) {
-      return `${errorField.label} field has an issue in ${locales[key]}`
+      return `${errorField.label} field is missing a value in ${locales[key]}`
     }
   }
   return null;
@@ -56,10 +56,10 @@ const errors = ref<IFieldError>({
   currentI18n: [],
   general: [],
 });
-watch([() => fieldKey, () => value.value, () => locale.value], () => {
+watch([() => fieldKey, () => value.value, () => locale], () => {
   const userDataErrors = getUserDataErrors(
     fields,
-    fieldKey + (index ? '[' + index + ']' : ''),
+    fieldKey + (index >= 0 ? ('[' + index + ']') : ''),
     parent,
   );
   const allErrorKeys = Object.keys(userDataErrors);
@@ -80,7 +80,7 @@ watch([() => fieldKey, () => value.value, () => locale.value], () => {
     location="bottom"
   >
     <template #activator="{ props }">
-      <v-icon v-bind="props" icon="mdi-alert" color="warning" />
+      <v-icon v-bind="props" icon="mdi-asterisk" color="warning" />
     </template>
   </v-tooltip>
   <v-tooltip
@@ -89,7 +89,7 @@ watch([() => fieldKey, () => value.value, () => locale.value], () => {
     location="bottom"
   >
     <template #activator="{ props }">
-      <v-icon v-bind="props" icon="mdi-alert-outline" color="warning" />
+      <v-icon v-bind="props" icon="mdi-asterisk" color="warning" />
     </template>
   </v-tooltip>
 </template>

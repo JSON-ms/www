@@ -53,18 +53,18 @@ const getErrorMsg = (section: ISection, sectionKey: string | number): string | n
   const locales = structureParsedData.value.locales;
   if (errors.general.length > 0) {
     const path = errors.general[0];
-    return `Field path "${path}" has an issue`
+    return `Field path "${path}" is missing a value`
   } else if (errors.currentI18n.length > 0) {
     const items = errors.currentI18n[0].split('.');
     items.pop();
     const path = items.join('.')
-    return `Field path "${path}" has an issue`;
+    return `Field path "${path}" is missing a value`;
   } else if (errors.i18n.length > 0) {
     const items = errors.i18n[0].split('.');
     const locale = items.pop();
     const path = items.join('.');
     if (locale) {
-      return `Field path "${path}" field has an issue in ${locales[locale]}`
+      return `Field path "${path}" is missing a value in ${locales[locale]}`
     }
   }
   return null;
@@ -133,7 +133,7 @@ watch(() => serverSettings.version, () => {
               max-width="400"
             >
               <template #activator="{ props }">
-                <v-icon v-bind="props" icon="mdi-alert" color="warning" />
+                <v-icon v-bind="props" icon="mdi-asterisk" color="warning" />
               </template>
             </v-tooltip>
             <v-tooltip
@@ -143,7 +143,7 @@ watch(() => serverSettings.version, () => {
               max-width="400"
             >
               <template #activator="{ props }">
-                <v-icon v-bind="props" icon="mdi-alert-outline" color="warning" />
+                <v-icon v-bind="props" icon="mdi-asterisk" color="warning" />
               </template>
             </v-tooltip>
           </template>
