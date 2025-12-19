@@ -486,6 +486,7 @@ if (globalStore.session.loggedIn) {
     v-model="editJsonContent"
     v-model:visible="showEditJson"
     @apply="onApplyJsonContent"
+    @clean="onEditJson"
   />
 
   <!-- MIGRATION DIALOG -->
