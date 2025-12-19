@@ -162,6 +162,19 @@ watch(() => visible.value, () => {
         </v-col>
         <v-col cols="12" md="6" class="d-flex flex-column" style="gap: 1rem">
 
+          <v-card title="Appearance">
+            <v-card-text class="d-flex flex-column" style="gap: 1rem">
+              <v-switch
+                v-model="userSettings.appearanceDarkMode"
+                color="primary"
+                label="Dark mode"
+                hint="Switch between light and dark themes to match your environment, reduce eye strain, and stay comfortable anytime."
+                persistent-hint
+                inset
+              />
+            </v-card-text>
+          </v-card>
+
           <v-card title="Data Form">
             <v-card-text class="d-flex flex-column" style="gap: 1rem">
               <v-switch

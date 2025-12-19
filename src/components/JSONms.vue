@@ -26,6 +26,7 @@ import FileManager from '@/components/FileManager.vue';
 import {useModelStore} from '@/stores/model';
 import structureMd from "../../docs/structure.md";
 import {useSyncing} from "@/composables/syncing";
+import { useTheme } from 'vuetify'
 
 // Model & Props
 const structure = defineModel<IStructure>({ required: true });
@@ -261,6 +262,15 @@ autoSyncCallback();
 window.addEventListener('fs-change', () => {
   syncFromFolder(structure.value);
 })
+
+const theme = useTheme();
+const toggleDarkMode = () => {
+  theme.global.name.value = globalStore.userSettings.data.appearanceDarkMode ? 'dark' : 'light'
+}
+watch(() => [
+  globalStore.userSettings.data.appearanceDarkMode,
+], toggleDarkMode);
+toggleDarkMode();
 
 const refreshUserData = async (): Promise<any> => {
   return fetchUserData().then((response: any) => {

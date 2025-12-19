@@ -199,7 +199,7 @@ watch(() => serverSettings.version, () => {
           Github
         </v-btn>
       </div>
-      <v-footer color="#f9f9f9">
+      <v-footer color="footer">
         <small style="font-size: 0.6rem">JSON.ms v{{ version }}. Licensed under the BSD-3-Clause.</small>
       </v-footer>
     </template>

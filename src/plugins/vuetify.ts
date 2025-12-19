@@ -23,12 +23,14 @@ export default createVuetify({
     themes: {
       light: {
         colors: {
+          footer: '#f9f9f9',
           background: '#eee',
         }
       },
       dark: {
         colors: {
-          background: '#eee',
+          footer: '#030303',
+          background: '#111',
         }
       },
     },

@@ -166,10 +166,10 @@ defineExpose({
     >
       <v-card
         class="w-100 fill-height"
+        color="sheet"
         :flat="!globalStore.userSettings.data.layoutSitePreviewPadding"
         :tile="!globalStore.userSettings.data.layoutSitePreviewPadding"
         :style="{
-          backgroundColor: 'white',
           height: globalStore.userSettings.data.layoutSitePreviewKeepRatio ? (layoutSize.preview.height + 'px !important') : undefined,
           width: layoutSize.preview.width + 'px !important',
         }"
