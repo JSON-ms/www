@@ -19,7 +19,7 @@ const globalStore = useGlobalStore();
 const modelStore = useModelStore();
 const { structureIsPristine, setDefaultValues } = useStructure();
 const { windowWidth, layoutSize } = useLayout();
-const { saveUserData, resetUserData, userDataHasChanged, canInteractWithServer, canInteractWithSyncedFolder, userDataSaving, userDataSaved, canSave } = useUserData();
+const { saveUserData, resetUserData, cleanUserData, userDataHasChanged, canInteractWithServer, canInteractWithSyncedFolder, userDataSaving, userDataSaved, canSave } = useUserData();
 
 const saveMaxWidth = computed((): string => {
   const long = canInteractWithServer.value && canInteractWithSyncedFolder.value;
@@ -38,7 +38,8 @@ const onSetAsDefaultValues = () => {
     btnIcon: 'mdi-text-box-check-outline',
     btnColor: 'warning',
     callback: () => new Promise(resolve => {
-      setDefaultValues(modelStore.structure, modelStore.userData);
+      const cleanData = cleanUserData();
+      setDefaultValues(modelStore.structure, cleanData);
       resolve();
     })
   })
