@@ -11,6 +11,33 @@ import type {
   IUserSettings
 } from '@/interfaces';
 
+const defaultUserSettings: IUserSettings = {
+  appearanceDarkMode: false,
+  editorFontSize: 16,
+  editorLiveUpdate: true,
+  editorUpdateTimeout: 1000,
+  editorShowPrintMargin: false,
+  editorAutoSyncFrom: true,
+  editorAutoSyncInterval: 1000,
+  autoCleanData: false,
+  editorTabSize: 2,
+  userDataAutoFetch: true,
+  layoutEditorLocation: 'start',
+  layoutSitePreviewLocation: 'start',
+  layoutSitePreviewPadding: true,
+  layoutSitePreviewKeepRatio: true,
+  layoutAutoSplit: true,
+  blueprintsIncludeTypings: true,
+  blueprintsReadFromData: true,
+  blueprintsReadFromStructure: true,
+  blueprintsWriteToData: true,
+  blueprintsWriteToDefault: true,
+  blueprintsWriteToIndex: true,
+  blueprintsWriteToStructure: true,
+  blueprintsWriteToTypings: true,
+  blueprintsWriteToSettings: true,
+}
+
 export const useGlobalStore = defineStore('global', {
   state: (): {
     theme: 'dark' | 'light',
@@ -72,32 +99,7 @@ export const useGlobalStore = defineStore('global', {
     },
     userSettings: {
       visible: false,
-      data: {
-        appearanceDarkMode: false,
-        editorFontSize: 16,
-        editorLiveUpdate: true,
-        editorUpdateTimeout: 1000,
-        editorShowPrintMargin: false,
-        editorAutoSyncFrom: true,
-        editorAutoSyncInterval: 1000,
-        autoCleanData: false,
-        editorTabSize: 2,
-        userDataAutoFetch: true,
-        layoutEditorLocation: 'start',
-        layoutSitePreviewLocation: 'start',
-        layoutSitePreviewPadding: true,
-        layoutSitePreviewKeepRatio: true,
-        layoutAutoSplit: true,
-        blueprintsIncludeTypings: true,
-        blueprintsReadFromData: true,
-        blueprintsReadFromStructure: true,
-        blueprintsWriteToData: true,
-        blueprintsWriteToDefault: true,
-        blueprintsWriteToIndex: true,
-        blueprintsWriteToStructure: true,
-        blueprintsWriteToTypings: true,
-        blueprintsWriteToSettings: true,
-      }
+      data: structuredClone(defaultUserSettings)
     },
   }),
   actions: {
@@ -165,11 +167,12 @@ export const useGlobalStore = defineStore('global', {
     },
     applyUserSettingsData(data: any) {
       const values: any = {};
-      Object.keys(this.userSettings.data).forEach(key => {
-        // @ts-expect-error Keys are fetched from this.userSettings, so it's all fine...
-        const item = this.userSettings.data[key];
-        if (data[key] !== undefined && typeof data[key] === typeof item) {
-          values[key] = data[key];
+      Object.keys(defaultUserSettings).forEach(key => {
+        // @ts-expect-error Keys are fetched from defaultUserSettings, so it's all fine...
+        const originalValue = defaultUserSettings[key];
+        values[key] = originalValue
+        if (typeof data[key] === typeof originalValue) {
+          values[key] = data[key] !== undefined ? data[key] : originalValue;
         }
       })
       this.userSettings.data = values;

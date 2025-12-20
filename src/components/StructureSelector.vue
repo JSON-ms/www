@@ -85,7 +85,11 @@ const computedStructure = computed((): IStructure => {
         width="24"
         height="24"
         class="mr-1"
-      />
+      >
+        <template #error>
+          <v-icon :icon="computedStructure.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'" />
+        </template>
+      </v-img>
     </template>
 
     <!-- TITLE -->
@@ -189,7 +193,11 @@ const computedStructure = computed((): IStructure => {
             width="24"
             height="24"
             class="mr-8"
-          />
+          >
+            <template #error>
+              <v-icon :icon="computedStructure.type === 'owner' ? 'mdi-list-box-outline' : 'mdi-folder-account-outline'" />
+            </template>
+          </v-img>
         </template>
 
         <v-list-item-subtitle>

@@ -316,7 +316,7 @@ export function useUserData() {
       }
 
       const defaultValue = getFieldDefaultValue(field, locales);
-      const overrideValue = getDataByPath(override, path, defaultValue);
+      const overrideValue = cleanProperties(getDataByPath(override, path, defaultValue), defaultValue);
 
       // Node
       if (isFieldType(field, 'node')) {
@@ -326,7 +326,7 @@ export function useUserData() {
       // Files
       if (isFieldType(field, 'file')) {
         if (typeof overrideValue === 'object' && overrideValue !== null && typeof overrideValue.path === 'string' && typeof overrideValue.meta === 'object') {
-          return parent[key] = cleanProperties(overrideValue, defaultValue);
+          return parent[key] = overrideValue;
         } else if (Array.isArray(overrideValue)) {
           parent[key] = [];
           overrideValue.forEach(value => {

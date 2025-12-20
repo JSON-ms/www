@@ -467,7 +467,12 @@ export function useStructure() {
   const saveStructureSimple = (
     structure: IStructure = modelStore.structure,
   ): Promise<IStructure> => {
-    const parsedStructureData = getParsedStructure(structure);
+    const parsedStructureData = getParsedStructure(structure) || {
+      global: {
+        title: undefined,
+        logo: undefined,
+      }
+    };
     const body = {
       content: { ...structure },
       data: {},

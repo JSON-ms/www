@@ -662,7 +662,6 @@ watch(() => globalStore.userSettings.data, () => {
                 size="small"
               />
               <v-tooltip
-                v-if="modelStore.structure.server_url || isFolderSynced(modelStore.structure)"
                 text="Save (CTRL+S)"
                 location="bottom"
               >
@@ -671,7 +670,7 @@ watch(() => globalStore.userSettings.data, () => {
                     v-if="structure"
                     v-bind="props"
                     :loading="structureStates.saving"
-                    :disabled="!canSaveStructure || ((!modelStore.structure.server_url || !globalStore.session.loggedIn) && !isFolderSynced(modelStore.structure)) || structureStates.saving || structureStates.saved"
+                    :disabled="!canSaveStructure || (!globalStore.session.loggedIn && !isFolderSynced(modelStore.structure)) || structureStates.saving || structureStates.saved"
                     :prepend-icon="!structureStates.saved ? 'mdi-content-save' : 'mdi-check'"
                     variant="outlined"
                     color="primary"

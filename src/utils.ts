@@ -679,35 +679,37 @@ export function formatDate(date: Date, format = 'YYYY-MM-DD HH:mm:ss') {
     .replace('ss', seconds);
 }
 
+export function valueType(v: any): 'array' | 'object' | 'null' {
+  if (v === null) return 'null'
+  if (Array.isArray(v)) return 'array'
+  if (typeof v === 'object') return 'object'
+  return 'null'
+}
+
+export function sameType(a: any, b: any): boolean {
+  return valueType(a) === valueType(b)
+}
+
 export function cleanProperties(data: any, defaultValue: any): any {
-  const result: any = Array.isArray(defaultValue) ? [] : {}
-
-  for (const key in defaultValue) {
-    const defVal = defaultValue[key]
-    const dataVal = data?.[key]
-
-    if (
-      defVal !== null &&
-      typeof defVal === 'object' &&
-      !Array.isArray(defVal)
-    ) {
-      result[key] =
-        dataVal !== null &&
-        typeof dataVal === 'object' &&
-        !Array.isArray(dataVal)
-          ? cleanProperties(dataVal, defVal)
-          : defVal
-    } else if (Array.isArray(defVal)) {
-      result[key] = Array.isArray(dataVal) ? dataVal : defVal
-    } else {
-      if (dataVal === null || defVal === null) {
-        result[key] = dataVal !== undefined ? dataVal : defVal
-      } else {
-        result[key] =
-          typeof dataVal === typeof defVal ? dataVal : defVal
-      }
-    }
+  if (Array.isArray(defaultValue)) {
+    return Array.isArray(data) ? data : []
   }
 
-  return result
+  if (
+      defaultValue !== null &&
+      typeof defaultValue === 'object'
+  ) {
+    const result: any = {}
+
+    for (const key in defaultValue) {
+      const defVal = defaultValue[key]
+      const dataVal = data?.[key]
+
+      result[key] = cleanProperties(dataVal, defVal)
+    }
+
+    return result
+  }
+
+  return sameType(data, defaultValue) ? data : null
 }
