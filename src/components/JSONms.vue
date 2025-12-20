@@ -51,10 +51,22 @@ const { sendMessageToIframe } = useIframe();
 const { isFolderSynced, syncFromFolder, autoAskToSyncFolder, syncToFolder, unSyncFolder, stopWatchSnapshotDirectory, watchSnapshotDirectory } = useSyncing();
 
 globalStore.initUserSettings();
+globalStore.initUIConfig();
 
-const splitTabs = computed((): boolean => globalStore.admin.structure && globalStore.userSettings.data.layoutAutoSplit && layoutSize.value.data >= (mobileFrameWidth.value * 2));
+const splitTabs = computed((): boolean => {
+  if (![globalStore.uiConfig.data, globalStore.uiConfig.documentation].every(item => item)) {
+    return false;
+  }
+  return globalStore.admin.structure && globalStore.userSettings.data.layoutAutoSplit && layoutSize.value.data >= (mobileFrameWidth.value * 2);
+});
 const tab = computed({
   get: () => {
+    if (globalStore.uiConfig.data && !globalStore.uiConfig.documentation) {
+      return 'data';
+    }
+    if (!globalStore.uiConfig.data && globalStore.uiConfig.documentation) {
+      return 'docs';
+    }
     const advancedMode = globalStore.admin.structure && windowWidth.value > 900;
     if (advancedMode && splitTabs.value) {
       return globalStore.admin.dataTab === 'data'
@@ -316,12 +328,14 @@ useShortcut({
 }).listen();
 initLayout();
 
-setUserData({}, true);
+const envInitialUserData = import.meta.env.VITE_USER_DATA;
+const initialUserData = JSON.parse(envInitialUserData || '{}') || {};
+setUserData(initialUserData, true);
 onMounted(() => {
   sitePreview.value?.structureEditor?.scrollToSection(getAvailableSection());
   structureEditor.value?.scrollToSection(getAvailableSection());
 })
-if (globalStore.userSettings.data.userDataAutoFetch) {
+if (!envInitialUserData && globalStore.userSettings.data.userDataAutoFetch) {
   refreshUserData();
 }
 if (globalStore.session.loggedIn) {
@@ -333,6 +347,7 @@ if (globalStore.session.loggedIn) {
 
   <!-- TOOLBAR -->
   <Toolbar
+    v-if="globalStore.uiConfig.toolbar"
     v-model="structure"
     :structures="structures"
     :structure-data="structureParsedData"
@@ -357,6 +372,7 @@ if (globalStore.session.loggedIn) {
 
   <!-- SIDEBAR -->
   <Sidebar
+    v-if="globalStore.uiConfig.sidebar"
     :structure-data="structureParsedData"
     :user-data="modelStore.userData"
     :server-settings="serverSettings"
@@ -364,6 +380,7 @@ if (globalStore.session.loggedIn) {
 
   <!-- EDITOR -->
   <v-navigation-drawer
+    v-if="globalStore.uiConfig.structure"
     v-model="showEditor"
     :width="layoutSize.editor.width"
     :temporary="layoutSize.editor.temporary"
@@ -394,6 +411,7 @@ if (globalStore.session.loggedIn) {
 
   <!-- PREVIEW -->
   <SitePreview
+    v-if="globalStore.uiConfig.site_preview"
     ref="sitePreview"
     v-model="structure"
     :structure-data="structureParsedData"
@@ -409,15 +427,15 @@ if (globalStore.session.loggedIn) {
       ref="form"
       class="fill-height"
     >
-      <template v-if="!splitTabs">
+      <template v-if="!splitTabs && (globalStore.uiConfig.data && globalStore.uiConfig.documentation)">
         <v-expand-transition group>
           <div v-if="globalStore.admin.structure && windowWidth > 900">
             <v-tabs v-model="tab" height="44" grow>
-              <v-tab value="data">
+              <v-tab v-if="globalStore.uiConfig.data" value="data">
                 <v-icon icon="mdi-pencil" start />
                 Data
               </v-tab>
-              <v-tab value="docs">
+              <v-tab v-if="globalStore.uiConfig.documentation" value="docs">
                 <v-icon start icon="mdi-book" />
                 Docs
               </v-tab>
@@ -426,7 +444,7 @@ if (globalStore.session.loggedIn) {
         </v-expand-transition>
       </template>
       <v-tabs-window v-model="tab" class="fill-height" style="flex: 1">
-        <v-tabs-window-item value="data" class="fill-height">
+        <v-tabs-window-item v-if="globalStore.uiConfig.data" value="data" class="fill-height">
           <DataEditor
             ref="dataEditor"
             v-model="structure"
@@ -436,7 +454,7 @@ if (globalStore.session.loggedIn) {
             :loading="userDataLoading"
           />
         </v-tabs-window-item>
-        <v-tabs-window-item value="docs">
+        <v-tabs-window-item v-if="globalStore.uiConfig.documentation" value="docs">
           <v-card tile flat>
             <v-card-text>
               <Docs v-model="structureMd" />
@@ -448,13 +466,13 @@ if (globalStore.session.loggedIn) {
   </v-card>
 
   <v-navigation-drawer
-    v-if="splitTabs"
+    v-if="globalStore.uiConfig.data && splitTabs"
     :width="layoutSize.data / 2"
     location="start"
     disable-resize-watcher
     disable-route-watcher
   >
-    <template #append>
+    <template v-if="globalStore.uiConfig.data && globalStore.uiConfig.data_footer" #append>
       <v-divider />
       <div class="d-flex align-center justify-space-between pl-3" style="height: 4rem">
         <ActionBar
@@ -466,6 +484,7 @@ if (globalStore.session.loggedIn) {
     </template>
 
     <DataEditor
+      v-if="globalStore.uiConfig.data"
       ref="dataEditor"
       v-model="structure"
       :structure-data="structureParsedData"
@@ -478,7 +497,7 @@ if (globalStore.session.loggedIn) {
   <!-- ACTIONS -->
   <v-expand-transition>
     <v-app-bar
-      v-if="showActionBar"
+      v-if="globalStore.uiConfig.data && globalStore.uiConfig.data_footer && showActionBar"
       flat
       location="bottom"
       color="background"

@@ -1,9 +1,9 @@
-# YAML Interface
+# YAML Structure
 ---
 Let's get started on building your ideal admin panel with JSON.ms!
 
 ## Global Configuration
-Let's start with the global configuration. You can copy paste and adjust the following code in your _YAML_ interface:
+Let's start with the global configuration. You can copy paste and adjust the following code in your _YAML_ structure:
 ```yaml
 global:
   
@@ -20,7 +20,7 @@ These settings allows to create an admin panel that aligns with your brand and u
 
 ## Locales
 
-JSON.ms allows you to manage locales for translating the fields that will be saved in your application. You can easily define multiple locales in a customizable list of key/value pairs within the YAML interface. If no locales are provided, JSON.ms will default to "`en-US`." This feature enables you to ensure that the data fields are accurately translated, accommodating users who speak different languages and enhancing the overall usability of your application.
+JSON.ms allows you to manage locales for translating the fields that will be saved in your application. You can easily define multiple locales in a customizable list of key/value pairs within the YAML structure. If no locales are provided, JSON.ms will default to "`en-US`." This feature enables you to ensure that the data fields are accurately translated, accommodating users who speak different languages and enhancing the overall usability of your application.
 
 ```yaml
 locales:
@@ -404,7 +404,7 @@ Here's an example of a field using an enum:
 
 ## Schemas
 
-Reusable schemas (fieldset) are a powerful feature that allows you to define a set of predefined fields that can be referenced multiple times throughout your interface. This promotes consistency in your data definitions and reduces redundancy, making your code cleaner and easier to maintain.
+Reusable schemas (fieldset) are a powerful feature that allows you to define a set of predefined fields that can be referenced multiple times throughout your structure. This promotes consistency in your data definitions and reduces redundancy, making your code cleaner and easier to maintain.
 
 ```yaml
 schemas:

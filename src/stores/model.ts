@@ -21,6 +21,12 @@ export const useModelStore = defineStore('model', {
   }),
   actions: {
     setStructure(model: IStructure = structuredClone(deepToRaw(defaultStructure)), data?: any) {
+
+      const forceStructure = import.meta.env.VITE_FORCE_STRUCTURE;
+      if (forceStructure) {
+        model.content = forceStructure;
+      }
+
       this.structure = model;
       this.temporaryContent = model.content;
       this.setOriginalStructure(model);

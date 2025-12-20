@@ -151,6 +151,7 @@ watch(() => currentRoute.params.locale, () => {
   <v-app-bar v-bind="$attrs" border>
     <template #prepend>
       <v-tooltip
+        v-if="globalStore.uiConfig.toolbar_menu"
         text="Sections (CTRL+Q)"
         location="bottom"
       >
@@ -160,7 +161,7 @@ watch(() => currentRoute.params.locale, () => {
       </v-tooltip>
     </template>
 
-    <template v-if="!globalStore.session.loggedIn || windowWidth > 1200">
+    <template v-if="globalStore.uiConfig.toolbar_logo && (!globalStore.session.loggedIn || windowWidth > 1200)">
       <v-app-bar-title style="flex: 1; min-width: 110px" class="mr-8">
         <Logo />
       </v-app-bar-title>
@@ -169,7 +170,7 @@ watch(() => currentRoute.params.locale, () => {
 
     <div class="d-flex align-center" style="gap: 1rem; flex: 75">
       <StructureSelector
-        v-if="globalStore.session.loggedIn"
+        v-if="globalStore.uiConfig.toolbar_project_selector && globalStore.session.loggedIn"
         v-model="structure"
         :structures="structures"
         :actions="windowWidth > 900"
@@ -191,7 +192,7 @@ watch(() => currentRoute.params.locale, () => {
       />
 
       <v-btn-toggle
-        v-if="windowWidth > 900"
+        v-if="globalStore.uiConfig.toolbar_advanced && globalStore.uiConfig.structure && windowWidth > 900"
         v-model="globalStore.admin.structure"
         color="primary"
         variant="text"
@@ -211,6 +212,7 @@ watch(() => currentRoute.params.locale, () => {
       </v-btn-toggle>
 
       <TriggerMenu
+        v-if="globalStore.uiConfig.toolbar_trigger_menu"
         :model-value="structureData"
         :structure="structure"
         :user-data="userData"
@@ -218,7 +220,7 @@ watch(() => currentRoute.params.locale, () => {
       />
 
       <v-alert
-        v-if="!globalStore.session.loggedIn && windowWidth > 1700"
+        v-if="globalStore.uiConfig.toolbar_info && !globalStore.session.loggedIn && windowWidth > 1700"
         density="comfortable"
         style="max-width: max-content"
         variant="tonal"
@@ -231,9 +233,9 @@ watch(() => currentRoute.params.locale, () => {
       </v-alert>
     </div>
 
-    <div class="d-flex align-center mx-3" :style="{ gap: smAndDown ? '0.5rem' : '1rem'}">
+    <div v-if="globalStore.uiConfig.toolbar_site_preview" class="d-flex align-center mx-3" :style="{ gap: smAndDown ? '0.5rem' : '1rem'}">
       <v-tooltip
-        v-if="windowWidth > 1000"
+        v-if="globalStore.uiConfig.toolbar_site_preview_refresh && windowWidth > 1000"
         text="Refresh Preview (ALT+R)"
         location="bottom"
       >
@@ -249,7 +251,7 @@ watch(() => currentRoute.params.locale, () => {
         </template>
       </v-tooltip>
       <v-btn-toggle
-        v-if="windowWidth > 1000"
+        v-if="globalStore.uiConfig.toolbar_site_preview_mobile && windowWidth > 1000"
         v-model="globalStore.admin.previewMode"
         group
         variant="text"
@@ -268,6 +270,7 @@ watch(() => currentRoute.params.locale, () => {
         </v-tooltip>
 
         <v-tooltip
+          v-if="globalStore.uiConfig.toolbar_site_preview_desktop"
           text="Desktop (CTRL+D)"
           location="bottom"
         >
@@ -279,7 +282,7 @@ watch(() => currentRoute.params.locale, () => {
         </v-tooltip>
       </v-btn-toggle>
       <v-tooltip
-        v-if="windowWidth > 1000"
+        v-if="globalStore.uiConfig.toolbar_site_preview_blank && windowWidth > 1000"
         text="Open site in new tab"
         location="bottom"
       >
@@ -297,7 +300,7 @@ watch(() => currentRoute.params.locale, () => {
       </v-tooltip>
 
       <LocaleSwitcher
-        v-if="showLocaleSwitcher && !smAndDown"
+        v-if="globalStore.uiConfig.toolbar_locale_selector && showLocaleSwitcher && !smAndDown"
         v-model="selectedLocale"
         :locales="locales"
         :dense="windowWidth < 1300"
@@ -315,13 +318,14 @@ watch(() => currentRoute.params.locale, () => {
         </template>
       </LocaleSwitcher>
 
-      <GoogleSignInButton v-if="!globalStore.session.loggedIn" />
+      <GoogleSignInButton v-if="globalStore.uiConfig.toolbar_login && !globalStore.session.loggedIn" />
 
       <SessionPanel
+        v-if="globalStore.uiConfig.toolbar_settings"
         :show-username="windowWidth > 1500"
         @logout="onLogout"
       >
-        <div v-if="showLocaleSwitcher && smAndDown" class="px-4 pt-2">
+        <div v-if="showLocaleSwitcher && smAndDown && globalStore.uiConfig.toolbar_locale_selector" class="px-4 pt-2">
           <LocaleSwitcher
             v-model="selectedLocale"
             :locales="locales"
@@ -341,13 +345,16 @@ watch(() => currentRoute.params.locale, () => {
           </LocaleSwitcher>
           <v-divider class="my-1 mt-4" />
         </div>
+        <template v-if="globalStore.uiConfig.toolbar_settings_edit_json">
+          <v-list-item
+            title="Edit JSON"
+            prepend-icon="mdi-code-json"
+            @click="onEditJson"
+          />
+          <v-divider class="my-1" />
+        </template>
         <v-list-item
-          title="Edit JSON"
-          prepend-icon="mdi-code-json"
-          @click="onEditJson"
-        />
-        <v-divider class="my-1" />
-        <v-list-item
+          v-if="globalStore.uiConfig.toolbar_settings_fetch_data"
           :disabled="userDataLoading || !canFetchUserData"
           :subtitle="!canFetchUserData ? 'Requires an endpoint' : ''"
           prepend-icon="mdi-monitor-arrow-down"
@@ -355,6 +362,7 @@ watch(() => currentRoute.params.locale, () => {
           @click="onFetchUserData"
         />
         <v-list-item
+          v-if="globalStore.uiConfig.toolbar_settings_download_data"
           :disabled="downloading || !canInteractWithServer"
           :subtitle="!canInteractWithServer ? 'Requires an endpoint' : ''"
           title="Download data"
@@ -362,6 +370,7 @@ watch(() => currentRoute.params.locale, () => {
           @click="downloadUserData"
         />
         <v-list-item
+          v-if="globalStore.uiConfig.toolbar_settings_mirate_data"
           :disabled="migrating || !canInteractWithServer"
           :subtitle="!canInteractWithServer ? 'Requires an endpoint' : ''"
           title="Migrate data"
@@ -369,17 +378,20 @@ watch(() => currentRoute.params.locale, () => {
           @click="onMigrateData"
         />
         <v-list-item
+          v-if="globalStore.uiConfig.toolbar_settings_clear_data"
           :disabled="userDataLoading"
           prepend-icon="mdi-close-box-outline"
           title="Clear data"
           @click="onClearUserData"
         />
-        <v-divider class="my-1" />
-        <v-list-item
-          prepend-icon="mdi-tune"
-          title="Settings"
-          @click="onUserSettings"
-        />
+        <template v-if="globalStore.uiConfig.toolbar_settings_settings">
+          <v-divider class="my-1" />
+          <v-list-item
+            prepend-icon="mdi-tune"
+            title="Settings"
+            @click="onUserSettings"
+          />
+        </template>
       </SessionPanel>
     </div>
   </v-app-bar>
