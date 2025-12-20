@@ -110,76 +110,87 @@ watch(() => serverSettings.version, () => {
       text="It appears that you have not created a section in your YAML template yet. Please ensure to define the necessary sections to avoid errors in your configuration."
     />
     <v-list v-else v-model="selectedSectionKey" nav>
-      <v-list-subheader title="Sections" />
-      <template
-        v-for="(section, sectionKey) in structureData.sections"
-        :key="sectionKey"
-      >
-        <v-divider v-if="sectionKey === 'separator'" class="my-2" />
-        <v-list-item
-          v-else
-          :value="sectionKey"
-          :title="section.label || sectionKey"
-          :active="selectedSectionKey === sectionKey"
-          :prepend-icon="section.icon"
-          color="primary"
-          @click="goToSection(sectionKey.toString())"
+      <template v-if="globalStore.uiConfig.sidebar_sections">
+        <v-list-subheader title="Sections" />
+        <template
+          v-for="(section, sectionKey) in structureData.sections"
+          :key="sectionKey"
         >
-          <template v-if="!userDataLoading" #append>
-            <v-tooltip
-              v-if="getErrors(section, sectionKey).general.length > 0 || getErrors(section, sectionKey).currentI18n.length > 0"
-              :text="getErrorMsg(section, sectionKey) || ''"
-              location="right"
-              max-width="400"
-            >
-              <template #activator="{ props }">
-                <v-icon v-bind="props" icon="mdi-asterisk" color="warning" />
-              </template>
-            </v-tooltip>
-            <v-tooltip
-              v-else-if="getErrors(section, sectionKey).i18n.length > 0"
-              :text="getErrorMsg(section, sectionKey) || ''"
-              location="right"
-              max-width="400"
-            >
-              <template #activator="{ props }">
-                <v-icon v-bind="props" icon="mdi-asterisk" color="warning" />
-              </template>
-            </v-tooltip>
-          </template>
-        </v-list-item>
+          <v-divider v-if="sectionKey === 'separator'" class="my-2" />
+          <v-list-item
+            v-else
+            :value="sectionKey"
+            :title="section.label || sectionKey"
+            :active="selectedSectionKey === sectionKey"
+            :prepend-icon="section.icon"
+            color="primary"
+            @click="goToSection(sectionKey.toString())"
+          >
+            <template v-if="!userDataLoading" #append>
+              <v-tooltip
+                v-if="getErrors(section, sectionKey).general.length > 0 || getErrors(section, sectionKey).currentI18n.length > 0"
+                :text="getErrorMsg(section, sectionKey) || ''"
+                location="right"
+                max-width="400"
+              >
+                <template #activator="{ props }">
+                  <v-icon v-bind="props" icon="mdi-asterisk" color="warning" />
+                </template>
+              </v-tooltip>
+              <v-tooltip
+                v-else-if="getErrors(section, sectionKey).i18n.length > 0"
+                :text="getErrorMsg(section, sectionKey) || ''"
+                location="right"
+                max-width="400"
+              >
+                <template #activator="{ props }">
+                  <v-icon v-bind="props" icon="mdi-asterisk" color="warning" />
+                </template>
+              </v-tooltip>
+            </template>
+          </v-list-item>
+        </template>
       </template>
 
-      <v-list-subheader title="Tools" />
-      <v-list-item
-        title="File Manager"
-        color="primary"
-        subtitle="Organize Your Files"
-        prepend-icon="mdi-file-cabinet"
-        @click="onFileManagerClick"
-      />
-      <v-expand-transition>
-        <div v-if="globalStore.admin.structure && canInteractWithServer">
-          <v-list-subheader title="Advanced details" />
-          <v-list-item
-            title="Hash"
-            :subtitle="lastDetails.hash || 'Loading...'"
-          />
-          <v-list-item
-            title="Server version"
-            :subtitle="lastDetails.version || 'Loading...'"
-          />
-          <v-list-item
-            title="Upload max size"
-            :subtitle="lastDetails.uploadMaxSize || 'Loading...'"
-          />
-        </div>
-      </v-expand-transition>
+      <template v-if="globalStore.uiConfig.sidebar_tools">
+        <v-list-subheader title="Tools" />
+        <v-list-item
+          v-if="globalStore.uiConfig.sidebar_tools_file_manager"
+          title="File Manager"
+          color="primary"
+          subtitle="Organize Your Files"
+          prepend-icon="mdi-file-cabinet"
+          @click="onFileManagerClick"
+        />
+        <v-expand-transition>
+          <div v-if="globalStore.uiConfig.sidebar_advanced && globalStore.admin.structure && canInteractWithServer">
+            <v-list-subheader title="Advanced details" />
+            <v-list-item
+              v-if="globalStore.uiConfig.sidebar_advanced_hash"
+              title="Hash"
+              :subtitle="lastDetails.hash || 'Loading...'"
+            />
+            <v-list-item
+              v-if="globalStore.uiConfig.sidebar_advanced_server"
+              title="Server version"
+              :subtitle="lastDetails.version || 'Loading...'"
+            />
+            <v-list-item
+              v-if="globalStore.uiConfig.sidebar_advanced_upload"
+              title="Upload max size"
+              :subtitle="lastDetails.uploadMaxSize || 'Loading...'"
+            />
+          </div>
+        </v-expand-transition>
+      </template>
     </v-list>
     <template #append>
-      <v-divider />
+      <v-divider
+        v-if="globalStore.uiConfig.sidebar_tutorial || globalStore.uiConfig.sidebar_github"
+      />
       <div class="pa-3 d-flex flex-column" style="gap: 0.5rem">
         <v-btn
+          v-if="globalStore.uiConfig.sidebar_tutorial"
           href="https://www.youtube.com/@jsonms"
           target="_blank"
           color="secondary"
@@ -190,6 +201,7 @@ watch(() => serverSettings.version, () => {
           Tutorials
         </v-btn>
         <v-btn
+          v-if="globalStore.uiConfig.sidebar_github"
           prepend-icon="mdi-github"
           href="https://github.com/JSON-ms"
           target="_blank"
@@ -199,7 +211,7 @@ watch(() => serverSettings.version, () => {
           Github
         </v-btn>
       </div>
-      <v-footer color="footer">
+      <v-footer v-if="globalStore.uiConfig.sidebar_footer" color="footer">
         <small style="font-size: 0.6rem">JSON.ms v{{ version }}. Licensed under the BSD-3-Clause.</small>
       </v-footer>
     </template>

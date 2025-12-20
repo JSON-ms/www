@@ -66,8 +66,72 @@ export interface IFile {
   }
 }
 
+export interface IUIConfig {
+  toolbar: boolean
+  toolbar_menu: boolean
+  toolbar_logo: boolean
+  toolbar_project_selector: boolean
+  toolbar_project_selector_new: boolean
+  toolbar_project_selector_delete: boolean
+  toolbar_advanced: boolean
+  toolbar_site_preview: boolean
+  toolbar_site_preview_refresh: boolean
+  toolbar_site_preview_mobile: boolean
+  toolbar_site_preview_desktop: boolean
+  toolbar_site_preview_blank: boolean
+  toolbar_trigger_menu: boolean
+  toolbar_info: boolean
+  toolbar_locale_selector: boolean
+  toolbar_login: boolean
+  toolbar_settings: boolean
+  toolbar_settings_edit_json: boolean
+  toolbar_settings_fetch_data: boolean
+  toolbar_settings_download_data: boolean
+  toolbar_settings_migrate_data: boolean
+  toolbar_settings_clear_data: boolean
+  toolbar_settings_settings: boolean
+  toolbar_settings_logout: boolean
+
+  sidebar: boolean
+  sidebar_sections: boolean
+  sidebar_tools: boolean
+  sidebar_tools_file_manager: boolean
+  sidebar_advanced: boolean
+  sidebar_advanced_hash: boolean
+  sidebar_advanced_server: boolean
+  sidebar_advanced_upload: boolean
+  sidebar_tutorial: boolean
+  sidebar_github: boolean
+  sidebar_footer: boolean
+
+  structure: boolean
+  structure_menu: boolean
+  structure_menu_structure: boolean
+  structure_menu_blueprints: boolean
+  structure_menu_settings: boolean
+  structure_menu_integration: boolean
+  structure_trigger_menu: boolean
+  structure_settings: boolean
+  structure_settings_endpoint: boolean
+  structure_settings_permissions_structure: boolean
+  structure_settings_permissions_admin: boolean
+  structure_footer: boolean
+  structure_footer_local_sync: boolean
+  structure_footer_save: boolean
+
+  site_preview: boolean
+
+  data: boolean
+  data_footer: boolean
+  data_footer_set_as_default: boolean
+  data_footer_sync_local: boolean
+  data_footer_sync_endpoint: boolean
+
+  documentation: boolean
+}
+
 export interface IUserSettings {
-  appearanceDarkMode: boolean,
+  appearanceDarkMode: boolean
   editorFontSize: number
   editorShowPrintMargin: boolean
   editorTabSize: number

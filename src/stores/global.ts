@@ -8,10 +8,78 @@ import type {
   IStructure,
   IFileManager,
   IFile,
-  IUserSettings
+  IUserSettings, IUIConfig
 } from '@/interfaces';
 
-const defaultUserSettings: IUserSettings = {
+const defaultUIConfig: IUIConfig = {
+  toolbar: true,
+  toolbar_menu: true,
+  toolbar_logo: true,
+  toolbar_project_selector: true,
+  toolbar_project_selector_new: true,
+  toolbar_project_selector_delete: true,
+  toolbar_advanced: true,
+  toolbar_site_preview: true,
+  toolbar_site_preview_refresh: true,
+  toolbar_site_preview_mobile: true,
+  toolbar_site_preview_desktop: true,
+  toolbar_site_preview_blank: true,
+  toolbar_trigger_menu: true,
+  toolbar_info: true,
+  toolbar_locale_selector: true,
+  toolbar_login: true,
+  toolbar_settings: true,
+  toolbar_settings_edit_json: true,
+  toolbar_settings_fetch_data: true,
+  toolbar_settings_download_data: true,
+  toolbar_settings_migrate_data: true,
+  toolbar_settings_clear_data: true,
+  toolbar_settings_settings: true,
+  toolbar_settings_logout: true,
+
+  sidebar: true,
+  sidebar_sections: true,
+  sidebar_tools: true,
+  sidebar_tools_file_manager: true,
+  sidebar_advanced: true,
+  sidebar_advanced_hash: true,
+  sidebar_advanced_server: true,
+  sidebar_advanced_upload: true,
+  sidebar_tutorial: true,
+  sidebar_github: true,
+  sidebar_footer: true,
+
+  structure: true,
+  structure_menu: true,
+  structure_menu_structure: true,
+  structure_menu_blueprints: true,
+  structure_menu_settings: true,
+  structure_menu_integration: true,
+  structure_trigger_menu: true,
+  structure_settings: true,
+  structure_settings_endpoint: true,
+  structure_settings_permissions_structure: true,
+  structure_settings_permissions_admin: true,
+  structure_footer: true,
+  structure_footer_local_sync: true,
+  structure_footer_save: true,
+
+  site_preview: true,
+
+  data: true,
+  data_footer: true,
+  data_footer_set_as_default: true,
+  data_footer_sync_local: true,
+  data_footer_sync_endpoint: true,
+
+  documentation: true,
+}
+
+const envForceUserSettings = import.meta.env.VITE_FORCE_USER_SETTINGS;
+const envDefaultUserSettings = import.meta.env.VITE_DEFAULT_USER_SETTINGS;
+
+const forceUserSettings: IUserSettings = envForceUserSettings && JSON.parse(envForceUserSettings || '{}') || {};
+const defaultUserSettings: IUserSettings = Object.assign({}, {
   appearanceDarkMode: false,
   editorFontSize: 16,
   editorLiveUpdate: true,
@@ -36,7 +104,7 @@ const defaultUserSettings: IUserSettings = {
   blueprintsWriteToStructure: true,
   blueprintsWriteToTypings: true,
   blueprintsWriteToSettings: true,
-}
+}, envDefaultUserSettings && JSON.parse(envDefaultUserSettings || '{}'));
 
 export const useGlobalStore = defineStore('global', {
   state: (): {
@@ -47,6 +115,7 @@ export const useGlobalStore = defineStore('global', {
     prompt: IPrompt,
     session: ISession,
     fileManager: IFileManager,
+    uiConfig: IUIConfig,
     userSettings: {
       visible: boolean,
       data: IUserSettings
@@ -67,6 +136,7 @@ export const useGlobalStore = defineStore('global', {
       body: '',
       visible: false,
     },
+    uiConfig: structuredClone(defaultUIConfig),
     admin: {
       drawer: window.innerWidth >= 1300,
       structure: window.innerWidth >= 1400,
@@ -140,6 +210,19 @@ export const useGlobalStore = defineStore('global', {
     setSession(session: ISession) {
       this.session = session;
     },
+    initUIConfig() {
+      const keys = (import.meta.env.VITE_UI_DISABLE || '')
+          .split(',')
+          .filter(Boolean)
+
+      const overrides: Partial<IUIConfig> = {}
+
+      for (const key of keys) {
+        overrides[key.replaceAll('.', '_') as keyof IUIConfig] = false
+      }
+
+      Object.assign(this.uiConfig, overrides)
+    },
     showFileManager(
       selected: IFile[] = [],
       canSelect = false,
@@ -160,6 +243,10 @@ export const useGlobalStore = defineStore('global', {
         if (jsonStr) {
           const json = JSON.parse(jsonStr);
           this.applyUserSettingsData(json);
+          Object.keys(forceUserSettings).forEach((key) => {
+            // @ts-expect-error Injected from .env file
+            this.userSettings.data[key] = forceUserSettings[key];
+          })
         }
       } catch (e: any) {
         console.warn('Unable to fetch user settings from local storage.', e)
@@ -182,6 +269,10 @@ export const useGlobalStore = defineStore('global', {
     },
     setUserSettings(userSettings: IUserSettings) {
       this.applyUserSettingsData(userSettings);
+      Object.keys(forceUserSettings).forEach((key) => {
+        // @ts-expect-error Injected from .env file
+        this.userSettings.data[key] = forceUserSettings[key];
+      })
       localStorage.setItem('jsonms/global:user-settings', JSON.stringify(userSettings));
     },
     addStructure(item: IStructure) {

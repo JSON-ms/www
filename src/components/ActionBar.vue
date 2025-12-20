@@ -192,17 +192,20 @@ const reset = () => {
       </template>
       <v-list>
         <v-list-item
+          v-if="globalStore.uiConfig.data_footer_set_as_default"
           title="Set as default values"
           prepend-icon="mdi-text-box-check-outline"
           @click="onSetAsDefaultValues"
         />
         <v-list-item
+          v-if="globalStore.uiConfig.data_footer_sync_local"
           title="Sync with local file only"
           prepend-icon="mdi-sync-circle"
           :disabled="!canInteractWithSyncedFolder || !canSave"
           @click="onSyncWithLocalOnly"
         />
         <v-list-item
+          v-if="globalStore.uiConfig.data_footer_sync_endpoint"
           title="Sync with endpoint only"
           prepend-icon="mdi-webhook"
           :disabled="!canInteractWithServer || !canSave"

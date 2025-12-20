@@ -76,7 +76,7 @@ const sections = ref([{
   title: "Structure",
   subtitle: "YAML schema and layout",
   disabledSubtitle: (): string => 'Must be logged in',
-  disabled: () => false
+  disabled: () => false,
 }, {
   key: 'blueprints',
   icon: 'mdi-ruler-square',
@@ -107,6 +107,10 @@ const sections = ref([{
   },
   disabled: () => !globalStore.session.loggedIn || !structure.value.endpoint
 }])
+const filteredSections = computed((): any[] => sections.value.filter(section => {
+  // @ts-expect-error Values are hardcoded... not an issue
+  return globalStore.uiConfig['structure_menu_' + section.key] as boolean;
+}));
 
 let parseInterval: any;
 let showParseInterval: any;
@@ -521,7 +525,7 @@ watch(() => globalStore.userSettings.data, () => {
     text="Access to this template has not been granted by the owner."
   />
   <div v-else class="d-flex flex-column">
-    <div class="d-flex align-center pa-1" style="gap: 1rem">
+    <div v-if="globalStore.uiConfig.structure_menu" class="d-flex align-center pa-1" style="gap: 1rem">
       <v-menu v-model="sectionMenu" contained :close-on-content-click="false">
         <template #activator="{ props }">
           <v-btn v-bind="props">
@@ -532,7 +536,7 @@ watch(() => globalStore.userSettings.data, () => {
         </template>
         <v-list color="primary">
           <v-list-item
-            v-for="section in sections"
+            v-for="section in filteredSections"
             :key="section.key"
             :prepend-icon="section.disabled() ? 'mdi-alert' : section.icon"
             :title="section.title"
@@ -600,8 +604,8 @@ watch(() => globalStore.userSettings.data, () => {
         </div>
       </div>
     </div>
-    <v-tabs-window v-model="tab" style="flex: 1" class="fill-height">
-      <v-tabs-window-item value="structure" class="fill-height">
+    <v-tabs-window v-if="globalStore.uiConfig.structure_menu" v-model="tab" style="flex: 1" class="fill-height">
+      <v-tabs-window-item v-if="globalStore.uiConfig.structure_menu_structure" value="structure" class="fill-height">
         <div class="d-flex flex-column align-center pr-1 fill-height">
           <div class="w-100" style="flex: 1">
             <v-ace-editor
@@ -621,8 +625,9 @@ watch(() => globalStore.userSettings.data, () => {
               @blur="onBlur"
             />
           </div>
-          <div class="pa-2 d-flex w-100" style="flex: 0; gap: 0.5rem">
+          <div v-if="globalStore.uiConfig.structure_footer" class="pa-2 d-flex w-100" style="flex: 0; gap: 0.5rem">
             <v-tooltip
+              v-if="globalStore.uiConfig.structure_footer_local_sync"
               text="Toggle local folder synchronization"
               location="bottom"
             >
@@ -655,6 +660,7 @@ watch(() => globalStore.userSettings.data, () => {
             <v-spacer />
             <div class="d-flex justify-end" style="gap: 0.5rem">
               <TriggerMenu
+                v-if="globalStore.uiConfig.structure_trigger_menu"
                 :model-value="structureData"
                 :structure="structure"
                 :user-data="userData"
@@ -662,6 +668,7 @@ watch(() => globalStore.userSettings.data, () => {
                 size="small"
               />
               <v-tooltip
+                v-if="globalStore.uiConfig.structure_footer_save"
                 text="Save (CTRL+S)"
                 location="bottom"
               >
@@ -686,7 +693,7 @@ watch(() => globalStore.userSettings.data, () => {
           </div>
         </div>
       </v-tabs-window-item>
-      <v-tabs-window-item value="blueprints" class="fill-height">
+      <v-tabs-window-item v-if="globalStore.uiConfig.structure_menu_blueprints" value="blueprints" class="fill-height">
         <div
           :class="['d-flex fill-height', {
             'flex-column': !columns
@@ -726,7 +733,7 @@ watch(() => globalStore.userSettings.data, () => {
           </div>
         </div>
       </v-tabs-window-item>
-      <v-tabs-window-item value="settings" class="fill-height">
+      <v-tabs-window-item v-if="globalStore.uiConfig.structure_menu_settings" value="settings" class="fill-height">
         <div class="d-flex flex-column overflow-auto h-100" style="max-height: calc(100vh - 109px)">
           <Settings
             v-model="structure"
@@ -735,7 +742,7 @@ watch(() => globalStore.userSettings.data, () => {
           />
         </div>
       </v-tabs-window-item>
-      <v-tabs-window-item value="integration" class="fill-height">
+      <v-tabs-window-item v-if="globalStore.uiConfig.structure_menu_integration" value="integration" class="fill-height">
         <div class="d-flex flex-column overflow-auto h-100" style="max-height: calc(100vh - 109px)">
           <Integration
             v-model="structure"
@@ -760,7 +767,7 @@ watch(() => globalStore.userSettings.data, () => {
 </style>
 
 <style scoped lang="scss">
-.v-window ::v-deep .v-window__container {
+.v-window :deep(.v-window__container) {
   height: 100% !important;
 }
 .annotation-warning {

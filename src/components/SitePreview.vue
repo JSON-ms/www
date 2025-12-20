@@ -269,7 +269,7 @@ defineExpose({
 .editor-card {
   transition: height 300ms ease;
 }
-.site-preview-drawer ::v-deep .v-navigation-drawer__content {
+.site-preview-drawer :deep(.v-navigation-drawer__content) {
   overflow: hidden !important;
 }
 </style>
