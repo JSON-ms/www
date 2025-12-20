@@ -281,10 +281,9 @@ export function useUserData() {
     })
   }
 
-  const cleanUserData = () => {
+  const cleanUserData = (): any => {
     const parsedStructure = getParsedStructureData(modelStore.structure);
-    const data = getParsedUserData(parsedStructure, modelStore.userData, true);
-    setUserData(data, true);
+    return getParsedUserData(parsedStructure, modelStore.userData, true);
   }
 
   const setUserData = (data: any, setOriginal = false) => {

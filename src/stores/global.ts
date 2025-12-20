@@ -73,6 +73,7 @@ export const useGlobalStore = defineStore('global', {
     userSettings: {
       visible: false,
       data: {
+        appearanceDarkMode: false,
         editorFontSize: 16,
         editorLiveUpdate: true,
         editorUpdateTimeout: 1000,

@@ -67,6 +67,7 @@ export interface IFile {
 }
 
 export interface IUserSettings {
+  appearanceDarkMode: boolean,
   editorFontSize: number
   editorShowPrintMargin: boolean
   editorTabSize: number

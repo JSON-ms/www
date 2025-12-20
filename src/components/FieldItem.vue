@@ -922,4 +922,16 @@ watch(() => field.collapsed, () => {
 .handle {
    cursor: grabbing;
  }
+.v-theme--dark {
+  .CodeMirror {
+    background-color: rgb(var(--v-theme-sheet));
+    color: inherit;
+  }
+  .CodeMirror-cursor {
+    border-left: white solid 1px;
+  }
+  .editor-toolbar button:hover {
+    color: black;
+  }
+}
 </style>

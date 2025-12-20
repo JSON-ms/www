@@ -12,7 +12,7 @@ import {useGlobalStore} from '@/stores/global';
 import {useTypings} from "@/composables/typings";
 import {useModelStore} from "@/stores/model";
 import {useSyncing} from "@/composables/syncing";
-import {useUserData} from "@/composables/user-data";
+import {LineCounter, parseDocument} from "yaml";
 // import yaml from 'js-yaml';
 
 const emit = defineEmits(['save', 'create', 'change', 'focus', 'blur']);
@@ -29,6 +29,13 @@ const { isFolderSynced, askToSyncFolder, unSyncFolder, lastStateTimestamp } = us
 const showParsingDelay = ref(false);
 const progressBarValue = ref(0);
 const progressBarCompleted = ref(false);
+const animateAnnotationWarning = ref(false);
+const annotations: Ref<{
+  row: number
+  column: number
+  text: string
+  type: string
+}[]> = ref([]);
 const globalStore = useGlobalStore();
 const structureEditor: Ref<VAceEditorInstance | null> = ref(null);
 const blueprintEditorTypings: Ref<VAceEditorInstance | null> = ref(null);
@@ -111,7 +118,10 @@ const value = computed({
   set(value: string) {
     modelStore.setTemporaryContent(value);
     if (globalStore.userSettings.data.editorLiveUpdate) {
-      emit('change', value);
+      printAnnotations(value);
+      if (annotations.value.length === 0) {
+        emit('change', value);
+      }
     } else {
       clearInterval(parseInterval);
       clearInterval(showParseInterval);
@@ -124,7 +134,10 @@ const value = computed({
       parseValueInterval = setTimeout(() => progressBarValue.value = 100, 100);
 
       parseInterval = setTimeout(() => {
-        emit('change', value);
+        printAnnotations(value);
+        if (annotations.value.length === 0) {
+          emit('change', value);
+        }
         progressBarCompleted.value = true;
         setTimeout(() => showParsingDelay.value = true);
         setTimeout(() => {
@@ -177,21 +190,60 @@ const onBlur = () => {
   emit('blur');
 }
 
+const printAnnotations = (content: string) => {
+  const instance = structureEditor.value?.getAceInstance();
+  if (instance) {
+    animateAnnotationWarning.value = false;
+    annotations.value = [];
+    const lineCounter = new LineCounter();
+    const doc = parseDocument(content, {lineCounter});
+    doc.errors.forEach(error => {
+      const line = error.linePos?.[0].line;
+      if (line) {
+        annotations.value.push({
+          row: line - 1,
+          column: 0,
+          text: error.message,
+          type: "error"
+        });
+      }
+    })
+    doc.warnings.forEach(error => {
+      const line = error.linePos?.[0].line;
+      if (line) {
+        annotations.value.push({
+          row: line - 1,
+          column: 0,
+          text: error.message,
+          type: "warning"
+        });
+      }
+    })
+    instance.session.setAnnotations(annotations.value);
+
+    if (annotations.value.length > 0) {
+      animateAnnotationWarning.value = true;
+      setTimeout(() => {
+        animateAnnotationWarning.value = false;
+      }, 200);
+    }
+  }
+}
+
+const goToNextAnnotation = () => {
+  const instance = structureEditor.value?.getAceInstance();
+  if (instance && annotations.value.length > 0) {
+    instance.renderer.scrollToLine(annotations.value[0].row, false, true);
+  }
+}
+
 const scrollToSection = (section: string) => {
   const instance = structureEditor.value?.getAceInstance();
   if (instance) {
-    const annotations = [];
     const line = findNeedleInString(structure.value.content, '  ' + section + ':');
     if (line) {
       instance.renderer.scrollToLine(line - 1, false, true);
-      annotations.push({
-        row: line - 1,
-        column: 0,
-        text: "Current section",
-        type: "info"
-      });
     }
-    instance.session.setAnnotations(annotations);
   }
 }
 
@@ -257,6 +309,7 @@ const tryToAddCommands = () => {
 onMounted(() => {
   tryToAddCommands();
   onChange();
+  printAnnotations(structure.value.content);
 })
 onBeforeUnmount(() => {
   // editor.value?.destroy();
@@ -356,7 +409,7 @@ defineExpose({
 
 function onChange() {
   if (structureEditor.value) {
-//     updateAnnotations(editor.value?.getAceInstance());
+
   }
 }
 
@@ -435,6 +488,9 @@ const structureOptions = computed(() => {
   return { ...options.value, tabSize: 2 };
 });
 
+watch(() => structure.value.hash, () => {
+  printAnnotations(structure.value.content);
+});
 watch(() => globalStore.userSettings.data, () => {
   options.value.fontSize = globalStore.userSettings.data.editorFontSize;
   options.value.tabSize = globalStore.userSettings.data.editorTabSize;
@@ -487,9 +543,33 @@ watch(() => globalStore.userSettings.data, () => {
           />
         </v-list>
       </v-menu>
+
       <v-spacer />
+
       <div class="d-flex align-center pr-1" style="gap: 0.5rem">
+        <v-tooltip
+          v-if="annotations.length > 0"
+          text="There are errors in your YAML structure"
+          location="bottom"
+          color="error"
+        >
+          <template #activator="{ props }">
+            <v-btn
+              v-bind="props"
+              :class="['annotation-warning', {
+                animate: animateAnnotationWarning
+              }]"
+              size="small"
+              icon
+              @click="goToNextAnnotation"
+            >
+              <v-icon color="error">mdi-alert</v-icon>
+            </v-btn>
+          </template>
+        </v-tooltip>
+
         <slot name="header.end" />
+
         <div
           v-if="!globalStore.userSettings.data.editorLiveUpdate"
           :style="{
@@ -499,8 +579,8 @@ watch(() => globalStore.userSettings.data, () => {
         >
           <v-icon
             v-if="progressBarCompleted"
-            icon="mdi-check-circle"
-            color="secondary"
+            :icon="annotations.length === 0 ? 'mdi-check-circle' : 'mdi-alert-circle'"
+            :color="annotations.length === 0 ? 'secondary' : 'error'"
             size="16"
             class="position-absolute"
             style="top: 1px"
@@ -508,7 +588,7 @@ watch(() => globalStore.userSettings.data, () => {
           <v-progress-circular
             v-if="showParsingDelay"
             :model-value="progressBarValue"
-            color="secondary"
+            :color="annotations.length === 0 ? 'secondary' : 'error'"
             size="16"
             width="2"
           />
@@ -683,5 +763,21 @@ watch(() => globalStore.userSettings.data, () => {
 <style scoped lang="scss">
 .v-window ::v-deep .v-window__container {
   height: 100% !important;
+}
+.annotation-warning {
+  &.animate {
+    animation: pulse-once 200ms ease-out normal;
+  }
+}
+@keyframes pulse-once {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.5);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 </style>

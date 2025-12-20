@@ -47,8 +47,8 @@ const onCleanUserData = () => {
     btnIcon: 'mdi-vacuum-outline',
     btnColor: 'warning',
     callback: () => new Promise(resolve => {
-      cleanUserData()
-      emit('clean');
+      const data = cleanUserData()
+      emit('clean', data);
       resolve();
     })
   })
