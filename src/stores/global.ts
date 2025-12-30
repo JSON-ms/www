@@ -8,7 +8,7 @@ import type {
   IStructure,
   IFileManager,
   IFile,
-  IUserSettings, IUIConfig
+  IUserSettings, IUIConfig, IBottomSheet
 } from '@/interfaces';
 
 const defaultUIConfig: IUIConfig = {
@@ -46,6 +46,7 @@ const defaultUIConfig: IUIConfig = {
   sidebar_advanced_server: true,
   sidebar_advanced_upload: true,
   sidebar_tutorial: true,
+  sidebar_theme: true,
   sidebar_github: true,
   sidebar_footer: true,
 
@@ -109,6 +110,7 @@ const defaultUserSettings: IUserSettings = Object.assign({}, {
 export const useGlobalStore = defineStore('global', {
   state: (): {
     theme: 'dark' | 'light',
+    bottomSheet: IBottomSheet,
     admin: IAdmin,
     snack: ISnack,
     error: IError,
@@ -122,6 +124,10 @@ export const useGlobalStore = defineStore('global', {
     },
   } => ({
     theme: 'light',
+    bottomSheet: {
+      visible: false,
+      text: '',
+    },
     prompt: {
       body: '',
       visible: false,
@@ -194,6 +200,12 @@ export const useGlobalStore = defineStore('global', {
         };
       }
       throw error;
+    },
+    showBottomSheet(text: string, color: string | null = null, icon: string | null = null, loading = false) {
+      Object.assign(this.bottomSheet, { visible: true, text, color, icon, loading });
+    },
+    hideBottomSheet() {
+      this.bottomSheet.visible = false;
     },
     setAdmin(admin: Partial<IAdmin>) {
       Object.assign(this.admin, admin);

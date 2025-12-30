@@ -2,6 +2,9 @@
 import {ref} from "vue";
 
 const src = defineModel<string>('src', { required: true });
+const { type } = defineProps<{
+  type?: string,
+}>();
 
 const hasError = ref(false);
 const onError = () => {
@@ -21,11 +24,18 @@ const onError = () => {
     </div>
     <video
       v-else
+      v-bind="$attrs"
       :src="src"
       width="100%"
       disablePictureInPicture
       @error="onError"
-    />
+    >
+      <source
+        :src="src"
+        :type="type"
+      >
+      Your browser does not support the video tag.
+    </video>
   </v-responsive>
 </template>
 

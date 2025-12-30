@@ -99,19 +99,23 @@ const showActionBar = computed((): boolean => {
   return ['data'].includes((tab.value || '').toString());
 });
 
-const bottomSheetData = ref<{
-  text: string,
-  icon?: string,
-  color?: string,
-  loading?: boolean,
-}>({
-  text: '',
-});
 const showBottomSheet = computed((): boolean => {
-  return downloading.value || userDataLoading.value || structureStates.value.saved;
+  return globalStore.bottomSheet.visible || structureStates.value.saved;
 });
-watch(() => downloading.value, () => bottomSheetData.value = { text: 'Downloading files and generating ZIP file. Please wait...', loading: true });
-watch(() => userDataLoading.value, () => bottomSheetData.value = { text: 'Fetching user data. Please wait...', loading: true });
+watch(() => downloading.value, () => {
+  if (downloading.value) {
+    globalStore.showBottomSheet('Downloading files and generating ZIP file. Please wait...', null, null, true)
+  } else {
+    globalStore.hideBottomSheet();
+  }
+});
+watch(() => userDataLoading.value, () => {
+  if (userDataLoading.value) {
+    globalStore.showBottomSheet('Fetching user data. Please wait...', null, null, true)
+  } else {
+    globalStore.hideBottomSheet();
+  }
+});
 
 const showEditor = computed({
   get(): boolean {
@@ -168,7 +172,7 @@ const onSaveStructure = () => {
   if (canSaveStructure.value) {
     modelStore.structure.content = modelStore.temporaryContent || modelStore.structure.content;
     saveStructure().then(() => {
-      bottomSheetData.value = { text: 'Structure saved!', color: 'success', icon: 'mdi-check' };
+      globalStore.showBottomSheet('Structure saved!', 'success', 'mdi-check');
       syncToFolder(modelStore.structure, ['structure', 'default', 'typings', 'settings', 'index']);
       const newModel = modelStore.structure;
       globalStore.addStructure(newModel);
@@ -395,7 +399,7 @@ if (globalStore.session.loggedIn) {
     disable-resize-watcher
     disable-route-watcher
   >
-    <v-card class="w-100 fill-height d-flex flex-column" theme="dark" tile flat>
+    <v-card class="w-100 fill-height d-flex flex-column" theme="dark" :style="{ left: showEditor ? 0 : '-1px' }" tile flat>
       <StructureEditor
         ref="structureEditor"
         v-model="structure"
@@ -540,11 +544,11 @@ if (globalStore.session.loggedIn) {
   >
     <v-card theme="dark" style="margin: 0 auto">
       <template #prepend>
-        <v-progress-circular v-if="bottomSheetData.loading" color="primary" indeterminate class="mr-4" />
-        <v-icon v-else-if="bottomSheetData.icon" :color="bottomSheetData.color" :icon="bottomSheetData.icon" />
+        <v-progress-circular v-if="globalStore.bottomSheet.loading" color="primary" indeterminate class="mr-4" />
+        <v-icon v-else-if="globalStore.bottomSheet.icon" :color="globalStore.bottomSheet.color" :icon="globalStore.bottomSheet.icon" />
       </template>
       <template #item>
-        {{ bottomSheetData.text }}
+        {{ globalStore.bottomSheet.text }}
       </template>
     </v-card>
   </v-bottom-sheet>

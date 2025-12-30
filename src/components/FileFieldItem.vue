@@ -110,6 +110,7 @@ const onRemoveFile = (file: IFile) => {
         <VideoPlayer
           v-else-if="isVideo(file)"
           :src="src"
+          :type="file.meta.type"
           :aspect-ratio="(file.meta.width || 1) / (file.meta.height || 1)"
           :style="{ float: 'left', width: thumbnailSize(file).width + 'px', height: thumbnailSize(file).height + 'px' }"
           controls

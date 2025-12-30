@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useGlobalStore } from '@/stores/global';
-import { ref } from 'vue';
+import {computed, ref} from 'vue';
 import { Services } from '@/services';
 import {useModelStore} from '@/stores/model';
 
@@ -42,6 +42,12 @@ const logout = () => {
     })
   })
 }
+
+const userInitials = computed((): string => {
+  return globalStore.session.user?.name.trim().split(' ')
+      .map(part => part.substring(0, 1))
+      .join('').substring(0, 2) || '?';
+})
 </script>
 
 <template>
@@ -49,24 +55,25 @@ const logout = () => {
     <template #activator="{ props }">
       <v-btn v-bind="props" :icon="dense" height="40">
         <template v-if="globalStore.session.loggedIn">
-          <v-avatar size="32" color="primary">
-            <v-img
-              v-if="globalStore.session.user?.avatar"
-              :src="globalStore.session.user?.avatar"
-              alt="Avatar"
-            >
-              <template #placeholder>
-                <div class="d-flex align-center justify-center fill-height">
-                  <v-progress-circular
-                    color="surface"
-                    indeterminate
-                    size="16"
-                    width="1"
-                  />
-                </div>
-              </template>
-            </v-img>
-            <strong v-else>{{ globalStore.session.user?.name.substring(0, 1) }}</strong>
+          <v-avatar size="32" color="secondary">
+<!--            <v-img-->
+<!--              v-if="globalStore.session.user?.avatar"-->
+<!--              :src="globalStore.session.user?.avatar"-->
+<!--              alt="Avatar"-->
+<!--            >-->
+<!--              <template #placeholder>-->
+<!--                <div class="d-flex align-center justify-center fill-height">-->
+<!--                  <v-progress-circular-->
+<!--                    color="surface"-->
+<!--                    indeterminate-->
+<!--                    size="16"-->
+<!--                    width="1"-->
+<!--                  />-->
+<!--                </div>-->
+<!--              </template>-->
+<!--            </v-img>-->
+<!--            <strong v-else>{{ globalStore.session.user?.name.substring(0, 1) }}</strong>-->
+            <strong>{{ userInitials }}</strong>
           </v-avatar>
           <strong v-if="showUsername" class="ml-3">{{ globalStore.session.user?.name }}</strong>
         </template>

@@ -236,6 +236,7 @@ defineExpose({
               :user-data="userData"
               class="fill-height"
               columns
+              show-tabs
               @save="onSaveStructureContent"
               @create="onCreateStructure"
               @change="onStructureContentChange"
