@@ -219,18 +219,18 @@ watch(() => currentRoute.params.locale, () => {
         location="toolbar"
       />
 
-      <v-alert
-        v-if="globalStore.uiConfig.toolbar_info && !globalStore.session.loggedIn && windowWidth > 1700"
-        density="comfortable"
-        style="max-width: max-content"
-        variant="tonal"
-        type="info"
-        icon="mdi-information-outline"
-      >
-        <div class="text-truncate">
-          Free and open-source, with data securely hosted on your server.
-        </div>
-      </v-alert>
+<!--      <v-alert-->
+<!--        v-if="globalStore.uiConfig.toolbar_info && !globalStore.session.loggedIn && windowWidth > 1700"-->
+<!--        density="comfortable"-->
+<!--        style="max-width: max-content"-->
+<!--        variant="tonal"-->
+<!--        type="info"-->
+<!--        icon="mdi-information-outline"-->
+<!--      >-->
+<!--        <div class="text-truncate">-->
+<!--          Free and open-source, with data securely hosted on your server.-->
+<!--        </div>-->
+<!--      </v-alert>-->
     </div>
 
     <div v-if="globalStore.uiConfig.toolbar_site_preview" class="d-flex align-center mx-3" :style="{ gap: smAndDown ? '0.5rem' : '1rem'}">
