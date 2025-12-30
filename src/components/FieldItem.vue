@@ -158,18 +158,21 @@ const onCollapsableHeader = (item: any, index: number) => {
   let thumbnail: string | false = false;
   for (const key in fields.value) {
     const fieldItem = fields.value[key];
-    if (!title && ['string', 'i18n:string', 'i18n', 'date', 'i18n:date'].includes(fieldItem.type)) {
-      if (isFieldI18n(fieldItem)) {
-        title = item[key][locale];
-      } else {
-        title = item[key];
+    const path = fieldKey + `[${index}]`;
+    if (isFieldVisible(fieldItem, path)) {
+      if (!title && ['string', 'i18n:string', 'i18n', 'date', 'i18n:date'].includes(fieldItem.type)) {
+        if (isFieldI18n(fieldItem)) {
+          title = item[key][locale];
+        } else {
+          title = item[key];
+        }
       }
-    }
-    if (fieldItem.type === 'file' && typeof item[key] === 'object' && item[key] !== null && item[key].path && item[key].meta && item[key].meta.type.startsWith('image/')) {
-      thumbnail = serverSettings.publicUrl + item[key].path;
-    }
-    if (thumbnail && title) {
-      break;
+      if (fieldItem.type === 'file' && typeof item[key] === 'object' && item[key] !== null && item[key].path && item[key].meta && item[key].meta.type.startsWith('image/')) {
+        thumbnail = serverSettings.publicUrl + item[key].path;
+      }
+      if (thumbnail && title) {
+        break;
+      }
     }
   }
 
