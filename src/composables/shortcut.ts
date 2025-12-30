@@ -57,7 +57,7 @@ export function useShortcut(options: {
       }
     }
   }, {
-    keys: ['ctrl', 'q'],
+    keys: ['alt', 'q'],
     preventDefault: true,
     handler() {
       globalStore.setAdmin({

@@ -27,6 +27,14 @@ export interface IPrompt {
   cancelIcon?: string | undefined,
 }
 
+export interface IBottomSheet {
+  visible: boolean,
+  text: string,
+  icon?: string,
+  color?: string,
+  loading?: boolean,
+}
+
 export interface IAdmin {
   drawer: boolean,
   structure: boolean,
@@ -101,6 +109,7 @@ export interface IUIConfig {
   sidebar_advanced_server: boolean
   sidebar_advanced_upload: boolean
   sidebar_tutorial: boolean
+  sidebar_theme: boolean
   sidebar_github: boolean
   sidebar_footer: boolean
 

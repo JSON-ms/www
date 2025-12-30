@@ -615,7 +615,7 @@ export function useStructure() {
 
   const canSaveStructure = computed(() => {
     return !structureIsPristine.value
-      && !structureHasSettingsError.value
+      && !structureHasSettingsError.value;
   })
 
   const canDeleteStructure = computed((): boolean => {

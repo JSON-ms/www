@@ -27,7 +27,7 @@ const close = () => {
       src="https://www.youtube.com/embed/QbzHaJ3GeJM?si=HsQLg2_cXyt97vv1"
       title="JSON.ms Youtube Presentation"
       frameborder="0"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       referrerpolicy="strict-origin-when-cross-origin"
       allowfullscreen
     />

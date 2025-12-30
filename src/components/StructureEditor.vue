@@ -13,12 +13,14 @@ import {useTypings} from "@/composables/typings";
 import {useModelStore} from "@/stores/model";
 import {useSyncing} from "@/composables/syncing";
 import {LineCounter, parseDocument} from "yaml";
+import {copyToClipboard} from "@/utils";
 // import yaml from 'js-yaml';
 
 const emit = defineEmits(['save', 'create', 'change', 'focus', 'blur']);
 const structure = defineModel<IStructure>({ required: true });
-const { columns = false, userData } = defineProps<{
+const { columns = false, showTabs = false, userData } = defineProps<{
   columns?: boolean,
+  showTabs?: boolean,
   structureData: IStructureData,
   userData: any
 }>();
@@ -42,6 +44,8 @@ const blueprintEditorTypings: Ref<VAceEditorInstance | null> = ref(null);
 const blueprintEditorDefault: Ref<VAceEditorInstance | null> = ref(null);
 const blueprintTypings = ref('')
 const blueprintDefault = ref('')
+const disableTypings = ref(false)
+const disableDefaultObjects = ref(false)
 const blueprintLanguage = ref<'typescript'>('typescript')
 
 const sectionMenu = ref(false);
@@ -79,8 +83,8 @@ const sections = ref([{
   disabled: () => false,
 }, {
   key: 'blueprints',
-  icon: 'mdi-ruler-square',
-  title: "Blueprints",
+  icon: 'mdi-language-typescript',
+  title: "Typescript",
   subtitle: "TypeScript types and default data",
   disabledSubtitle: (): string => 'Must be logged in',
   disabled: () => false
@@ -192,6 +196,22 @@ const onFocus = () => {
 }
 const onBlur = () => {
   emit('blur');
+}
+
+const copy = (content: string, type: 'typings' | 'defaults') => {
+  switch (type) {
+    case 'typings': disableTypings.value = true; break;
+    case 'defaults': disableDefaultObjects.value = true; break;
+  }
+  copyToClipboard(content);
+  globalStore.showBottomSheet('Copied to clipboard!', null, 'mdi-clipboard-check-outline');
+  setTimeout(() => {
+    globalStore.hideBottomSheet();
+    switch (type) {
+      case 'typings': disableTypings.value = false; break;
+      case 'defaults': disableDefaultObjects.value = false; break;
+    }
+  }, 1000);
 }
 
 const printAnnotations = (content: string) => {
@@ -526,7 +546,16 @@ watch(() => globalStore.userSettings.data, () => {
   />
   <div v-else class="d-flex flex-column">
     <div v-if="globalStore.uiConfig.structure_menu" class="d-flex align-center pa-1" style="gap: 1rem">
-      <v-menu v-model="sectionMenu" contained :close-on-content-click="false">
+      <v-tabs v-if="showTabs" density="compact">
+        <v-tab
+          v-for="section in filteredSections"
+          :key="section.key"
+          :prepend-icon="section.disabled() ? 'mdi-alert' : section.icon"
+          :text="section.title"
+          @click="setSection(section)"
+        />
+      </v-tabs>
+      <v-menu v-else v-model="sectionMenu" contained :close-on-content-click="false">
         <template #activator="{ props }">
           <v-btn v-bind="props">
             <v-icon :icon="selectedSection?.icon" start />
@@ -700,11 +729,19 @@ watch(() => globalStore.userSettings.data, () => {
           }]"
         >
           <div v-if="globalStore.userSettings.data.blueprintsIncludeTypings" class="d-flex flex-column" style="flex: 1">
-            <v-alert tile class="py-4 text-caption">
+            <div class="d-flex justify-space-between bg-sheet pa-2 text-caption">
               <div class="text-truncate">
                 <strong>Readonly:</strong> Typings are generated automatically.
               </div>
-            </v-alert>
+              <v-btn
+                :disabled="disableTypings"
+                size="x-small"
+                variant="tonal"
+                @click="() => copy(blueprintTypings, 'typings')"
+              >
+                Copy
+              </v-btn>
+            </div>
             <v-ace-editor
               ref="blueprintEditorTypings"
               v-model:value="blueprintTypings"
@@ -716,11 +753,19 @@ watch(() => globalStore.userSettings.data, () => {
             />
           </div>
           <div class="d-flex flex-column" style="flex: 1">
-            <v-alert tile class="py-4 text-caption">
+            <div class="d-flex justify-space-between bg-sheet pa-2 text-caption">
               <div class="text-truncate">
                 <strong>Readonly:</strong> Default objects are generated automatically.
               </div>
-            </v-alert>
+              <v-btn
+                :disabled="disableDefaultObjects"
+                size="x-small"
+                variant="tonal"
+                @click="() => copy(blueprintDefault, 'defaults')"
+              >
+                Copy
+              </v-btn>
+            </div>
             <v-ace-editor
               ref="blueprintEditorDefault"
               v-model:value="blueprintDefault"

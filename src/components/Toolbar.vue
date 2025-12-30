@@ -152,7 +152,7 @@ watch(() => currentRoute.params.locale, () => {
     <template #prepend>
       <v-tooltip
         v-if="globalStore.uiConfig.toolbar_menu"
-        text="Sections (CTRL+Q)"
+        text="Sections (ALT+Q)"
         location="bottom"
       >
         <template #activator="{ props }">

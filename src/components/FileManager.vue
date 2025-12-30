@@ -221,9 +221,13 @@ const upload = async (fileList: FileList, type: 'remote' | 'local') => {
       }))
     }
   }
+  globalStore.showBottomSheet('Uploading file(s)...', null, 'mdi-upload', true);
   return Promise.all(promises)
     .catch(globalStore.catchError)
-    .finally(() => uploading.value = false);
+    .finally(() => {
+      globalStore.hideBottomSheet();
+      uploading.value = false
+    });
 }
 
 const remove = () => {
@@ -464,7 +468,9 @@ watch(() => globalStore.fileManager.visible, () => {
                 <VideoPlayer
                   v-else-if="item.meta.type?.startsWith('video')"
                   :src="blobFileList[item.path || 'unknown'] || (serverSettings.publicUrl + item.path)"
+                  :type="item.meta.type"
                   :aspect-ratio="(item.meta.width || 1) / (item.meta.height || 1)"
+                  controls
                 />
                 <v-sheet v-else>
                   <v-responsive :aspect-ratio="16 / 9" class="d-flex align-center justify-center text-center">
@@ -568,12 +574,12 @@ watch(() => globalStore.fileManager.visible, () => {
           </v-list-item>
         </v-list>
       </v-menu>
-      <v-checkbox
-        v-if="!smAndDown"
-        v-model="showInfo"
-        label="Show additional info"
-        hide-details
-      />
+<!--      <v-checkbox-->
+<!--        v-if="!smAndDown"-->
+<!--        v-model="showInfo"-->
+<!--        label="Show additional info"-->
+<!--        hide-details-->
+<!--      />-->
       <v-spacer />
       <v-btn
         v-if="canSelect"
