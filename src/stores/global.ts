@@ -95,7 +95,7 @@ const defaultUserSettings: IUserSettings = Object.assign({}, {
   layoutSitePreviewLocation: 'start',
   layoutSitePreviewPadding: true,
   layoutSitePreviewKeepRatio: true,
-  layoutAutoSplit: true,
+  layoutAutoSplit: false,
   blueprintsIncludeTypings: true,
   blueprintsReadFromData: true,
   blueprintsReadFromStructure: true,
