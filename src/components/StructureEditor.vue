@@ -552,6 +552,7 @@ watch(() => globalStore.userSettings.data, () => {
           :key="section.key"
           :prepend-icon="section.disabled() ? 'mdi-alert' : section.icon"
           :text="section.title"
+          :disabled="section.disabled()"
           @click="setSection(section)"
         />
       </v-tabs>
