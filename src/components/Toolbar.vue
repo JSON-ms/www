@@ -192,7 +192,7 @@ watch(() => currentRoute.params.locale, () => {
       />
 
       <v-btn-toggle
-        v-if="globalStore.uiConfig.toolbar_advanced && globalStore.uiConfig.structure && windowWidth > 900"
+        v-if="globalStore.uiConfig.toolbar_developer && globalStore.uiConfig.structure && windowWidth > 900"
         v-model="globalStore.admin.structure"
         color="primary"
         variant="text"

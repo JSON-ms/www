@@ -67,13 +67,13 @@ const tab = computed({
     if (!globalStore.uiConfig.data && globalStore.uiConfig.documentation) {
       return 'docs';
     }
-    const advancedMode = globalStore.admin.structure && windowWidth.value > 900;
-    if (advancedMode && splitTabs.value) {
+    const developerMode = globalStore.admin.structure && windowWidth.value > 900;
+    if (developerMode && splitTabs.value) {
       return globalStore.admin.dataTab === 'data'
         ? 'docs'
         : globalStore.admin.dataTab
     }
-    return advancedMode
+    return developerMode
       ? globalStore.admin.dataTab
       : 'data';
   },

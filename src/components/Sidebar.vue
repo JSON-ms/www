@@ -162,26 +162,26 @@ watch(() => serverSettings.version, () => {
           prepend-icon="mdi-file-cabinet"
           @click="onFileManagerClick"
         />
-        <v-expand-transition>
-          <div v-if="globalStore.uiConfig.sidebar_advanced && globalStore.admin.structure && canInteractWithServer">
-            <v-list-subheader title="Advanced details" />
-            <v-list-item
-              v-if="globalStore.uiConfig.sidebar_advanced_hash"
-              title="Hash"
-              :subtitle="lastDetails.hash || 'Loading...'"
-            />
-            <v-list-item
-              v-if="globalStore.uiConfig.sidebar_advanced_server"
-              title="Server version"
-              :subtitle="lastDetails.version || 'Loading...'"
-            />
-            <v-list-item
-              v-if="globalStore.uiConfig.sidebar_advanced_upload"
-              title="Upload max size"
-              :subtitle="lastDetails.uploadMaxSize || 'Loading...'"
-            />
-          </div>
-        </v-expand-transition>
+<!--        <v-expand-transition>-->
+<!--          <div v-if="globalStore.uiConfig.sidebar_developer && globalStore.admin.structure && canInteractWithServer">-->
+<!--            <v-list-subheader title="Developer details" />-->
+<!--            <v-list-item-->
+<!--              v-if="globalStore.uiConfig.sidebar_developer_hash"-->
+<!--              title="Hash"-->
+<!--              :subtitle="lastDetails.hash || 'Loading...'"-->
+<!--            />-->
+<!--            <v-list-item-->
+<!--              v-if="globalStore.uiConfig.sidebar_developer_server"-->
+<!--              title="Server version"-->
+<!--              :subtitle="lastDetails.version || 'Loading...'"-->
+<!--            />-->
+<!--            <v-list-item-->
+<!--              v-if="globalStore.uiConfig.sidebar_developer_upload"-->
+<!--              title="Upload max size"-->
+<!--              :subtitle="lastDetails.uploadMaxSize || 'Loading...'"-->
+<!--            />-->
+<!--          </div>-->
+<!--        </v-expand-transition>-->
       </template>
     </v-list>
     <template #append>

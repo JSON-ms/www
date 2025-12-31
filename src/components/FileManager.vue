@@ -419,7 +419,7 @@ watch(() => globalStore.fileManager.visible, () => {
             v-if="!isFolderSynced(structure) && !structure.endpoint"
             icon="mdi-help-network-outline"
             title="No endpoint or syncing detected"
-            text="Files cannot be loaded without a synced local directory or a properly configured endpoint. Please check your project's settings in advanced mode."
+            text="Files cannot be loaded without a synced local directory or a properly configured endpoint. Please check your project's settings in developer mode."
           />
           <v-empty-state
             v-else-if="structure.endpoint || isFolderSynced(structure)"
@@ -431,7 +431,7 @@ watch(() => globalStore.fileManager.visible, () => {
             v-else
             icon="mdi-help-network-outline"
             title="No endpoint detected"
-            text="Files cannot be loaded without a properly configured endpoint. Please check your project's settings in advanced mode."
+            text="Files cannot be loaded without a properly configured endpoint. Please check your project's settings in developer mode."
           />
         </v-card>
         <v-card
