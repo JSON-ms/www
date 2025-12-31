@@ -1,5 +1,5 @@
 ## Server-Side Integration
-Currently, our server-side integration supports PHP, with plans to add Python in the near future.
+Currently, our server-side integration supports PHP. Check out the repository for installation instructions.
 
 ### Repository
 > #### PHP

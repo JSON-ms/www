@@ -13,6 +13,7 @@ declare module 'vue' {
     DataEditor: typeof import('./src/components/DataEditor.vue')['default']
     Docs: typeof import('./src/components/Docs.vue')['default']
     EditorDrawer: typeof import('./src/components/EditorDrawer.vue')['default']
+    Endpoint: typeof import('./src/components/Endpoint.vue')['default']
     EndpointManager: typeof import('./src/components/EndpointManager.vue')['default']
     EndpointManagerModal: typeof import('./src/components/EndpointManagerModal.vue')['default']
     Error: typeof import('./src/components/Error.vue')['default']
