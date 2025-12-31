@@ -81,7 +81,7 @@ export interface IUIConfig {
   toolbar_project_selector: boolean
   toolbar_project_selector_new: boolean
   toolbar_project_selector_delete: boolean
-  toolbar_advanced: boolean
+  toolbar_developer: boolean
   toolbar_site_preview: boolean
   toolbar_site_preview_refresh: boolean
   toolbar_site_preview_mobile: boolean
@@ -104,10 +104,10 @@ export interface IUIConfig {
   sidebar_sections: boolean
   sidebar_tools: boolean
   sidebar_tools_file_manager: boolean
-  sidebar_advanced: boolean
-  sidebar_advanced_hash: boolean
-  sidebar_advanced_server: boolean
-  sidebar_advanced_upload: boolean
+  sidebar_developer: boolean
+  sidebar_developer_hash: boolean
+  sidebar_developer_server: boolean
+  sidebar_developer_upload: boolean
   sidebar_tutorial: boolean
   sidebar_theme: boolean
   sidebar_github: boolean

@@ -192,20 +192,20 @@ watch(() => currentRoute.params.locale, () => {
       />
 
       <v-btn-toggle
-        v-if="globalStore.uiConfig.toolbar_advanced && globalStore.uiConfig.structure && windowWidth > 900"
+        v-if="globalStore.uiConfig.toolbar_developer && globalStore.uiConfig.structure && windowWidth > 900"
         v-model="globalStore.admin.structure"
         color="primary"
         variant="text"
         @update:model-value="value => globalStore.admin.structure = !!value"
       >
         <v-tooltip
-          text="Advanced (CTRL+A)"
+          text="Developer (CTRL+A)"
           location="bottom"
         >
           <template #activator="{ props }">
             <v-btn v-bind="props" :value="true">
-              <v-icon icon="mdi-code-tags" style="top: 1px" :start="windowWidth > 1400" />
-              <span v-if="windowWidth > 1400">Advanced</span>
+              <v-icon icon="mdi-console" style="top: 1px" :start="windowWidth > 1400" />
+              <span v-if="windowWidth > 1400">Developer</span>
             </v-btn>
           </template>
         </v-tooltip>
