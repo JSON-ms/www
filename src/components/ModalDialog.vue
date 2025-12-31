@@ -22,8 +22,8 @@ const { title, prependIcon } = defineProps<{
       <template #append>
         <div class="d-flex align-center" style="gap: 1rem">
           <slot name="append"></slot>
-          <v-btn size="x-small" icon variant="flat">
-            <v-icon icon="mdi-close" size="large" @click="visible = false" />
+          <v-btn size="x-small" icon variant="flat" @click="visible = false">
+            <v-icon icon="mdi-close" size="large" />
           </v-btn>
         </div>
       </template>
