@@ -101,19 +101,20 @@ export function useLayout() {
       let width = windowWidth.value - total;
       if (width < _mobileFrameWidth) {
         width = _mobileFrameWidth;
-        if (!drawer.temporary) {
-          drawer.temporary = true;
-          drawer.memory = globalStore.admin.drawer;
-          return getDataWidth();
-        } else if (!editor.temporary) {
-          editor.temporary = true;
-          editor.memory = globalStore.admin.structure;
-          return getDataWidth();
-        } else if (preview.active) {
-          preview.active = false;
-          preview.memory = globalStore.admin.previewMode;
-          return getDataWidth();
-        }
+        // if (!drawer.temporary) {
+        //   drawer.temporary = true;
+        //   drawer.memory = globalStore.admin.drawer;
+        //   return getDataWidth();
+        // } else if (!editor.temporary) {
+        //   editor.temporary = true;
+        //   editor.memory = globalStore.admin.structure;
+        //   return getDataWidth();
+        // } else if (preview.active) {
+        // if (preview.active) {
+        //   preview.active = false;
+        //   preview.memory = globalStore.admin.previewMode;
+        //   return getDataWidth();
+        // }
       }
       return width;
     }
