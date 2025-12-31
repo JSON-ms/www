@@ -6,7 +6,7 @@ import type {IStructure, IStructureData} from '@/interfaces';
 import TriggerMenu from '@/components/TriggerMenu.vue';
 import {useStructure} from '@/composables/structure';
 import Settings from '@/components/Settings.vue';
-import Integration from '@/components/Integration.vue';
+import Endpoint from '@/components/Endpoint.vue';
 import '@/plugins/aceeditor';
 import {useGlobalStore} from '@/stores/global';
 import {useTypings} from "@/composables/typings";
@@ -78,28 +78,21 @@ const sections = ref([{
   key: 'structure',
   icon: 'mdi-invoice-text-edit-outline',
   title: "Structure",
-  subtitle: "YAML schema and layout",
+  subtitle: "Data structure in YAML format",
   disabledSubtitle: (): string => 'Must be logged in',
   disabled: () => false,
 }, {
   key: 'blueprints',
   icon: 'mdi-language-typescript',
   title: "Typescript",
-  subtitle: "TypeScript types and default data",
+  subtitle: "Generated types and default data",
   disabledSubtitle: (): string => 'Must be logged in',
   disabled: () => false
 }, {
-  key: 'settings',
-  icon: 'mdi-cog',
-  title: "Settings",
-  subtitle: "Configure project behavior",
-  disabledSubtitle: (): string => 'Must be logged in',
-  disabled: () => !globalStore.session.loggedIn
-}, {
   key: 'integration',
-  icon: 'mdi-download-circle-outline',
-  title: "Integration",
-  subtitle: "Install and connect your custom endpoint",
+  icon: 'mdi-server-network',
+  title: "Endpoint",
+  subtitle: "Install and save your data remotely",
   disabledSubtitle: (): string => {
     if (!globalStore.session.loggedIn) {
       return 'Must be logged in';
@@ -110,6 +103,13 @@ const sections = ref([{
     return 'Unknown'
   },
   disabled: () => !globalStore.session.loggedIn || !structure.value.endpoint
+}, {
+  key: 'settings',
+  icon: 'mdi-cog',
+  title: "Settings",
+  subtitle: "Configure project behavior",
+  disabledSubtitle: (): string => 'Must be logged in',
+  disabled: () => !globalStore.session.loggedIn
 }])
 const filteredSections = computed((): any[] => sections.value.filter(section => {
   // @ts-expect-error Values are hardcoded... not an issue
@@ -789,8 +789,10 @@ watch(() => globalStore.userSettings.data, () => {
       </v-tabs-window-item>
       <v-tabs-window-item v-if="globalStore.uiConfig.structure_menu_integration" value="integration" class="fill-height">
         <div class="d-flex flex-column overflow-auto h-100" style="max-height: calc(100vh - 109px)">
-          <Integration
+          <Endpoint
             v-model="structure"
+            :demo="!globalStore.session.loggedIn"
+            :disabled="structure.type !== 'owner'"
           />
         </div>
       </v-tabs-window-item>
