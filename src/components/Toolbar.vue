@@ -199,13 +199,13 @@ watch(() => currentRoute.params.locale, () => {
         @update:model-value="value => globalStore.admin.structure = !!value"
       >
         <v-tooltip
-          text="Advanced (CTRL+A)"
+          text="Developer (CTRL+A)"
           location="bottom"
         >
           <template #activator="{ props }">
             <v-btn v-bind="props" :value="true">
-              <v-icon icon="mdi-code-tags" style="top: 1px" :start="windowWidth > 1400" />
-              <span v-if="windowWidth > 1400">Advanced</span>
+              <v-icon icon="mdi-console" style="top: 1px" :start="windowWidth > 1400" />
+              <span v-if="windowWidth > 1400">Developer</span>
             </v-btn>
           </template>
         </v-tooltip>
