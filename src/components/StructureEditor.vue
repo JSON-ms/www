@@ -779,18 +779,18 @@ watch(() => globalStore.userSettings.data, () => {
           </div>
         </div>
       </v-tabs-window-item>
-      <v-tabs-window-item v-if="globalStore.uiConfig.structure_menu_settings" value="settings" class="fill-height">
+      <v-tabs-window-item v-if="globalStore.uiConfig.structure_menu_integration" value="integration" class="fill-height">
         <div class="d-flex flex-column overflow-auto h-100" style="max-height: calc(100vh - 109px)">
-          <Settings
+          <Endpoint
             v-model="structure"
             :demo="!globalStore.session.loggedIn"
             :disabled="structure.type !== 'owner'"
           />
         </div>
       </v-tabs-window-item>
-      <v-tabs-window-item v-if="globalStore.uiConfig.structure_menu_integration" value="integration" class="fill-height">
+      <v-tabs-window-item v-if="globalStore.uiConfig.structure_menu_settings" value="settings" class="fill-height">
         <div class="d-flex flex-column overflow-auto h-100" style="max-height: calc(100vh - 109px)">
-          <Endpoint
+          <Settings
             v-model="structure"
             :demo="!globalStore.session.loggedIn"
             :disabled="structure.type !== 'owner'"

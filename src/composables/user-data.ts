@@ -58,9 +58,9 @@ export function useUserData() {
   const userDataHasChanged = computed((): boolean => objectsAreDifferent(modelStore.userData, modelStore.originalUserData));
 
   const canSave = computed((): boolean => {
+    const canSaveWithServer = globalStore.session.loggedIn && canInteractWithServer.value;
     return !saving.value
-      && globalStore.session.loggedIn
-      && (canInteractWithServer.value || canInteractWithSyncedFolder.value)
+      && (canSaveWithServer || canInteractWithSyncedFolder.value)
       // && !userDataHasError.value
       && userDataHasChanged.value
       && structureIsPristine.value;

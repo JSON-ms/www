@@ -61,6 +61,7 @@ export interface IError {
 
 export interface IFile {
   path: string | null,
+  origin?: 'local' | 'remote',
   blob?: string | undefined,
   meta: {
     type?: string,

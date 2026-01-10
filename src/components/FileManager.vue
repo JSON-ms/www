@@ -45,6 +45,10 @@ const getFilesByType = (type: string): IFile[] => {
     return acceptedFiles.value.filter((file: IFile) => file.meta.type?.startsWith('video'));
   } else if (type === 'document') {
     return acceptedFiles.value.filter((file: IFile) => !file.meta.type?.startsWith('image') && !file.meta.type?.startsWith('video'));
+  } else if (type === 'local') {
+    return acceptedFiles.value.filter((file: IFile) => file.origin === 'local');
+  } else if (type === 'remote') {
+    return acceptedFiles.value.filter((file: IFile) => file.origin === 'remote');
   }
   return [];
 }
@@ -123,6 +127,7 @@ const load = () => {
       if (!['data.json', 'structure.json', 'structure.yml', 'default.ts', 'index.ts', 'typings.ts', 'settings.json'].includes(item.path)) {
         files.value.push({
           path: item.path,
+          origin: 'local',
           meta: {
             type: item.file.type,
             width: item.width,
@@ -136,7 +141,7 @@ const load = () => {
     });
 
     endpointResponse.forEach((item: IFile) => {
-      files.value.push(item);
+      files.value.push(({ ...item, origin: 'remote' }));
     });
 
     selectedFiles.value = [];
@@ -348,6 +353,15 @@ watch(() => globalStore.fileManager.visible, () => {
         <v-tab v-if="getFilesByType('document').length > 0" value="document">
           Document ({{ getFilesByType('document').length }})
         </v-tab>
+        <template v-if="getFilesByType('remote').length > 0 && getFilesByType('local').length > 0">
+          <v-divider inset vertical class="mx-2" />
+          <v-tab v-if="getFilesByType('remote').length > 0" value="remote">
+            Cloud ({{ getFilesByType('remote').length }})
+          </v-tab>
+          <v-tab v-if="getFilesByType('local').length > 0" value="local">
+            Local ({{ getFilesByType('local').length }})
+          </v-tab>
+        </template>
       </v-tabs>
     </template>
     <v-card-actions>
@@ -457,7 +471,24 @@ watch(() => globalStore.fileManager.visible, () => {
               @click="onFileClick(item)"
             >
               <div v-if="!canSelect || globalStore.fileManager.multiple" class="position-absolute" style="top: 0; left: 0; z-index: 10">
-                <v-checkbox :model-value="fileIsSelected(item)" color="primary" base-color="surface" hide-details @click.stop.prevent="onFileClick(item)" />
+                <v-checkbox :model-value="fileIsSelected(item)" color="primary" hide-details @click.stop.prevent="onFileClick(item)" />
+              </div>
+              <div class="position-absolute" style="top: 0; right: 0; z-index: 10">
+                <v-chip
+                  v-if="['local', 'remote'].includes(item.origin || 'unknown')"
+                  :color="fileIsSelected(item) ? 'primary' : undefined"
+                  size="x-small"
+                  variant="flat"
+                  class="px-1 ma-2"
+                  label
+                >
+                  <template v-if="item.origin === 'local'">
+                    Local
+                  </template>
+                  <template v-else>
+                    Cloud
+                  </template>
+                </v-chip>
               </div>
               <div class="bg-blue-grey-lighten-4">
                 <ImgTag
