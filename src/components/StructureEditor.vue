@@ -97,12 +97,12 @@ const sections = ref([{
     if (!globalStore.session.loggedIn) {
       return 'Must be logged in';
     }
-    if (!structure.value.endpoint) {
-      return 'Must connect an endpoint to your project'
-    }
+    // if (!structure.value.endpoint) {
+    //   return 'Must connect an endpoint to your project'
+    // }
     return 'Unknown'
   },
-  disabled: () => !globalStore.session.loggedIn || !structure.value.endpoint
+  disabled: () => !globalStore.session.loggedIn// || !structure.value.endpoint
 }, {
   key: 'settings',
   icon: 'mdi-cog',
