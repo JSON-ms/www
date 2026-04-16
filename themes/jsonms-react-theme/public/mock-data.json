@@ -1,0 +1,91 @@
+{
+  "settings": {
+    "theme": "dark",
+    "sections": {
+      "hero": true,
+      "about": true,
+      "skills": true,
+      "projects": true,
+      "contact": true
+    }
+  },
+  "profile": {
+    "name": "Alex Rivera",
+    "role": "Full-Stack Engineer & Open Source Contributor",
+    "bio": "I craft fast, accessible, and beautifully designed web products. Passionate about open-source ecosystems, developer tooling, and the intersection of great UX and solid engineering. When I'm not shipping features, I'm contributing to the tools I love — including JSON.ms.",
+    "avatar": "https://i.pravatar.cc/300?img=11",
+    "skills": [
+      "React",
+      "TypeScript",
+      "Node.js",
+      "GraphQL",
+      "Rust",
+      "Docker",
+      "PostgreSQL",
+      "Redis",
+      "Vite",
+      "Testing Library",
+      "Terraform",
+      "Linux"
+    ],
+    "projects": [
+      {
+        "title": "JSON.ms React Theme",
+        "description": "A plug-and-play React theme starter kit for the JSON.ms ecosystem. Dynamic rendering, zero hardcoded content, fully extensible.",
+        "tags": ["React", "TypeScript", "Vite", "JSON.ms"],
+        "url": "https://github.com/jsonms/react-theme",
+        "stars": 312
+      },
+      {
+        "title": "Forge CLI",
+        "description": "A blazing-fast scaffolding CLI written in Rust. Generates project boilerplate from Git templates in under 200ms.",
+        "tags": ["Rust", "CLI", "DevTools"],
+        "url": "https://github.com/alexrivera/forge-cli",
+        "stars": 1840
+      },
+      {
+        "title": "GraphQL Federation Gateway",
+        "description": "A lightweight, zero-dependency GraphQL federation gateway that stitches microservice schemas on-the-fly.",
+        "tags": ["GraphQL", "Node.js", "Microservices"],
+        "url": "https://github.com/alexrivera/gql-gateway",
+        "stars": 921
+      },
+      {
+        "title": "Pulse Dashboard",
+        "description": "Real-time infrastructure monitoring dashboard with WebSocket telemetry, metric graphs, and alert policies.",
+        "tags": ["React", "WebSockets", "PostgreSQL", "Docker"],
+        "url": "https://github.com/alexrivera/pulse",
+        "stars": 487
+      }
+    ]
+  },
+  "contact": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/alexrivera",
+        "icon": "github"
+      },
+      {
+        "label": "LinkedIn",
+        "href": "https://linkedin.com/in/alexrivera",
+        "icon": "linkedin"
+      },
+      {
+        "label": "Twitter",
+        "href": "https://twitter.com/alexrivera",
+        "icon": "twitter"
+      },
+      {
+        "label": "Email",
+        "href": "mailto:alex@example.com",
+        "icon": "mail"
+      },
+      {
+        "label": "Website",
+        "href": "https://alexrivera.dev",
+        "icon": "globe"
+      }
+    ]
+  }
+}
