@@ -1,0 +1,58 @@
+{
+  "settings": {
+    "theme": "dark",
+    "sections": {
+      "hero": true,
+      "about": true,
+      "skills": true,
+      "projects": true,
+      "contact": true
+    }
+  },
+  "profile": {
+    "name": "Alex Developer",
+    "role": "Frontend Architect & UI Engineer",
+    "bio": "I am a passionate software engineer specializing in building exceptional digital experiences. I focus on modern web architecture, minimalist design, and scalable frontend solutions.",
+    "avatar": "https://i.pravatar.cc/300?img=68",
+    "email": "hello@example.com",
+    "location": "San Francisco, CA",
+    "skills": [
+      { "name": "React" },
+      { "name": "TypeScript" },
+      { "name": "Node.js" },
+      { "name": "GraphQL" },
+      { "name": "CSS/Sass" },
+      { "name": "Figma" }
+    ],
+    "projects": [
+      {
+        "title": "JSON.ms Theme Framework",
+        "description": "A robust, minimal framework for rendering dynamic websites from structured JSON data.",
+        "url": "https://example.com",
+        "tags": ["React", "TypeScript", "Vite"]
+      },
+      {
+        "title": "Minimal UI Kit",
+        "description": "A set of highly reusable, unstyled React components for building custom design systems.",
+        "repository": "https://github.com/example/ui-kit",
+        "tags": ["React", "CSS Variables"]
+      }
+    ],
+    "social": [
+      {
+        "platform": "GitHub",
+        "url": "https://github.com",
+        "label": "@alexdev"
+      },
+      {
+        "platform": "Twitter",
+        "url": "https://twitter.com",
+        "label": "@alex_codes"
+      },
+      {
+        "platform": "LinkedIn",
+        "url": "https://linkedin.com"
+      }
+    ]
+  }
+}

@@ -1,0 +1,31 @@
+settings:
+  theme: system
+  sections:
+    hero: true
+    about: true
+    skills: true
+    projects: true
+    contact: true
+
+profile:
+  name: YAML Developer
+  role: Full Stack Engineer
+  bio: "I love writing clean configurations using YAML! This is a test to ensure the YAML parser is functioning correctly."
+  avatar: "https://i.pravatar.cc/300?img=12"
+  email: yaml@example.com
+  location: "YAML City"
+  skills:
+    - name: React
+    - name: TypeScript
+    - name: YAML
+    - name: Node.js
+  projects:
+    - title: "YAML Parser"
+      description: "A cool project that parses YAML into JSON.ms."
+      tags:
+        - React
+        - YAML
+  social:
+    - platform: GitHub
+      url: "https://github.com"
+      label: "@yamldev"
