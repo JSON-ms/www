@@ -1,26 +1,30 @@
+import React from 'react';
+import { Section } from '../components/Section';
 import { Badge } from '../components/Badge';
+import { Profile } from '../types';
 
 interface SkillsSectionProps {
-  skills: string[];
+  profile: Profile;
 }
 
-/**
- * Skills section — renders skill badges in a flex-wrap grid.
- * Each badge has glassmorphism style with primary-color hover glow.
- */
-export function SkillsSection({ skills }: SkillsSectionProps) {
-  if (skills.length === 0) return null;
+export const SkillsSection: React.FC<SkillsSectionProps> = ({ profile }) => {
+  if (!profile.skills || profile.skills.length === 0) return null;
 
   return (
-    <section id="skills" className="section" aria-labelledby="skills-heading">
-      <p className="section-label" id="skills-heading">Skills</p>
-      <div className="skills-grid" role="list" aria-label="Technical skills">
-        {skills.map((skill) => (
-          <div key={skill} role="listitem">
-            <Badge label={skill} />
-          </div>
+    <Section id="skills" title="Skills">
+      <div 
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
+        }}
+      >
+        {profile.skills.map((skill, index) => (
+          <Badge key={index}>
+            {skill.name}
+          </Badge>
         ))}
       </div>
-    </section>
+    </Section>
   );
-}
+};

@@ -1,39 +1,37 @@
-// ─── Theme ───────────────────────────────────────────────────────────────────
-
-export type ThemeMode = 'light' | 'dark';
-
-export interface ThemeTokens {
-  background: string;
-  surface: string;
-  surfaceHover: string;
-  text: string;
-  textMuted: string;
-  primary: string;
-  primaryHover: string;
-  border: string;
-  cardShadow: string;
-  glassBackground: string;
-  glassBorder: string;
+export interface Skill {
+  name: string;
+  level?: string;
+  icon?: string; // Optional URL or identifier
 }
-
-// ─── Data Shapes ─────────────────────────────────────────────────────────────
 
 export interface Project {
   title: string;
   description: string;
-  tags: string[];
   url?: string;
-  stars?: number;
+  repository?: string;
+  image?: string;
+  tags?: string[];
 }
 
-export interface ContactLink {
-  label: string;
-  href: string;
-  /** Supported: 'github' | 'linkedin' | 'twitter' | 'mail' | 'globe' | any custom string */
-  icon: string;
+export interface SocialLink {
+  platform: string;
+  url: string;
+  label?: string;
 }
 
-export interface SectionVisibility {
+export interface Profile {
+  name: string;
+  role: string;
+  bio: string;
+  avatar: string;
+  email?: string;
+  location?: string;
+  skills: Skill[];
+  projects: Project[];
+  social: SocialLink[];
+}
+
+export interface SectionSettings {
   hero: boolean;
   about: boolean;
   skills: boolean;
@@ -41,36 +39,12 @@ export interface SectionVisibility {
   contact: boolean;
 }
 
-export interface JSONMSSettings {
-  theme: ThemeMode;
-  sections: SectionVisibility;
+export interface ThemeSettings {
+  theme: 'light' | 'dark' | 'system';
+  sections: SectionSettings;
 }
 
-export interface ProfileData {
-  name: string;
-  role: string;
-  bio: string;
-  avatar: string;
-  skills: string[];
-  projects: Project[];
-}
-
-export interface ContactData {
-  links: ContactLink[];
-}
-
-// ─── Top-Level API Shape ─────────────────────────────────────────────────────
-
-export interface JSONMSConfig {
-  settings: JSONMSSettings;
-  profile: ProfileData;
-  contact: ContactData;
-}
-
-// ─── Context State ────────────────────────────────────────────────────────────
-
-export interface JSONMSState {
-  data: JSONMSConfig | null;
-  loading: boolean;
-  error: string | null;
+export interface JSONMSData {
+  settings: ThemeSettings;
+  profile: Profile;
 }

@@ -1,33 +1,59 @@
-import { Avatar } from '../components/Avatar';
-import type { ProfileData } from '../types';
+import React from 'react';
+import { Section } from '../components/Section';
+import { Profile } from '../types';
 
 interface HeroSectionProps {
-  profile: ProfileData;
+  profile: Profile;
 }
 
-/**
- * Hero section — displays the avatar, name (with gradient text),
- * role, and a decorative divider. Always the first visible section.
- */
-export function HeroSection({ profile }: HeroSectionProps) {
-  const { name, role, avatar } = profile;
-
+export const HeroSection: React.FC<HeroSectionProps> = ({ profile }) => {
   return (
-    <section id="hero" className="section hero" aria-labelledby="hero-name">
-      <div className="hero-top">
-        <div className="hero-text">
-          <p className="hero-greeting">Hello, I&apos;m</p>
-          <h1 id="hero-name" className="hero-name">
-            {name || 'Your Name'}
-          </h1>
-          <p className="hero-role">{role || 'Your Role'}</p>
-          <div className="hero-divider" aria-hidden="true" />
-        </div>
-
-        {avatar && (
-          <Avatar src={avatar} alt={name || 'Profile picture'} size={110} />
+    <Section id="hero" className="hero-section">
+      <div 
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
+          gap: '1.5rem',
+        }}
+      >
+        {profile.avatar && (
+          <img 
+            src={profile.avatar} 
+            alt={profile.name} 
+            style={{
+              width: '8rem',
+              height: '8rem',
+              borderRadius: 'var(--radius-full)',
+              objectFit: 'cover',
+              border: '2px solid var(--color-border)',
+            }}
+          />
         )}
+        <div>
+          <h1 
+            style={{
+              fontSize: '3rem',
+              fontWeight: 700,
+              lineHeight: 1.2,
+              marginBottom: '0.5rem',
+              letterSpacing: '-0.05em',
+            }}
+          >
+            {profile.name}
+          </h1>
+          <p 
+            style={{
+              fontSize: '1.25rem',
+              color: 'var(--color-text-muted)',
+              fontWeight: 400,
+            }}
+          >
+            {profile.role}
+          </p>
+        </div>
       </div>
-    </section>
+    </Section>
   );
-}
+};

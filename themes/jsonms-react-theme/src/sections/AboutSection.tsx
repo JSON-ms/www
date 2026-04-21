@@ -1,15 +1,25 @@
+import React from 'react';
+import { Section } from '../components/Section';
+import { Profile } from '../types';
+
 interface AboutSectionProps {
-  bio: string;
+  profile: Profile;
 }
 
-/**
- * About section — displays the user's bio with a styled left border accent.
- */
-export function AboutSection({ bio }: AboutSectionProps) {
+export const AboutSection: React.FC<AboutSectionProps> = ({ profile }) => {
+  if (!profile.bio) return null;
+
   return (
-    <section id="about" className="section" aria-labelledby="about-heading">
-      <p className="section-label" id="about-heading">About</p>
-      <p className="about-text">{bio}</p>
-    </section>
+    <Section id="about" title="About">
+      <p 
+        style={{
+          fontSize: '1.125rem',
+          lineHeight: 1.75,
+          color: 'var(--color-text)',
+        }}
+      >
+        {profile.bio}
+      </p>
+    </Section>
   );
-}
+};
