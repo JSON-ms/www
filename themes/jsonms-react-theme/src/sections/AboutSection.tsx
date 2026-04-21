@@ -10,12 +10,13 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ profile }) => {
   if (!profile.bio) return null;
 
   return (
-    <Section id="about" title="About">
+    <Section id="about" title="About Me">
       <p 
         style={{
-          fontSize: '1.125rem',
-          lineHeight: 1.75,
+          fontSize: '1.25rem',
+          lineHeight: 1.8,
           color: 'var(--color-text)',
+          fontWeight: 400,
         }}
       >
         {profile.bio}

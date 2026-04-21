@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { useJSONMS } from '../core/useJSONMS';
+import { useJSONMSContext } from '../core/JSONMSProvider';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -15,7 +15,7 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const { data } = useJSONMS();
+  const { data } = useJSONMSContext();
   
   // Default to system, but override if JSON.ms provides a preference
   const [theme, setTheme] = useState<Theme>('system');

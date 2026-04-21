@@ -1,5 +1,7 @@
 import React from 'react';
-import { useJSONMS } from '../core/useJSONMS';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Moon, Sun, Loader2 } from 'lucide-react';
+import { useJSONMSContext } from '../core/JSONMSProvider';
 import { HeroSection } from '../sections/HeroSection';
 import { AboutSection } from '../sections/AboutSection';
 import { SkillsSection } from '../sections/SkillsSection';
@@ -8,13 +10,17 @@ import { ContactSection } from '../sections/ContactSection';
 import { useTheme } from '../theme/useTheme';
 
 export const AboutMePage: React.FC = () => {
-  const { data, loading, error } = useJSONMS();
+  const { data, loading, error } = useJSONMSContext();
   const { theme, setTheme } = useTheme();
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <p style={{ color: 'var(--color-text-muted)', fontSize: '1.25rem' }}>Loading profile...</p>
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', gap: '1rem' }}>
+        <Loader2 className="animate-spin" size={48} color="var(--color-primary)" style={{ animation: 'spin 2s linear infinite' }} />
+        <style>
+          {`@keyframes spin { 100% { transform: rotate(360deg); } }`}
+        </style>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '1.25rem', fontWeight: 500, letterSpacing: '0.05em' }}>Loading Experience...</p>
       </div>
     );
   }
@@ -22,7 +28,7 @@ export const AboutMePage: React.FC = () => {
   if (error || !data) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <p style={{ color: 'red', fontSize: '1.25rem' }}>Error loading data. Please check your endpoint.</p>
+        <p style={{ color: '#ef4444', fontSize: '1.25rem', fontWeight: 500 }}>Error loading profile data. Check endpoint.</p>
       </div>
     );
   }
@@ -31,50 +37,74 @@ export const AboutMePage: React.FC = () => {
   const sections = settings.sections;
 
   return (
-    <div className="about-me-page">
-      <header 
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          padding: '1rem 2rem',
-          maxWidth: '48rem',
-          margin: '0 auto',
-        }}
+    <AnimatePresence>
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        className="about-me-page"
       >
-        <button
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        <header 
           style={{
-            background: 'var(--color-bg-secondary)',
-            border: '1px solid var(--color-border)',
-            color: 'var(--color-text)',
-            padding: '0.5rem 1rem',
-            borderRadius: 'var(--radius-md)',
-            cursor: 'pointer',
-            fontWeight: 500,
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            display: 'flex',
+            justifyContent: 'flex-end',
+            padding: '1.5rem 2rem',
+            maxWidth: '100vw',
+            margin: '0 auto',
+            zIndex: 50,
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            background: 'linear-gradient(to bottom, var(--color-bg), transparent)',
           }}
         >
-          {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-        </button>
-      </header>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            style={{
+              background: 'var(--glass-bg)',
+              border: 'var(--glass-border)',
+              color: 'var(--color-text)',
+              padding: '0.75rem',
+              borderRadius: 'var(--radius-full)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: 'var(--shadow-sm)',
+            }}
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+          </motion.button>
+        </header>
 
-      <main>
-        {sections.hero && <HeroSection profile={profile} />}
-        {sections.about && <AboutSection profile={profile} />}
-        {sections.skills && <SkillsSection profile={profile} />}
-        {sections.projects && <ProjectsSection profile={profile} />}
-        {sections.contact && <ContactSection profile={profile} />}
-      </main>
+        <main style={{ paddingTop: '5rem', paddingBottom: '3rem' }}>
+          {sections.hero && <HeroSection profile={profile} />}
+          {sections.about && <AboutSection profile={profile} />}
+          {sections.skills && <SkillsSection profile={profile} />}
+          {sections.projects && <ProjectsSection profile={profile} />}
+          {sections.contact && <ContactSection profile={profile} />}
+        </main>
 
-      <footer
-        style={{
-          textAlign: 'center',
-          padding: '2rem 0',
-          color: 'var(--color-text-muted)',
-          fontSize: '0.875rem',
-        }}
-      >
-        <p>© {new Date().getFullYear()} {profile.name}. All rights reserved.</p>
-      </footer>
-    </div>
+        <footer
+          style={{
+            textAlign: 'center',
+            padding: '3rem 0',
+            color: 'var(--color-text-muted)',
+            fontSize: '0.875rem',
+            borderTop: '1px solid var(--color-border)',
+            maxWidth: '52rem',
+            margin: '0 auto',
+          }}
+        >
+          <p>© {new Date().getFullYear()} {profile.name}. Designed with JSON.ms</p>
+        </footer>
+      </motion.div>
+    </AnimatePresence>
   );
 };

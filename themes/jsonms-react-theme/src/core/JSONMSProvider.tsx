@@ -1,5 +1,6 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { JSONMSData } from '../types';
+import { useJSONMS } from './useJSONMS';
 
 interface JSONMSContextType {
   data: JSONMSData | null;
@@ -15,32 +16,17 @@ interface JSONMSProviderProps {
 }
 
 export const JSONMSProvider: React.FC<JSONMSProviderProps> = ({ endpoint, children }) => {
-  const [data, setData] = useState<JSONMSData | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(endpoint);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch data: ${response.statusText}`);
-        }
-        const json = await response.json();
-        // Here you might add a normalization layer if the YAML structure is slightly different
-        setData(json as JSONMSData);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('An unknown error occurred'));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [endpoint]);
+  const { data, loading, error } = useJSONMS(endpoint);
 
   const value = { data, loading, error };
 
   return <JSONMSContext.Provider value={value}>{children}</JSONMSContext.Provider>;
+};
+
+export const useJSONMSContext = () => {
+  const context = useContext(JSONMSContext);
+  if (context === undefined) {
+    throw new Error('useJSONMSContext must be used within a JSONMSProvider');
+  }
+  return context;
 };

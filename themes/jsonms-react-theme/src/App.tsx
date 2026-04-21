@@ -7,7 +7,7 @@ import './theme/theme.css';
 
 const App: React.FC = () => {
   return (
-    <JSONMSProvider endpoint="/mock.json">
+    <JSONMSProvider endpoint="/mock.yaml">
       <ThemeProvider>
         <AboutMePage />
       </ThemeProvider>

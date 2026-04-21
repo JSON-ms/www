@@ -11,16 +11,16 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({ profile }) => {
   if (!profile.skills || profile.skills.length === 0) return null;
 
   return (
-    <Section id="skills" title="Skills">
+    <Section id="skills" title="Expertise">
       <div 
         style={{
           display: 'flex',
           flexWrap: 'wrap',
-          gap: '0.5rem',
+          gap: '0.75rem',
         }}
       >
         {profile.skills.map((skill, index) => (
-          <Badge key={index}>
+          <Badge key={index} index={index}>
             {skill.name}
           </Badge>
         ))}
